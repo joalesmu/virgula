@@ -1,7 +1,7 @@
 /* Vírgula · service worker: guarda la app en el aparato para que abra sin internet.
    Copyright (c) 2026 Alejandro Estrada · SPDX-License-Identifier: AGPL-3.0-only
    Al publicar una versión nueva, cambia VERSION: así el aparato descarga la nueva y avisa. */
-const VERSION = 'virgula-1.1';
+const VERSION = 'virgula-1.2';
 const ARCHIVOS = ['./', './index.html', './manifest.webmanifest', './icono-192.png', './icono-512.png', './icono-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

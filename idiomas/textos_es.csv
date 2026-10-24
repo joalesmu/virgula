@@ -149,6 +149,7 @@ aparato: {lista},General
 sonido sin alterar,General
 micrófono predeterminado,General
 💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.,General
+"🎙️ Se está grabando. Para terminar, toca ⏹ Detener.",General
 Se está grabando. ¿Ver otra sección? La grabación sigue.,General
 Grabación {fecha},Grabar
 El micrófono elegido no está conectado: usa el predeterminado.,Grabar
@@ -498,6 +499,9 @@ Papel del adjunto,Ficha
 Sin adjuntos.,Ficha
 No se pudo guardar «{nombre}»: {error},Ficha
 📎 {n} adjunto(s) guardado(s).,Ficha
+Vírgula no puede mostrar este tipo de archivo: guárdalo o compártelo para abrirlo con otra app.,Ficha
+⬇️ Guardar en el aparato,Ficha
+📤 Compartir,Ficha
 ¿Quitar «{nombre}» de esta grabación?,Ficha
 Enlazar,Ficha
 Palabras que se verán,Ficha
@@ -566,8 +570,6 @@ Tamaño aproximado: {x},Exportar
 "Referencia: 1 hora de archivo WAV mono ≈ 330 MB; la consulta ≈ 21 MB. Antes de compartir, el aparato necesita espacio libre parecido al tamaño del paquete.",Exportar
 Preparando… {n} %,Exportar
 "✅ Listo: {n} paquete(s), {x}.",Exportar
-⬇️ Guardar en el aparato,Exportar
-📤 Compartir,Exportar
 "Este navegador no deja compartir .zip directamente: guárdalo y compártelo desde Descargas o Archivos (WhatsApp, Drive, correo…).",Exportar
 En la computadora queda en Descargas.,Exportar
 📦 Paquete compartido.,Exportar
@@ -650,6 +652,7 @@ Problema en Vírgula {v},Ajustes
 2. Toca **Compartir** (el cuadro con la flecha hacia arriba).,Ajustes
 3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.,Ajustes
 "Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.",Ajustes
+"En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).",Ajustes
 Entendido,Ajustes
 ✅ Vírgula quedó instalada.,Ajustes
 ✨ Hay una versión nueva de Vírgula.,Ajustes

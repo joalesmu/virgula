@@ -101,6 +101,7 @@ const Grabadora = {
     try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {}
     await DB.poner('grabaciones', G.reg);
     G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
+    Atras.abrir();   // «atrás» no saca de la app mientras se graba
     G.cuadro = requestAnimationFrame(() => this.medir());
     $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>' + tH('Grabando'); $('bGrabar').setAttribute('aria-pressed', 'true');
     ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);

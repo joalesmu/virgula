@@ -262,11 +262,22 @@ const Ficha = {
     }
     if (n) { this.reg.modificada = Date.now(); await this.guardar(true); this.pintarAdj(); avisar(t('📎 {n} adjunto(s) guardado(s).', { n })); }
   },
+  /** Fotos, audio, video, PDF y texto se ven dentro de Vírgula (en la app instalada las ventanas nuevas pueden fallar, sobre todo en iPhone); lo demás se guarda o se comparte. */
   abrirAdjunto(id) {
     const a = this.adjuntos.find(x => x.id === id); if (!a) return;
-    const url = URL.createObjectURL(new File([a.blob], a.nombre, { type: a.tipo || 'application/octet-stream' }));
-    if (/^(image|audio|video|text)\/|pdf/.test(a.tipo)) window.open(url, '_blank');
-    else { const l = document.createElement('a'); l.href = url; l.download = a.nombre; document.body.appendChild(l); l.click(); l.remove(); }
+    const f = new File([a.blob], a.nombre, { type: a.tipo || 'application/octet-stream' }), url = URL.createObjectURL(f), tipo = a.tipo || '';
+    const vista = /^image\//.test(tipo) ? `<img src="${url}" alt="${esc(a.nota || a.nombre)}" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:10px">`
+      : /^audio\//.test(tipo) ? `<audio controls autoplay src="${url}" style="width:100%"></audio>`
+      : /^video\//.test(tipo) ? `<video controls playsinline src="${url}" style="width:100%;max-height:70vh"></video>`
+      : /pdf|^text\//.test(tipo) ? `<iframe src="${url}" title="${esc(a.nombre)}" style="width:100%;height:70vh;border:1px solid var(--borde);border-radius:10px;background:#fff"></iframe>` : '';
+    const puede = navigator.canShare && navigator.canShare({ files: [f] });
+    Ventana.abrir(`<h2>${iconoDe(a.tipo, a.nombre)} ${esc(a.nombre)}</h2>${a.nota ? `<p class="nota">${esc(a.nota)}</p>` : ''}
+      ${vista || `<p class="nota">${tH('Vírgula no puede mostrar este tipo de archivo: guárdalo o compártelo para abrirlo con otra app.')}</p>`}
+      <div class="fila"><button class="prim" id="adjGuardar">${tH('⬇️ Guardar en el aparato')}</button>${puede ? `<button id="adjCompartir">${tH('📤 Compartir')}</button>` : ''}<button id="adjCerrar">${tH('Cerrar')}</button></div>`,
+      () => setTimeout(() => URL.revokeObjectURL(url), 1000));
+    $('adjGuardar').onclick = () => descargarArchivos([f]);
+    if (puede) $('adjCompartir').onclick = () => compartirArchivos([f], a.nombre);
+    $('adjCerrar').onclick = () => Ventana.cerrar();
   },
   async quitarAdjunto(id) {
     const a = this.adjuntos.find(x => x.id === id); if (!a || !confirm(t('¿Quitar «{nombre}» de esta grabación?', { nombre: a.nombre }))) return;
@@ -351,7 +362,7 @@ const Ficha = {
         const c = this.reg.ficha.consentimiento; if (!c.forma) c.forma = 'oral'; if (c.estado === 'pendiente') c.estado = 'otorgado';
         await this.guardar(true); this.pintar(); this.cargarAudio();
       };
-      mr.stop(); const v = $('velo'); if (v) v.remove();
+      mr.stop(); Ventana.cerrar();
     };
   },
   async borrar() {

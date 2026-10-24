@@ -1,5 +1,5 @@
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
-const VERSION = '1.1';
+const VERSION = '1.2';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
@@ -135,9 +135,26 @@ function avisar(texto, ms = 3500) {
   const d = document.createElement('div'); d.className = 'aviso-toast'; d.setAttribute('role', 'status'); d.textContent = texto;
   document.body.appendChild(d); setTimeout(() => d.remove(), ms);
 }
+/** Botón «atrás» del teléfono: cierra la ventana abierta, vuelve de la ficha al Acervo y nunca sale de la app mientras se graba. */
+const Atras = {
+  ignorar: false,
+  abierto() { return !!$('velo') || Nav.actual === 'vFicha' || !!G; },
+  abrir() { if (!(history.state && history.state.capa)) history.pushState({ capa: true }, ''); },
+  cerrar() { if (this.ignorar) return; if (history.state && history.state.capa && !this.abierto()) { this.ignorar = true; history.back(); } },   // nunca dos pasos atrás pendientes
+  alVolver() {
+    if (this.ignorar) { this.ignorar = false; if (this.abierto()) this.abrir(); return; }
+    if ($('velo')) Ventana.cerrar(true);
+    else if (G) avisar(t('🎙️ Se está grabando. Para terminar, toca ⏹ Detener.'), 4000);
+    else if (Nav.actual === 'vFicha') Nav.ir('vAcervo', true);
+    if (this.abierto()) this.abrir();
+  }
+};
+window.addEventListener('popstate', () => Atras.alVolver());
+
 const Ventana = {
   abrir(html, alCerrar) {
-    this.cerrar();
+    this.cerrar(true);
+    Atras.abrir();
     const v = document.createElement('div'); v.className = 'velo'; v.id = 'velo';
     v.innerHTML = `<div class="ventana" role="dialog" aria-modal="true">${html}</div>`;
     v.addEventListener('click', e => { if (e.target === v) this.cerrar(); });
@@ -145,18 +162,23 @@ const Ventana = {
     const f = v.querySelector('input,select,textarea,button'); if (f) f.focus();
     return v.firstElementChild;
   },
-  cerrar() { const v = $('velo'); if (v) { v.remove(); if (this.alCerrar) { const f = this.alCerrar; this.alCerrar = null; f(); } } }
+  cerrar(desdeAtras) {
+    const v = $('velo'); if (!v) return;
+    v.remove(); if (this.alCerrar) { const f = this.alCerrar; this.alCerrar = null; f(); }
+    if (!desdeAtras) Atras.cerrar();
+  }
 };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') Ventana.cerrar(); });
 const Nav = {
   actual: 'vGrabar',
-  ir(id) {
+  ir(id, desdeAtras) {
     if (G && id !== 'vGrabar' && !confirm(t('Se está grabando. ¿Ver otra sección? La grabación sigue.'))) return;
     document.querySelectorAll('.vista').forEach(v => v.classList.toggle('oculto', v.id !== id));
     document.querySelectorAll('nav.abajo button').forEach(b => b.classList.toggle('on', b.dataset.vista === id || (id === 'vFicha' && b.dataset.vista === 'vAcervo')));
     this.actual = id; window.scrollTo(0, 0);
     if (id === 'vAcervo') Acervo.pintar();
     if (id === 'vAjustes') { Espacio.actualizar(); Plantillas.pintarAjustes(); Idioma.pintar(); pintarBaseTraduccion(); }
+    if (Atras.abierto()) Atras.abrir(); else if (!desdeAtras) Atras.cerrar();
   }
 };
 document.querySelectorAll('nav.abajo button').forEach(b => b.addEventListener('click', () => Nav.ir(b.dataset.vista)));

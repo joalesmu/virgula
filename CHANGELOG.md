@@ -1,5 +1,11 @@
 # Cambios
 
+## 1.2 (octubre de 2026)
+- Botón «atrás» del teléfono: cierra la ventana abierta y vuelve de la ficha al Acervo; mientras se graba no sale de la app (avisa que hay que tocar ⏹ Detener).
+- Adjuntos dentro de la app: fotos, audio, video, PDF y texto se ven en Vírgula, con botones para guardar o compartir (en la app instalada las ventanas nuevas pueden fallar, sobre todo en iPhone).
+- iPhone: las instrucciones de instalación avisan que la app y Safari guardan por separado y cómo pasar lo grabado (exportar e importar).
+- Inglés actualizado (v3).
+
 ## 1.1 (octubre de 2026)
 - Accesibilidad: tamaño de letra y botones, tema claro (para el sol), alto contraste, reducir movimiento, vibración opcional.
 - iPhone y iPad: instrucciones para instalar, aviso de pantalla encendida, audio a la frecuencia del aparato, consulta en m4a, mensajes de Archivos/Descargas, metadatos para pantalla de inicio.

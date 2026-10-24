@@ -63,7 +63,7 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   ok((await p.textContent('#avisoGlobal')).trim() === '', '«Mañana» pospone el recordatorio');
   // ── Reportar problema ──
   await p.click('nav.abajo [data-vista="vAjustes"]'); await p.click('#bReportar'); await p.fill('#repQue', 'prueba'); await p.click('#repOk'); await p.waitForSelector('#repSalida pre');
-  const inf = await p.textContent('#repSalida pre'); ok(inf.includes('Vírgula 1.1') && !inf.includes('Coro de ranas'), 'informe técnico sin datos de fichas');
+  const inf = await p.textContent('#repSalida pre'); ok(inf.includes('Vírgula 1.2') && !inf.includes('Coro de ranas'), 'informe técnico sin datos de fichas');
   ok((await p.getAttribute('#repSalida a.boton.prim', 'href')).startsWith('mailto:joalesmu@gmail.com'), 'informe por correo al proyecto');
   await p.click('#repNo');
   // ── Idioma: plantilla de traducción → probar ──

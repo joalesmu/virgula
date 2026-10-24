@@ -4,7 +4,7 @@ Grabadora de campo gratuita: graba en un toque, documenta cada sonido con su fic
 
 > En los códices mesoamericanos, la **vírgula** es la voluta que sale de la boca de alguien para indicar que habla. Todo sonido viene de alguien.
 
-**Versión:** 1.1 · **Abrir:** https://joalesmu.github.io/virgula/
+**Versión:** 1.2 · **Abrir:** https://joalesmu.github.io/virgula/
 
 ## Qué hace
 - **Grabar en un toque.** Dos calidades a la vez del mismo micrófono: *archivo* (WAV de 16 bits, sin alterar) y *consulta* (ligera, con volumen ajustado solo en ella). Marcas mientras se graba: 1 toque = siguiente clip; 2 toques = «otra vez». Guarda cada 2 s; si la app se cierra, se recupera lo grabado. Detecta y anota los tramos sin audio (llamadas) y los huecos.

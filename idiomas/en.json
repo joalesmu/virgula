@@ -9,7 +9,7 @@
  "avala": "",
  "licencia": "AGPL-3.0",
  "contacto": "",
- "version": 2,
+ "version": 3,
  "textos": {
   "memoria sonora viva": "living sound memory",
   "⬇️ Instalar": "⬇️ Install",
@@ -663,6 +663,9 @@
   "2. Toca **Compartir** (el cuadro con la flecha hacia arriba).": "2. Tap **Share** (the square with the arrow pointing up).",
   "3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.": "3. Choose **Add to Home Screen** and then **Add**.",
   "Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.": "Install it before recording: on iPhone, Safari deletes the data of pages not used for 7 days, but not of apps added to the Home Screen.",
-  "Entendido": "Got it"
+  "Entendido": "Got it",
+  "🎙️ Se está grabando. Para terminar, toca ⏹ Detener.": "🎙️ Recording in progress. To finish, tap ⏹ Stop.",
+  "Vírgula no puede mostrar este tipo de archivo: guárdalo o compártelo para abrirlo con otra app.": "Vírgula cannot display this type of file: save it or share it to open it with another app.",
+  "En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).": "On iPhone, the installed app and Safari store data separately: what you recorded in Safari does not appear in the app. If you already recorded in Safari, export those recordings from Safari (📦 Export) and import them in the app (📥 Import package)."
  }
 }

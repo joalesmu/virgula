@@ -67,6 +67,7 @@ function instruccionesIos() {
     <p>${tH('1. Abre esta página en **Safari**.')}</p><p>${tH('2. Toca **Compartir** (el cuadro con la flecha hacia arriba).')}</p>
     <p>${tH('3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.')}</p>
     <div class="banda info">${tH('Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.')}</div>
+    <div class="banda aviso">${tH('En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).')}</div>
     <div class="fila"><button id="iosCerrar">${tH('Entendido')}</button></div>`);
   $('iosCerrar').onclick = () => Ventana.cerrar();
 }
