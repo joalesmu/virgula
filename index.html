@@ -128,7 +128,7 @@
   <section class="panel">
     <h2>📋 Informe para enviar</h2>
     <p class="nota">Resume el teléfono, los ajustes y lo que pasó en cada grabación. Cópialo o compártelo.</p>
-    <div class="fila"><button id="informeCopiar">📋 Copiar informe</button><button id="informeCompartir">📤 Compartir informe</button></div>
+    <div class="fila"><button id="informeCopiar">📋 Copiar informe</button><button id="informeCompartir">📤 Compartir informe (archivo)</button></div>
     <details><summary>Ver informe</summary><pre id="informe"></pre></details>
   </section>
 
@@ -138,7 +138,7 @@
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-const VERSION = 'prueba-1';
+const VERSION = 'prueba-2';
 
 /* ─────────── Base de datos local (IndexedDB) ─────────── */
 const DB = {
@@ -534,7 +534,13 @@ async function informe(sesiones) {
 }
 async function informeCompleto() { const s = (await DB.todas('sesiones')).filter(x => x.estado === 'terminada').sort((a, b) => a.inicio - b.inicio); return informe(s); }
 $('informeCopiar').onclick = async () => { const t = await informeCompleto(); $('informe').textContent = t; try { await navigator.clipboard.writeText(t); $('informeCopiar').textContent = '✅ Copiado'; setTimeout(() => $('informeCopiar').textContent = '📋 Copiar informe', 2000); } catch (e) { $('informe').closest('details').open = true; } };
-$('informeCompartir').onclick = async () => { const t = await informeCompleto(); $('informe').textContent = t; if (navigator.share) { try { await navigator.share({ title: 'Informe Vírgula', text: t }); } catch (e) {} } else $('informe').closest('details').open = true; };
+$('informeCompartir').onclick = async () => {
+  const t = await informeCompleto(); $('informe').textContent = t;
+  // Como archivo .txt: algunas apps recortan los textos largos que se comparten
+  const f = new File([t], 'informe_virgula_' + sello(new Date()) + '.txt', { type: 'text/plain' });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Informe Vírgula' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+};
 
 /* ─────────── Instalar ─────────── */
 let pedirInstalar = null;
