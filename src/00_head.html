@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="description" content="Vírgula · memoria sonora viva. Grabadora de campo: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas.">
+<title>Vírgula</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!--
+  Vírgula · memoria sonora viva
+  Copyright (c) 2026 Alejandro Estrada
+  SPDX-License-Identifier: AGPL-3.0-only
+  Este programa es software libre: puedes redistribuirlo y modificarlo según los términos de la
+  Licencia Pública General Affero de GNU, versión 3, con los términos adicionales de su sección 7
+  (crédito de autoría visible y marca de versiones modificadas) descritos en NOTICE.md.
+  Se distribuye SIN NINGUNA GARANTÍA. Las grabaciones, fichas y adjuntos pertenecen a quienes los
+  registran y a las personas y comunidades que aparecen en ellos.
+  Todo se guarda en este aparato: Vírgula no envía nada a ningún lado.
+-->
+<style>
+  :root{--fondo:#0f1f33;--panel:#16304d;--panel2:#1b3a5c;--borde:#2a4a6e;--texto:#f1f5f9;--suave:#a9bcd3;--acento:#facc15;--rojo:#ef4444;--verde:#22c55e;--ambar:#f59e0b;--azul:#60a5fa}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--fondo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+  body{padding:max(10px,env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom))}
+  main{max-width:720px;margin:0 auto}
+  a{color:var(--azul)}
+  h1{font-size:20px;margin:0}
+  h2{font-size:17px;margin:0 0 8px}
+  h3{font-size:15.5px;margin:14px 0 6px}
+  header.app{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  header.app img{width:36px;height:36px;border-radius:9px}
+  header.app small{display:block;font-weight:400;color:var(--suave);font-size:12.5px}
+  header.app .esp{flex:1}
+  button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--borde);color:var(--texto);cursor:pointer;min-height:44px}
+  button:disabled{opacity:.45;cursor:default}
+  button.prim{background:var(--acento);color:#1a1a1a;font-weight:700}
+  button.peligro{background:#7f1d1d}
+  button.chico{min-height:36px;padding:6px 10px;font-size:14px;border-radius:10px}
+  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:14px;margin:10px 0}
+  label{display:block;margin:10px 0 4px;color:var(--suave);font-size:14px}
+  input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],textarea,select{width:100%;font:inherit;padding:10px;border-radius:10px;background:var(--fondo);color:var(--texto);border:1px solid var(--borde);min-height:44px}
+  textarea{min-height:96px;resize:vertical;line-height:1.45}
+  .op{display:flex;gap:8px;flex-wrap:wrap}
+  .op label{display:flex;align-items:center;gap:6px;margin:0;padding:8px 12px;border:1px solid var(--borde);border-radius:10px;color:var(--texto);min-height:44px;cursor:pointer}
+  .op input{width:20px;height:20px;accent-color:var(--acento)}
+  .nota{color:var(--suave);font-size:13px;margin:6px 0 0}
+  .fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .fila > *{flex:1 1 auto}
+  .fila.fija > *{flex:0 0 auto}
+  .chip{display:inline-block;font-size:12.5px;padding:2px 9px;border-radius:999px;background:var(--fondo);border:1px solid var(--borde);color:var(--suave);margin:2px 2px 0 0}
+  .chip.ok{color:#bbf7d0;border-color:#166534}.chip.mal{color:#fecaca;border-color:#991b1b}.chip.aviso{color:#fde68a;border-color:#92400e}
+  .banda{border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14.5px}
+  .banda.aviso{background:#422006;border:1px solid #92400e;color:#fde68a}
+  .banda.ok{background:#052e16;border:1px solid #166534;color:#bbf7d0}
+  .banda.info{background:#0c2340;border:1px solid #1e40af;color:#bfdbfe}
+  .oculto{display:none!important}
+  /* Navegación inferior */
+  nav.abajo{position:fixed;left:0;right:0;bottom:0;background:#0b1828;border-top:1px solid var(--borde);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20}
+  nav.abajo button{flex:1;background:none;min-height:56px;font-size:13px;color:var(--suave);display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:12px}
+  nav.abajo button b{font-size:21px;line-height:1}
+  nav.abajo button.on{color:var(--texto);background:var(--panel)}
+  /* Grabar */
+  #bGrabar{display:block;width:190px;height:190px;border-radius:50%;margin:14px auto 6px;font-size:23px;font-weight:800;background:var(--rojo);color:#fff;box-shadow:0 0 0 8px rgba(239,68,68,.18)}
+  #bGrabar.on{background:#991b1b;animation:latido 1.4s infinite}
+  @keyframes latido{50%{box-shadow:0 0 0 16px rgba(239,68,68,.08)}}
+  #tiempo{text-align:center;font-size:44px;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:1px}
+  .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:8px 0 4px}
+  .medidor i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--verde) 0 70%,var(--ambar) 70% 88%,var(--rojo) 88%)}
+  .medidor b{position:absolute;top:0;bottom:0;width:2px;background:#fff;left:0}
+  .controles{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controles button{min-height:72px;font-size:17px}
+  #bMarcar{background:var(--acento);color:#1a1a1a;font-weight:800}
+  #bMarcar small{display:block;font-weight:500;font-size:12px}
+  .resumen-ajustes{text-align:center;color:var(--suave);font-size:13px}
+  /* Acervo */
+  .tarjeta{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:12px;margin:8px 0;display:flex;gap:10px;align-items:flex-start}
+  .tarjeta .cuerpo{flex:1;min-width:0;cursor:pointer}
+  .tarjeta h3{margin:0 0 2px;font-size:15.5px;overflow-wrap:anywhere}
+  .tarjeta input[type=checkbox]{width:22px;height:22px;margin-top:4px;accent-color:var(--acento)}
+  /* Ficha */
+  .clip{border:1px solid var(--borde);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--panel2)}
+  .clip.descartado{opacity:.55}
+  .clip .t{font-variant-numeric:tabular-nums;color:var(--suave);font-size:13px}
+  .rep{border:1px solid var(--borde);border-radius:12px;padding:8px 10px;margin:6px 0}
+  .adj{display:flex;gap:10px;align-items:center;border:1px solid var(--borde);border-radius:12px;padding:8px;margin:6px 0}
+  .adj .ico{font-size:26px;width:36px;text-align:center}
+  .adj .info{flex:1;min-width:0}
+  .adj .info b{display:block;overflow-wrap:anywhere;font-size:14.5px}
+  .vista-texto{background:var(--fondo);border:1px dashed var(--borde);border-radius:10px;padding:8px 10px;margin-top:6px;white-space:pre-wrap;font-size:14.5px}
+  details.sec{border:1px solid var(--borde);border-radius:14px;padding:6px 12px;margin:10px 0;background:var(--panel)}
+  details.sec > summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+  canvas.firma{width:100%;height:180px;background:#fff;border-radius:10px;touch-action:none}
+  pre{white-space:pre-wrap;word-break:break-word;background:var(--fondo);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:12.5px;max-height:300px;overflow:auto}
+  /* Ventana */
+  .velo{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+  .ventana{background:var(--panel);border:1px solid var(--borde);border-radius:18px 18px 0 0;width:100%;max-width:720px;max-height:92vh;overflow:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  @media(min-width:760px){.velo{align-items:center}.ventana{border-radius:18px}}
+  footer{color:var(--suave);font-size:12.5px;text-align:center;margin-top:20px}
+  footer a{color:var(--suave)}
+  .aviso-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#0b1828;border:1px solid var(--borde);color:var(--texto);padding:10px 14px;border-radius:12px;z-index:50;max-width:90vw;font-size:14.5px}
+</style>
+</head>

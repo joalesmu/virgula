@@ -1,0 +1,105 @@
+<body>
+<main>
+  <header class="app">
+    <img src="icono-192.png" alt="">
+    <h1>Vírgula<small>memoria sonora viva</small></h1>
+    <span class="esp"></span>
+    <button id="bInstalar" class="chico oculto">⬇️ Instalar</button>
+  </header>
+
+  <div id="avisoRecuperar" class="banda aviso oculto" role="alert"></div>
+
+  <!-- ───── Grabar ───── -->
+  <section id="vGrabar" class="vista">
+    <div class="panel">
+      <button id="bGrabar" aria-pressed="false">⏺<br>Grabar</button>
+      <div id="tiempo">00:00:00</div>
+      <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
+      <p class="nota" id="nivelNota" style="text-align:center">Nivel de entrada</p>
+      <div class="controles">
+        <button id="bMarcar" disabled>🔖 Marcar<small>1 toque: siguiente · 2 toques: otra vez</small></button>
+        <button id="bPausa" disabled>⏸ Pausa</button>
+        <button id="bDetener" disabled>⏹ Detener</button>
+      </div>
+      <div id="estadoGrab" class="fila fija" aria-live="polite"></div>
+      <p class="resumen-ajustes" id="resumenAjustes"></p>
+    </div>
+    <p class="nota" style="text-align:center">Graba primero; la ficha se completa después, con calma.</p>
+  </section>
+
+  <!-- ───── Acervo ───── -->
+  <section id="vAcervo" class="vista oculto">
+    <div id="avisoRespaldo"></div>
+    <div class="fila">
+      <input type="search" id="buscar" placeholder="🔍 Buscar en títulos, descripciones, transcripciones…" aria-label="Buscar">
+    </div>
+    <div class="fila">
+      <button id="bExportarSel" class="prim" disabled>📦 Exportar (<span id="nSel">0</span>)</button>
+      <button id="bTodas">☑ Todas</button>
+      <button id="bImportar">📥 Importar paquete</button>
+    </div>
+    <input type="file" id="archivoImportar" accept=".zip,application/zip" class="oculto">
+    <div id="lista"></div>
+  </section>
+
+  <!-- ───── Ficha ───── -->
+  <section id="vFicha" class="vista oculto"></section>
+
+  <!-- ───── Ajustes ───── -->
+  <section id="vAjustes" class="vista oculto">
+    <div class="panel">
+      <h2>🎙️ Grabación</h2>
+      <label for="aMic">Micrófono</label>
+      <select id="aMic"><option value="">Predeterminado del aparato</option></select>
+      <div class="fila fija"><button id="bBuscarMic" class="chico">🔎 Buscar micrófonos</button></div>
+      <label>Calidad</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aCalidad" value="ambas"> Archivo + consulta</label>
+        <label><input type="radio" name="aCalidad" value="archivo"> Solo archivo (WAV)</label>
+        <label><input type="radio" name="aCalidad" value="consulta"> Solo consulta</label>
+      </div>
+      <p class="nota">Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).</p>
+      <label>Canales</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aCanales" value="1"> Mono</label>
+        <label><input type="radio" name="aCanales" value="2"> Estéreo</label>
+      </div>
+      <label>Ajustes del aparato (afectan también el audio de archivo)</label>
+      <div class="op">
+        <label><input type="checkbox" id="aVolAuto"> Volumen automático</label>
+        <label><input type="checkbox" id="aRuido"> Quitar ruido</label>
+        <label><input type="checkbox" id="aEco"> Quitar eco</label>
+      </div>
+      <p class="nota">Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.</p>
+      <p class="nota" id="espacio"></p>
+    </div>
+    <div class="panel">
+      <h2>🧾 Fichas</h2>
+      <label for="aQuien">Quién graba (se propone en cada ficha)</label>
+      <input type="text" id="aQuien" maxlength="200" placeholder="Nombre o equipo">
+      <label for="aDerechos">Derechos y licencia (se propone en cada ficha)</label>
+      <input type="text" id="aDerechos" maxlength="300" placeholder="Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos">
+      <label>Ubicación al llenar la ficha</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aUbic" value="exacta"> Exacta</label>
+        <label><input type="radio" name="aUbic" value="aprox1"> Aproximada (~1 km)</label>
+        <label><input type="radio" name="aUbic" value="aprox10"> Aproximada (~10 km)</label>
+      </div>
+      <p class="nota">La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.</p>
+    </div>
+    <div class="panel">
+      <h2>ℹ️ Acerca de</h2>
+      <p class="nota">Vírgula · memoria sonora viva · versión <span id="version"></span>. Todo se guarda en este aparato y no se envía a ningún lado: respalda con 📦 Exportar.</p>
+      <p class="nota">En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
+      <p class="nota">Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0 · <a href="https://github.com/joalesmu/virgula" target="_blank" rel="noopener">código</a></p>
+    </div>
+  </section>
+
+  <footer>Vírgula · Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0</footer>
+</main>
+
+<nav class="abajo" aria-label="Secciones">
+  <button data-vista="vGrabar" class="on"><b>⏺</b>Grabar</button>
+  <button data-vista="vAcervo"><b>📚</b>Acervo</button>
+  <button data-vista="vAjustes"><b>⚙️</b>Ajustes</button>
+</nav>

@@ -4,141 +4,230 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1e3a5f">
-<meta name="description" content="Vírgula · memoria sonora viva. Prueba técnica de grabación.">
-<title>Vírgula · prueba técnica</title>
+<meta name="description" content="Vírgula · memoria sonora viva. Grabadora de campo: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas.">
+<title>Vírgula</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icono-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!--
-  Vírgula · memoria sonora viva — prueba técnica (etapa 0)
-  Copyright (c) 2025 Alejandro Estrada
+  Vírgula · memoria sonora viva
+  Copyright (c) 2026 Alejandro Estrada
   SPDX-License-Identifier: AGPL-3.0-only
   Este programa es software libre: puedes redistribuirlo y modificarlo según los términos de la
-  Licencia Pública General Affero de GNU, versión 3, con el término adicional de conservar visible
-  el crédito «Diseñado y desarrollado por Alejandro Estrada». Se distribuye SIN NINGUNA GARANTÍA.
-
-  Qué prueba esta página:
-   · grabar de corrido en dos calidades a la vez (WAV de archivo + comprimido de consulta);
-   · apagar o no el «mejoramiento» del teléfono (supresión de ruido, eco, volumen automático);
-   · mantener la pantalla encendida; guardar por partes cada 5 s y recuperar si algo se corta;
-   · elegir micrófono; registrar interrupciones (pantalla bloqueada, llamadas, pausas del sistema);
-   · espacio ocupado y espacio libre. Todo queda en el teléfono: nada se envía a ningún lado.
+  Licencia Pública General Affero de GNU, versión 3, con los términos adicionales de su sección 7
+  (crédito de autoría visible y marca de versiones modificadas) descritos en NOTICE.md.
+  Se distribuye SIN NINGUNA GARANTÍA. Las grabaciones, fichas y adjuntos pertenecen a quienes los
+  registran y a las personas y comunidades que aparecen en ellos.
+  Todo se guarda en este aparato: Vírgula no envía nada a ningún lado.
 -->
 <style>
-  :root{--fondo:#0f1f33;--panel:#16304d;--borde:#2a4a6e;--texto:#f1f5f9;--suave:#a9bcd3;--acento:#facc15;--rojo:#ef4444;--verde:#22c55e;--ambar:#f59e0b}
+  :root{--fondo:#0f1f33;--panel:#16304d;--panel2:#1b3a5c;--borde:#2a4a6e;--texto:#f1f5f9;--suave:#a9bcd3;--acento:#facc15;--rojo:#ef4444;--verde:#22c55e;--ambar:#f59e0b;--azul:#60a5fa}
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--fondo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
-  body{padding:max(12px,env(safe-area-inset-top)) 16px 32px}
-  main{max-width:640px;margin:0 auto}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  header img{width:40px;height:40px;border-radius:10px}
-  header h1{font-size:20px;margin:0;flex:1}
-  header small{display:block;font-weight:400;color:var(--suave);font-size:13px}
-  button{font:inherit;border:0;border-radius:12px;padding:12px 16px;background:var(--borde);color:var(--texto);cursor:pointer;min-height:48px}
-  button:disabled{opacity:.45}
+  body{padding:max(10px,env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom))}
+  main{max-width:720px;margin:0 auto}
+  a{color:var(--azul)}
+  h1{font-size:20px;margin:0}
+  h2{font-size:17px;margin:0 0 8px}
+  h3{font-size:15.5px;margin:14px 0 6px}
+  header.app{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  header.app img{width:36px;height:36px;border-radius:9px}
+  header.app small{display:block;font-weight:400;color:var(--suave);font-size:12.5px}
+  header.app .esp{flex:1}
+  button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--borde);color:var(--texto);cursor:pointer;min-height:44px}
+  button:disabled{opacity:.45;cursor:default}
   button.prim{background:var(--acento);color:#1a1a1a;font-weight:700}
-  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:14px;margin:12px 0}
-  .panel h2{font-size:16px;margin:0 0 8px}
+  button.peligro{background:#7f1d1d}
+  button.chico{min-height:36px;padding:6px 10px;font-size:14px;border-radius:10px}
+  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:14px;margin:10px 0}
   label{display:block;margin:10px 0 4px;color:var(--suave);font-size:14px}
-  select{width:100%;font:inherit;padding:10px;border-radius:10px;background:var(--fondo);color:var(--texto);border:1px solid var(--borde);min-height:48px}
+  input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],textarea,select{width:100%;font:inherit;padding:10px;border-radius:10px;background:var(--fondo);color:var(--texto);border:1px solid var(--borde);min-height:44px}
+  textarea{min-height:96px;resize:vertical;line-height:1.45}
   .op{display:flex;gap:8px;flex-wrap:wrap}
-  .op label{display:flex;align-items:center;gap:6px;margin:0;padding:10px 12px;border:1px solid var(--borde);border-radius:10px;color:var(--texto);min-height:44px;cursor:pointer}
+  .op label{display:flex;align-items:center;gap:6px;margin:0;padding:8px 12px;border:1px solid var(--borde);border-radius:10px;color:var(--texto);min-height:44px;cursor:pointer}
   .op input{width:20px;height:20px;accent-color:var(--acento)}
   .nota{color:var(--suave);font-size:13px;margin:6px 0 0}
-  #grabar{display:block;width:180px;height:180px;border-radius:50%;margin:18px auto 8px;font-size:22px;font-weight:800;background:var(--rojo);color:#fff;box-shadow:0 0 0 8px rgba(239,68,68,.18)}
-  #grabar.on{background:#991b1b;animation:latido 1.4s infinite}
+  .fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .fila > *{flex:1 1 auto}
+  .fila.fija > *{flex:0 0 auto}
+  .chip{display:inline-block;font-size:12.5px;padding:2px 9px;border-radius:999px;background:var(--fondo);border:1px solid var(--borde);color:var(--suave);margin:2px 2px 0 0}
+  .chip.ok{color:#bbf7d0;border-color:#166534}.chip.mal{color:#fecaca;border-color:#991b1b}.chip.aviso{color:#fde68a;border-color:#92400e}
+  .banda{border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14.5px}
+  .banda.aviso{background:#422006;border:1px solid #92400e;color:#fde68a}
+  .banda.ok{background:#052e16;border:1px solid #166534;color:#bbf7d0}
+  .banda.info{background:#0c2340;border:1px solid #1e40af;color:#bfdbfe}
+  .oculto{display:none!important}
+  /* Navegación inferior */
+  nav.abajo{position:fixed;left:0;right:0;bottom:0;background:#0b1828;border-top:1px solid var(--borde);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20}
+  nav.abajo button{flex:1;background:none;min-height:56px;font-size:13px;color:var(--suave);display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:12px}
+  nav.abajo button b{font-size:21px;line-height:1}
+  nav.abajo button.on{color:var(--texto);background:var(--panel)}
+  /* Grabar */
+  #bGrabar{display:block;width:190px;height:190px;border-radius:50%;margin:14px auto 6px;font-size:23px;font-weight:800;background:var(--rojo);color:#fff;box-shadow:0 0 0 8px rgba(239,68,68,.18)}
+  #bGrabar.on{background:#991b1b;animation:latido 1.4s infinite}
   @keyframes latido{50%{box-shadow:0 0 0 16px rgba(239,68,68,.08)}}
-  #tiempo{text-align:center;font-size:42px;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:1px}
-  .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:10px 0 4px}
+  #tiempo{text-align:center;font-size:44px;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:1px}
+  .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:8px 0 4px}
   .medidor i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--verde) 0 70%,var(--ambar) 70% 88%,var(--rojo) 88%)}
   .medidor b{position:absolute;top:0;bottom:0;width:2px;background:#fff;left:0}
-  .controles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
-  .controles button{min-height:64px;font-size:17px}
-  #marcar{background:var(--acento);color:#1a1a1a;font-weight:700}
-  .estado{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .chip{display:inline-block;font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--fondo);border:1px solid var(--borde);color:var(--suave)}
-  .chip.ok{color:#bbf7d0;border-color:#166534}.chip.mal{color:#fecaca;border-color:#991b1b}.chip.aviso{color:#fde68a;border-color:#92400e}
-  .sesion{border-top:1px solid var(--borde);padding:12px 0}
-  .sesion:first-child{border-top:0}
-  .sesion h3{font-size:15px;margin:0 0 4px}
-  .sesion audio{width:100%;margin:6px 0}
-  .fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-  .fila button{flex:1 1 auto;min-height:44px;padding:8px 12px;font-size:14.5px}
-  .aviso-banda{background:#422006;border:1px solid #92400e;color:#fde68a;border-radius:12px;padding:12px;margin:12px 0}
-  pre{white-space:pre-wrap;word-break:break-word;background:var(--fondo);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:12.5px;max-height:320px;overflow:auto}
-  details summary{cursor:pointer;color:var(--suave);font-size:14px;min-height:32px}
-  footer{color:var(--suave);font-size:12.5px;text-align:center;margin-top:24px}
+  .controles{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controles button{min-height:72px;font-size:17px}
+  #bMarcar{background:var(--acento);color:#1a1a1a;font-weight:800}
+  #bMarcar small{display:block;font-weight:500;font-size:12px}
+  .resumen-ajustes{text-align:center;color:var(--suave);font-size:13px}
+  /* Acervo */
+  .tarjeta{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:12px;margin:8px 0;display:flex;gap:10px;align-items:flex-start}
+  .tarjeta .cuerpo{flex:1;min-width:0;cursor:pointer}
+  .tarjeta h3{margin:0 0 2px;font-size:15.5px;overflow-wrap:anywhere}
+  .tarjeta input[type=checkbox]{width:22px;height:22px;margin-top:4px;accent-color:var(--acento)}
+  /* Ficha */
+  .clip{border:1px solid var(--borde);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--panel2)}
+  .clip.descartado{opacity:.55}
+  .clip .t{font-variant-numeric:tabular-nums;color:var(--suave);font-size:13px}
+  .rep{border:1px solid var(--borde);border-radius:12px;padding:8px 10px;margin:6px 0}
+  .adj{display:flex;gap:10px;align-items:center;border:1px solid var(--borde);border-radius:12px;padding:8px;margin:6px 0}
+  .adj .ico{font-size:26px;width:36px;text-align:center}
+  .adj .info{flex:1;min-width:0}
+  .adj .info b{display:block;overflow-wrap:anywhere;font-size:14.5px}
+  .vista-texto{background:var(--fondo);border:1px dashed var(--borde);border-radius:10px;padding:8px 10px;margin-top:6px;white-space:pre-wrap;font-size:14.5px}
+  details.sec{border:1px solid var(--borde);border-radius:14px;padding:6px 12px;margin:10px 0;background:var(--panel)}
+  details.sec > summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}
+  canvas.firma{width:100%;height:180px;background:#fff;border-radius:10px;touch-action:none}
+  pre{white-space:pre-wrap;word-break:break-word;background:var(--fondo);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:12.5px;max-height:300px;overflow:auto}
+  /* Ventana */
+  .velo{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+  .ventana{background:var(--panel);border:1px solid var(--borde);border-radius:18px 18px 0 0;width:100%;max-width:720px;max-height:92vh;overflow:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  @media(min-width:760px){.velo{align-items:center}.ventana{border-radius:18px}}
+  footer{color:var(--suave);font-size:12.5px;text-align:center;margin-top:20px}
   footer a{color:var(--suave)}
-  .oculto{display:none!important}
+  .aviso-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#0b1828;border:1px solid var(--borde);color:var(--texto);padding:10px 14px;border-radius:12px;z-index:50;max-width:90vw;font-size:14.5px}
 </style>
 </head>
 <body>
 <main>
-  <header>
+  <header class="app">
     <img src="icono-192.png" alt="">
-    <h1>Vírgula<small>memoria sonora viva · prueba técnica</small></h1>
-    <button id="instalar" class="oculto">⬇️ Instalar</button>
+    <h1>Vírgula<small>memoria sonora viva</small></h1>
+    <span class="esp"></span>
+    <button id="bInstalar" class="chico oculto">⬇️ Instalar</button>
   </header>
 
-  <div id="recuperar" class="aviso-banda oculto" role="alert"></div>
+  <div id="avisoRecuperar" class="banda aviso oculto" role="alert"></div>
 
-  <section class="panel" id="ajustes">
-    <h2>⚙️ Antes de grabar</h2>
-    <label for="mic">Micrófono</label>
-    <select id="mic"><option value="">El del teléfono (predeterminado)</option></select>
-    <p class="nota" id="micNota">Si conectas un micrófono de solapa o USB, toca «Buscar micrófonos».</p>
-    <div class="fila"><button id="buscarMic">🔎 Buscar micrófonos</button></div>
-    <label>Calidad</label>
-    <div class="op" role="radiogroup">
-      <label><input type="radio" name="calidad" value="ambas" checked> Archivo + consulta</label>
-      <label><input type="radio" name="calidad" value="archivo"> Solo archivo (WAV)</label>
-      <label><input type="radio" name="calidad" value="consulta"> Solo consulta</label>
+  <!-- ───── Grabar ───── -->
+  <section id="vGrabar" class="vista">
+    <div class="panel">
+      <button id="bGrabar" aria-pressed="false">⏺<br>Grabar</button>
+      <div id="tiempo">00:00:00</div>
+      <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
+      <p class="nota" id="nivelNota" style="text-align:center">Nivel de entrada</p>
+      <div class="controles">
+        <button id="bMarcar" disabled>🔖 Marcar<small>1 toque: siguiente · 2 toques: otra vez</small></button>
+        <button id="bPausa" disabled>⏸ Pausa</button>
+        <button id="bDetener" disabled>⏹ Detener</button>
+      </div>
+      <div id="estadoGrab" class="fila fija" aria-live="polite"></div>
+      <p class="resumen-ajustes" id="resumenAjustes"></p>
     </div>
-    <label>Canales</label>
-    <div class="op" role="radiogroup">
-      <label><input type="radio" name="canales" value="1" checked> Mono</label>
-      <label><input type="radio" name="canales" value="2"> Estéreo</label>
-    </div>
-    <label>Sonido</label>
-    <div class="op">
-      <label><input type="checkbox" id="mejora"> Usar el «mejoramiento» del teléfono</label>
-    </div>
-    <p class="nota">Apagado (recomendado para documentar): el teléfono no quita ruido ni cambia el volumen. Prueba una vez con y otra sin, y compara.</p>
-    <p class="nota" id="espacio"></p>
+    <p class="nota" style="text-align:center">Graba primero; la ficha se completa después, con calma.</p>
   </section>
 
-  <section class="panel" aria-label="Grabación">
-    <button id="grabar" aria-pressed="false">⏺<br>Grabar</button>
-    <div id="tiempo" aria-live="off">00:00:00</div>
-    <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
-    <p class="nota" id="nivelNota" style="text-align:center">Nivel de entrada</p>
-    <div class="controles">
-      <button id="marcar" disabled>🔖 Marcar<br><small>2 toques: otra vez</small></button>
-      <button id="pausa" disabled>⏸ Pausa</button>
-      <button id="detener" disabled>⏹ Detener</button>
+  <!-- ───── Acervo ───── -->
+  <section id="vAcervo" class="vista oculto">
+    <div id="avisoRespaldo"></div>
+    <div class="fila">
+      <input type="search" id="buscar" placeholder="🔍 Buscar en títulos, descripciones, transcripciones…" aria-label="Buscar">
     </div>
-    <div class="estado" id="estado" aria-live="polite"></div>
+    <div class="fila">
+      <button id="bExportarSel" class="prim" disabled>📦 Exportar (<span id="nSel">0</span>)</button>
+      <button id="bTodas">☑ Todas</button>
+      <button id="bImportar">📥 Importar paquete</button>
+    </div>
+    <input type="file" id="archivoImportar" accept=".zip,application/zip" class="oculto">
+    <div id="lista"></div>
   </section>
 
-  <section class="panel">
-    <h2>🎧 Grabaciones de prueba</h2>
-    <div id="sesiones"><p class="nota">Todavía no hay grabaciones.</p></div>
+  <!-- ───── Ficha ───── -->
+  <section id="vFicha" class="vista oculto"></section>
+
+  <!-- ───── Ajustes ───── -->
+  <section id="vAjustes" class="vista oculto">
+    <div class="panel">
+      <h2>🎙️ Grabación</h2>
+      <label for="aMic">Micrófono</label>
+      <select id="aMic"><option value="">Predeterminado del aparato</option></select>
+      <div class="fila fija"><button id="bBuscarMic" class="chico">🔎 Buscar micrófonos</button></div>
+      <label>Calidad</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aCalidad" value="ambas"> Archivo + consulta</label>
+        <label><input type="radio" name="aCalidad" value="archivo"> Solo archivo (WAV)</label>
+        <label><input type="radio" name="aCalidad" value="consulta"> Solo consulta</label>
+      </div>
+      <p class="nota">Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).</p>
+      <label>Canales</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aCanales" value="1"> Mono</label>
+        <label><input type="radio" name="aCanales" value="2"> Estéreo</label>
+      </div>
+      <label>Ajustes del aparato (afectan también el audio de archivo)</label>
+      <div class="op">
+        <label><input type="checkbox" id="aVolAuto"> Volumen automático</label>
+        <label><input type="checkbox" id="aRuido"> Quitar ruido</label>
+        <label><input type="checkbox" id="aEco"> Quitar eco</label>
+      </div>
+      <p class="nota">Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.</p>
+      <p class="nota" id="espacio"></p>
+    </div>
+    <div class="panel">
+      <h2>🧾 Fichas</h2>
+      <label for="aQuien">Quién graba (se propone en cada ficha)</label>
+      <input type="text" id="aQuien" maxlength="200" placeholder="Nombre o equipo">
+      <label for="aDerechos">Derechos y licencia (se propone en cada ficha)</label>
+      <input type="text" id="aDerechos" maxlength="300" placeholder="Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos">
+      <label>Ubicación al llenar la ficha</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aUbic" value="exacta"> Exacta</label>
+        <label><input type="radio" name="aUbic" value="aprox1"> Aproximada (~1 km)</label>
+        <label><input type="radio" name="aUbic" value="aprox10"> Aproximada (~10 km)</label>
+      </div>
+      <p class="nota">La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.</p>
+    </div>
+    <div class="panel">
+      <h2>ℹ️ Acerca de</h2>
+      <p class="nota">Vírgula · memoria sonora viva · versión <span id="version"></span>. Todo se guarda en este aparato y no se envía a ningún lado: respalda con 📦 Exportar.</p>
+      <p class="nota">En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
+      <p class="nota">Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0 · <a href="https://github.com/joalesmu/virgula" target="_blank" rel="noopener">código</a></p>
+    </div>
   </section>
 
-  <section class="panel">
-    <h2>📋 Informe para enviar</h2>
-    <p class="nota">Resume el teléfono, los ajustes y lo que pasó en cada grabación. Cópialo o compártelo.</p>
-    <div class="fila"><button id="informeCopiar">📋 Copiar informe</button><button id="informeCompartir">📤 Compartir informe (archivo)</button></div>
-    <details><summary>Ver informe</summary><pre id="informe"></pre></details>
-  </section>
-
-  <footer>Vírgula · Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0<br>Todo queda en este teléfono: nada se envía a ningún lado.</footer>
+  <footer>Vírgula · Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0</footer>
 </main>
 
+<nav class="abajo" aria-label="Secciones">
+  <button data-vista="vGrabar" class="on"><b>⏺</b>Grabar</button>
+  <button data-vista="vAcervo"><b>📚</b>Acervo</button>
+  <button data-vista="vAjustes"><b>⚙️</b>Ajustes</button>
+</nav>
 <script>
 'use strict';
+/* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
+const VERSION = '1.0-etapa1';
+const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
-const VERSION = 'prueba-2';
+const dos = n => String(n).padStart(2, '0');
+const reloj = s => { s = Math.max(0, Math.floor(s || 0)); return `${dos(Math.floor(s / 3600))}:${dos(Math.floor(s / 60) % 60)}:${dos(s % 60)}`; };
+const relojFino = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60); return `${dos(m)}:${(s - m * 60).toFixed(1).padStart(4, '0')}`; };
+const mb = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
+const sello = d => `${d.getFullYear()}${dos(d.getMonth() + 1)}${dos(d.getDate())}-${dos(d.getHours())}${dos(d.getMinutes())}${dos(d.getSeconds())}`;
+const fechaBonita = t => new Date(t).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+const fechaISO = t => { const d = new Date(t); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}T${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`; };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const chip = (t, tipo = '') => `<span class="chip ${tipo}">${t}</span>`;
+const azar = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('');
+/** Nombre de archivo seguro (conserva acentos y letras de cualquier lengua; quita lo que los sistemas no aceptan). */
+const nombreArchivo = (s, max = 60) => String(s || '').normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, max).replace(/[ .]+$/, '');
+const leerRadio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
+const marcarRadio = (n, v) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) r.checked = true; };
 
 /* ─────────── Base de datos local (IndexedDB) ─────────── */
 const DB = {
@@ -146,11 +235,13 @@ const DB = {
   abrir() {
     if (this.db) return Promise.resolve(this.db);
     return new Promise((ok, mal) => {
-      const r = indexedDB.open('virgula-prueba', 1);
+      const r = indexedDB.open('virgula', 1);
       r.onupgradeneeded = () => {
         const d = r.result;
-        d.createObjectStore('sesiones', { keyPath: 'id' });
-        d.createObjectStore('trozos', { autoIncrement: true }).createIndex('sesion', 'sesion');
+        d.createObjectStore('grabaciones', { keyPath: 'id' });
+        d.createObjectStore('trozos', { autoIncrement: true }).createIndex('grabacion', 'grabacion');
+        d.createObjectStore('adjuntos', { keyPath: 'id' }).createIndex('grabacion', 'grabacion');
+        d.createObjectStore('ajustes');
       };
       r.onsuccess = () => { this.db = r.result; ok(this.db); };
       r.onerror = () => mal(r.error);
@@ -164,33 +255,119 @@ const DB = {
       t.oncomplete = () => ok(res); t.onerror = () => mal(t.error); t.onabort = () => mal(t.error);
     });
   },
-  guardar(store, v) { return this.tx(store, 'readwrite', s => s.put(v)); },
+  poner(store, v, k) { return this.tx(store, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k)); },
   leer(store, k) { return this.tx(store, 'readonly', s => s.get(k)); },
   todas(store) { return this.tx(store, 'readonly', s => s.getAll()); },
-  trozos(sesion) { return this.tx('trozos', 'readonly', s => s.index('sesion').getAll(sesion)); },
-  async borrarSesion(id) {
+  quitar(store, k) { return this.tx(store, 'readwrite', s => s.delete(k)); },
+  porGrabacion(store, id) { return this.tx(store, 'readonly', s => s.index('grabacion').getAll(id)); },
+  async borrarGrabacion(id) {
     const d = await this.abrir();
     await new Promise((ok, mal) => {
-      const t = d.transaction(['sesiones', 'trozos'], 'readwrite');
-      t.objectStore('sesiones').delete(id);
-      const c = t.objectStore('trozos').index('sesion').openKeyCursor(IDBKeyRange.only(id));
-      c.onsuccess = () => { const k = c.result; if (k) { t.objectStore('trozos').delete(k.primaryKey); k.continue(); } };
+      const t = d.transaction(['grabaciones', 'trozos', 'adjuntos'], 'readwrite');
+      t.objectStore('grabaciones').delete(id);
+      ['trozos', 'adjuntos'].forEach(st => {
+        const c = t.objectStore(st).index('grabacion').openKeyCursor(IDBKeyRange.only(id));
+        c.onsuccess = () => { const k = c.result; if (k) { t.objectStore(st).delete(k.primaryKey); k.continue(); } };
+      });
       t.oncomplete = ok; t.onerror = () => mal(t.error);
     });
   }
 };
 
-/* ─────────── Utilidades ─────────── */
-const dos = n => String(n).padStart(2, '0');
-const reloj = s => { s = Math.max(0, Math.floor(s)); return `${dos(Math.floor(s / 3600))}:${dos(Math.floor(s / 60) % 60)}:${dos(s % 60)}`; };
-const mb = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
-const sello = d => `${d.getFullYear()}${dos(d.getMonth() + 1)}${dos(d.getDate())}_${dos(d.getHours())}${dos(d.getMinutes())}${dos(d.getSeconds())}`;
-const fechaBonita = t => new Date(t).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
-const leerRadio = n => document.querySelector(`input[name="${n}"]:checked`).value;
-function chip(texto, tipo = '') { return `<span class="chip ${tipo}">${texto}</span>`; }
-const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/* ─────────── Ajustes del aparato ─────────── */
+const AJUSTES_BASE = { calidad: 'ambas', canales: 1, volAuto: false, ruido: false, eco: false, mic: '', quien: '', derechos: '', ubic: 'aprox1' };
+const Ajustes = {
+  v: Object.assign({}, AJUSTES_BASE),
+  async cargar() { try { Object.assign(this.v, (await DB.leer('ajustes', 'ajustes')) || {}); } catch (e) {} this.pintar(); },
+  guardar() { return DB.poner('ajustes', this.v, 'ajustes').catch(() => {}); },
+  pintar() {
+    marcarRadio('aCalidad', this.v.calidad); marcarRadio('aCanales', String(this.v.canales)); marcarRadio('aUbic', this.v.ubic);
+    $('aVolAuto').checked = this.v.volAuto; $('aRuido').checked = this.v.ruido; $('aEco').checked = this.v.eco;
+    $('aQuien').value = this.v.quien; $('aDerechos').value = this.v.derechos;
+    if (this.v.mic && ![...$('aMic').options].some(o => o.value === this.v.mic)) $('aMic').insertAdjacentHTML('beforeend', `<option value="${esc(this.v.mic)}">${esc(this.v.micNombre || 'Micrófono elegido')}</option>`);
+    $('aMic').value = this.v.mic;
+    this.resumen();
+  },
+  leerFormulario() {
+    Object.assign(this.v, { calidad: leerRadio('aCalidad') || 'ambas', canales: Number(leerRadio('aCanales') || 1), ubic: leerRadio('aUbic') || 'aprox1',
+      volAuto: $('aVolAuto').checked, ruido: $('aRuido').checked, eco: $('aEco').checked, mic: $('aMic').value,
+      micNombre: ($('aMic').selectedOptions[0] || {}).textContent || '', quien: $('aQuien').value.trim(), derechos: $('aDerechos').value.trim() });
+    this.guardar(); this.resumen(); Espacio.actualizar();
+  },
+  resumen() {
+    const v = this.v, cal = { ambas: 'archivo + consulta', archivo: 'solo archivo', consulta: 'solo consulta' }[v.calidad];
+    const aj = [v.volAuto && 'volumen automático', v.ruido && 'sin ruido', v.eco && 'sin eco'].filter(Boolean);
+    $('resumenAjustes').textContent = `${cal} · ${v.canales === 2 ? 'estéreo' : 'mono'} · ${aj.length ? 'aparato: ' + aj.join(', ') : 'sonido sin alterar'} · ${v.micNombre && v.mic ? v.micNombre : 'micrófono predeterminado'}`;
+  }
+};
 
-/* Procesador de audio: convierte a PCM de 16 bits y lo entrega en bloques de 0.1 s. */
+/* ─────────── Espacio disponible (cifras medidas en la prueba técnica) ─────────── */
+const MB_MIN = { archivo: 5.5 * 1048576, consulta: 0.35 * 1048576 };
+const Espacio = {
+  async datos() { if (!navigator.storage || !navigator.storage.estimate) return null; const e = await navigator.storage.estimate(); return { usado: e.usage || 0, cuota: e.quota || 0, libre: Math.max(0, (e.quota || 0) - (e.usage || 0)) }; },
+  porMinuto() { const v = Ajustes.v; return ((v.calidad !== 'consulta' ? MB_MIN.archivo : 0) + (v.calidad !== 'archivo' ? MB_MIN.consulta : 0)) * (v.canales === 2 ? 2 : 1); },
+  async actualizar() {
+    const e = await this.datos(); if (!e) { $('espacio').textContent = ''; return; }
+    const min = Math.floor(e.libre / this.porMinuto());
+    $('espacio').textContent = `💾 Vírgula usa ${mb(e.usado)}. Con estos ajustes caben unas ${Math.floor(min / 60)} h ${min % 60} min más de grabación.`;
+  }
+};
+
+/* ─────────── Interfaz: avisos, ventanas, navegación ─────────── */
+function avisar(texto, ms = 3500) {
+  const d = document.createElement('div'); d.className = 'aviso-toast'; d.setAttribute('role', 'status'); d.textContent = texto;
+  document.body.appendChild(d); setTimeout(() => d.remove(), ms);
+}
+const Ventana = {
+  abrir(html, alCerrar) {
+    this.cerrar();
+    const v = document.createElement('div'); v.className = 'velo'; v.id = 'velo';
+    v.innerHTML = `<div class="ventana" role="dialog" aria-modal="true">${html}</div>`;
+    v.addEventListener('click', e => { if (e.target === v) this.cerrar(); });
+    document.body.appendChild(v); this.alCerrar = alCerrar;
+    const f = v.querySelector('input,select,textarea,button'); if (f) f.focus();
+    return v.firstElementChild;
+  },
+  cerrar() { const v = $('velo'); if (v) { v.remove(); if (this.alCerrar) { const f = this.alCerrar; this.alCerrar = null; f(); } } }
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape') Ventana.cerrar(); });
+const Nav = {
+  actual: 'vGrabar',
+  ir(id) {
+    if (G && id !== 'vGrabar' && !confirm('Se está grabando. ¿Ver otra sección? La grabación sigue.')) return;
+    document.querySelectorAll('.vista').forEach(v => v.classList.toggle('oculto', v.id !== id));
+    document.querySelectorAll('nav.abajo button').forEach(b => b.classList.toggle('on', b.dataset.vista === id || (id === 'vFicha' && b.dataset.vista === 'vAcervo')));
+    this.actual = id; window.scrollTo(0, 0);
+    if (id === 'vAcervo') Acervo.pintar();
+    if (id === 'vAjustes') Espacio.actualizar();
+  }
+};
+document.querySelectorAll('nav.abajo button').forEach(b => b.addEventListener('click', () => Nav.ir(b.dataset.vista)));
+
+/** Comparte archivos con el menú del aparato; si no se puede, los descarga. */
+async function compartirArchivos(archivos, titulo) {
+  if (navigator.canShare && navigator.canShare({ files: archivos })) {
+    try { await navigator.share({ files: archivos, title: titulo }); return 'compartido'; }
+    catch (e) { if (e.name === 'AbortError') return 'cancelado'; }
+  }
+  return descargarArchivos(archivos);
+}
+async function descargarArchivos(archivos) {
+  for (const f of archivos) {
+    const a = document.createElement('a'), u = URL.createObjectURL(f); a.href = u; a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove(); await new Promise(r => setTimeout(r, 600));
+    setTimeout(() => URL.revokeObjectURL(u), 120000);
+  }
+  return 'descargado';
+}
+
+/* ═════════════════ GRABADORA ═════════════════
+   Dos caminos a la vez desde el mismo micrófono:
+   · archivo: PCM de 16 bits tal como llega (WAV), guardado por partes cada 2 s;
+   · consulta: comprimido (Opus/AAC) con volumen automático propio y limitador, SOLO en este camino.
+   Así el archivo conserva el sonido real y la consulta se escucha bien. */
+let G = null;   // la grabación en curso
+
 const CODIGO_CAPTURA = `
 class Captura extends AudioWorkletProcessor {
   constructor(o) { super(); this.ch = o.processorOptions.canales; this.tam = Math.round(sampleRate / 10); this.buf = new Int16Array(this.tam * this.ch); this.i = 0;
@@ -208,6 +385,373 @@ class Captura extends AudioWorkletProcessor {
 }
 registerProcessor('captura', Captura);`;
 
+function formatoConsulta() {
+  const op = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm'];
+  return window.MediaRecorder ? (op.find(m => MediaRecorder.isTypeSupported(m)) || '') : '';
+}
+const extensionDe = mime => /mp4|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : /wav/.test(mime) ? 'wav' : 'webm';
+
+function nuevoCodigo(t) { return 'VRG-' + sello(new Date(t)) + '-' + azar(4); }
+
+function fichaVacia(t) {
+  return { titulo: 'Grabación ' + new Date(t).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }), descripcion: '', fechaHora: fechaISO(t), lugar: '', ubicacion: null,
+    participantes: [], lenguas: '', claves: '', transcripcion: { lengua: '', texto: '' }, traducciones: [], fuentes: [], derechos: Ajustes.v.derechos || '',
+    consentimiento: { estado: 'pendiente', forma: '', nota: '' }, notas: '', quien: Ajustes.v.quien || '', confidencial: false, uso: '' };
+}
+
+const Grabadora = {
+  async iniciar() {
+    if (G) return;
+    const v = Ajustes.v, conArchivo = v.calidad !== 'consulta', conConsulta = v.calidad !== 'archivo', canales = v.canales === 2 ? 2 : 1;
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        deviceId: v.mic ? { exact: v.mic } : undefined, channelCount: { ideal: canales }, sampleRate: { ideal: 48000 },
+        echoCancellation: v.eco, noiseSuppression: v.ruido, autoGainControl: v.volAuto } });
+    } catch (e) {
+      if (v.mic && e.name === 'OverconstrainedError') { Ajustes.v.mic = ''; Ajustes.guardar(); avisar('El micrófono elegido no está conectado: usa el predeterminado.'); return this.iniciar(); }
+      avisar('No se pudo usar el micrófono: ' + e.message + '. Revisa el permiso del micrófono.', 6000); return;
+    }
+    const track = stream.getAudioTracks()[0], reales = track.getSettings ? track.getSettings() : {};
+    let ctx; try { ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
+    const sr = ctx.sampleRate, fuente = ctx.createMediaStreamSource(stream);
+    const analizador = ctx.createAnalyser(); analizador.fftSize = 2048; fuente.connect(analizador);
+    const ahora = Date.now(), id = nuevoCodigo(ahora);
+    G = { id, inicio: ahora, sr, canales, conArchivo, conConsulta, stream, track, ctx, analizador, t0: performance.now(), pausado: 0, pausaDesde: 0,
+      frames: 0, pendientes: [], nTrozo: 0, bytesArchivo: 0, bytesConsulta: 0, marcas: [], eventos: [], silencios: [], silencioDesde: null,
+      huecos: 0, ultimoGuardado: 0, picoMax: 0, saturado: 0, ultSat: 0, ganancia: 1, ultimoChequeo: performance.now() };
+    G.reg = { id, creada: ahora, estado: 'grabando', version: VERSION,
+      tecnica: { sr, canales, conArchivo, conConsulta, mime: '', ajustesPedidos: { volAuto: v.volAuto, ruido: v.ruido, eco: v.eco },
+        ajustesReales: { sampleRate: reales.sampleRate, channelCount: reales.channelCount, autoGainControl: reales.autoGainControl, noiseSuppression: reales.noiseSuppression, echoCancellation: reales.echoCancellation },
+        microfono: track.label || 'predeterminado', aparato: navigator.userAgent },
+      marcas: [], eventos: [], silencios: [], huecos: 0, frames: 0, bytes: { archivo: 0, consulta: 0 }, duracion: 0, clips: [], ficha: fichaVacia(ahora), respaldo: null, modificada: ahora };
+    this.evento('inicio', `${sr} Hz · ${canales === 2 ? 'estéreo' : 'mono'}`);
+
+    if (conArchivo) {
+      try {
+        const url = URL.createObjectURL(new Blob([CODIGO_CAPTURA], { type: 'application/javascript' }));
+        await ctx.audioWorklet.addModule(url);
+        const nodo = new AudioWorkletNode(ctx, 'captura', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: canales, channelCountMode: 'explicit', processorOptions: { canales } });
+        nodo.port.onmessage = e => { if (!G || G.cerrado) return; if (e.data.buf) this.recibir(e.data); else if (e.data.vaciado && G.alVaciar) G.alVaciar(); };
+        const mudo = ctx.createGain(); mudo.gain.value = 0;
+        fuente.connect(nodo); nodo.connect(mudo); mudo.connect(ctx.destination);
+        G.nodo = nodo;
+      } catch (e) { this.evento('error', 'no se pudo grabar en calidad de archivo: ' + e.message); G.conArchivo = G.reg.tecnica.conArchivo = false; }
+    }
+    if (conConsulta) {
+      const mime = formatoConsulta();
+      if (!mime) this.evento('error', 'este navegador no graba en calidad de consulta');
+      else {
+        // Volumen automático y limitador SOLO para la consulta
+        const g = ctx.createGain(); g.gain.value = 1;
+        const lim = ctx.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
+        const dest = ctx.createMediaStreamDestination(); dest.channelCount = canales;
+        fuente.connect(g); g.connect(lim); lim.connect(dest);
+        const mr = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
+        mr.ondataavailable = e => { if (e.data && e.data.size) this.guardarTrozo('consulta', e.data); };
+        mr.onerror = e => this.evento('error', 'consulta: ' + (e.error && e.error.message));
+        mr.start(2000);
+        Object.assign(G, { recorder: mr, gananciaNodo: g }); G.reg.tecnica.mime = mime;
+      }
+    }
+    this.vigilar();
+    await this.pantalla(true);
+    try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {}
+    await DB.poner('grabaciones', G.reg);
+    G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
+    G.cuadro = requestAnimationFrame(() => this.medir());
+    $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>Grabando'; $('bGrabar').setAttribute('aria-pressed', 'true');
+    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
+    navigator.vibrate && navigator.vibrate(40);
+    this.pintarEstado();
+  },
+
+  recibir(d) {
+    G.pendientes.push(d.buf); G.frames += d.frames;
+    // Silencio absoluto (ceros exactos): ningún micrófono real lo produce; suele ser una llamada u otra app usando el micrófono
+    const a = new Int16Array(d.buf); let cero = true;
+    for (let i = 0; i < a.length; i += 7) if (a[i] !== 0) { cero = false; break; }
+    if (cero && a.every(x => x === 0)) { if (G.silencioDesde == null) G.silencioDesde = (G.frames - d.frames) / G.sr; }
+    else if (G.silencioDesde != null) this.cerrarSilencio((G.frames - d.frames) / G.sr);
+  },
+  cerrarSilencio(hasta) {
+    const desde = G.silencioDesde; G.silencioDesde = null;
+    if (hasta - desde >= 1) { G.silencios.push({ desde, hasta }); G.reg.silencios = G.silencios; this.evento('sin audio', `de ${relojFino(desde)} a ${relojFino(hasta)} (posible llamada u otra app usando el micrófono)`); }
+  },
+  transcurrido() { if (!G) return 0; const p = G.pausaDesde ? performance.now() - G.pausaDesde : 0; return (performance.now() - G.t0 - G.pausado - p) / 1000; },
+  segundos() { return G && G.conArchivo ? G.frames / G.sr : this.transcurrido(); },
+  evento(tipo, detalle = '') {
+    if (!G) return;
+    G.eventos.push({ t: Math.round(this.segundos() * 10) / 10, hora: new Date().toLocaleTimeString('es-MX'), tipo, detalle });
+    G.reg.eventos = G.eventos; this.pintarEstado();
+  },
+  vigilar() {
+    G.track.onmute = () => this.evento('micrófono ocupado por el sistema', 'p. ej. una llamada');
+    G.track.onunmute = () => this.evento('micrófono de vuelta');
+    G.track.onended = () => this.evento('el micrófono se desconectó');
+    G.ctx.onstatechange = () => this.evento('audio del sistema: ' + G.ctx.state);
+  },
+  async pantalla(si) {
+    try {
+      if (si && G && 'wakeLock' in navigator && !G.wake && !document.hidden) {
+        G.wake = await navigator.wakeLock.request('screen');
+        G.wake.addEventListener('release', () => { if (G) G.wake = null; });
+      } else if (!si && G && G.wake) { await G.wake.release(); G.wake = null; }
+    } catch (e) { /* sin pantalla fija: la grabación sigue */ }
+    this.pintarEstado();
+  },
+  async guardarTrozo(tipo, blob, frames = 0) {
+    if (!G) return; const id = G.id, n = ++G.nTrozo;
+    if (tipo === 'archivo') G.bytesArchivo += blob.size; else G.bytesConsulta += blob.size;
+    try { await DB.poner('trozos', { grabacion: id, tipo, n, datos: blob, frames }); G && (G.ultimoGuardado = Date.now()); }
+    catch (e) { this.evento('error al guardar', e.message + ' (¿espacio lleno?)'); avisar('⚠️ No se pudo guardar: revisa el espacio del aparato.', 6000); }
+  },
+  vaciar() {
+    if (!G || !G.pendientes.length) return;
+    const partes = G.pendientes; G.pendientes = [];
+    const frames = partes.reduce((a, b) => a + b.byteLength, 0) / (2 * G.canales);
+    this.guardarTrozo('archivo', new Blob(partes), frames);
+  },
+  cadaSegundo() {
+    if (!G) return;
+    $('tiempo').textContent = reloj(this.transcurrido());
+    if (performance.now() - G.ultimoChequeo > 2000) {
+      G.ultimoChequeo = performance.now();
+      this.vaciar();
+      Object.assign(G.reg, { frames: G.frames, duracion: this.segundos(), bytes: { archivo: G.bytesArchivo, consulta: G.bytesConsulta }, marcas: G.marcas, modificada: Date.now() });
+      DB.poner('grabaciones', G.reg).catch(() => {});
+      if (G.conArchivo && !G.pausaDesde && G.ctx.state === 'running') {
+        const falta = this.transcurrido() - G.frames / G.sr;
+        if (falta > G.huecos + 0.6) { this.evento('hueco', `faltan ${falta.toFixed(1)} s respecto al reloj`); G.huecos = falta; G.reg.huecos = falta; }
+      }
+    }
+    this.pintarEstado();
+  },
+  medir() {
+    if (!G) return;
+    const a = G.analizador, d = new Float32Array(a.fftSize); a.getFloatTimeDomainData(d);
+    let pico = 0, suma = 0; for (const x of d) { const y = Math.abs(x); if (y > pico) pico = y; suma += x * x; }
+    const rms = Math.sqrt(suma / d.length), db = x => x > 0 ? 20 * Math.log10(x) : -100, pos = x => Math.max(0, Math.min(100, (db(x) + 60) / 60 * 100));
+    $('nivel').style.width = pos(rms) + '%';
+    G.picoMax = Math.max(G.picoMax * 0.995, pico); $('pico').style.left = pos(G.picoMax) + '%';
+    // Volumen automático de la consulta: sube despacio cuando hay voz, nunca más de 16×; el limitador evita saturar
+    if (G.gananciaNodo && !G.pausaDesde && rms > 0.004) {
+      const deseada = Math.max(1, Math.min(16, 0.1 / rms));
+      G.ganancia = G.ganancia + (deseada - G.ganancia) * (deseada < G.ganancia ? 0.08 : 0.01);
+      G.gananciaNodo.gain.setTargetAtTime(G.ganancia, G.ctx.currentTime, 0.3);
+    }
+    if (pico > 0.98) { if (performance.now() - G.ultSat > 1000) { G.saturado++; G.ultSat = performance.now(); } $('nivelNota').textContent = '⚠️ Satura: aleja el micrófono'; }
+    else if (rms < 0.003 && this.transcurrido() > 3) $('nivelNota').textContent = 'Muy bajo: acerca el micrófono (20–30 cm)';
+    else $('nivelNota').textContent = `Nivel ${db(rms).toFixed(0)} dB`;
+    G.cuadro = requestAnimationFrame(() => this.medir());
+  },
+  /* 1 toque: siguiente clip · 2 toques seguidos: «otra vez» (el intento que termina ahí queda descartado) */
+  ultimoToque: 0,
+  marcar() {
+    if (!G) return;
+    const t = Math.round(this.segundos() * 100) / 100, ahora = performance.now();
+    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); avisar('↩ Otra vez: ese intento queda descartado', 1500); }
+    else { G.marcas.push({ t, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
+    this.ultimoToque = ahora; G.reg.marcas = G.marcas; this.pintarEstado();
+  },
+  async pausa() {
+    if (!G) return;
+    if (!G.pausaDesde) {
+      G.pausaDesde = performance.now();
+      if (G.recorder && G.recorder.state === 'recording') G.recorder.pause();
+      await G.ctx.suspend().catch(() => {});
+      $('bPausa').textContent = '▶ Seguir'; this.evento('pausa');
+    } else {
+      await G.ctx.resume().catch(() => {});
+      if (G.recorder && G.recorder.state === 'paused') G.recorder.resume();
+      G.pausado += performance.now() - G.pausaDesde; G.pausaDesde = 0;
+      $('bPausa').textContent = '⏸ Pausa'; this.evento('continúa');
+    }
+  },
+  async detener() {
+    if (!G) return;
+    $('bDetener').disabled = true;
+    if (G.pausaDesde) await this.pausa();
+    this.evento('fin');
+    if (G.recorder && G.recorder.state !== 'inactive') await new Promise(ok => { G.recorder.addEventListener('stop', () => setTimeout(ok, 60), { once: true }); G.recorder.stop(); });
+    if (G.nodo) await new Promise(ok => { G.alVaciar = ok; G.nodo.port.postMessage('vaciar'); setTimeout(ok, 800); });
+    if (G.silencioDesde != null) this.cerrarSilencio(G.frames / G.sr);
+    G.cerrado = true; this.vaciar();
+    await new Promise(ok => setTimeout(ok, 300));
+    clearInterval(G.intervalo); cancelAnimationFrame(G.cuadro);
+    G.stream.getTracks().forEach(t => t.stop()); await G.ctx.close().catch(() => {});
+    await this.pantalla(false);
+    const dur = this.segundos();
+    Object.assign(G.reg, { estado: 'lista', fin: Date.now(), duracion: dur, frames: G.frames, bytes: { archivo: G.bytesArchivo, consulta: G.bytesConsulta },
+      marcas: G.marcas, eventos: G.eventos, silencios: G.silencios, huecos: G.huecos, saturaciones: G.saturado, clips: clipsDesdeMarcas(G.marcas, dur), modificada: Date.now() });
+    if (G.reg.tecnica.mime) G.reg.tecnica.ganancia = Math.round(G.ganancia * 10) / 10;
+    await DB.poner('grabaciones', G.reg);
+    const id = G.id; G = null;
+    $('bGrabar').classList.remove('on'); $('bGrabar').innerHTML = '⏺<br>Grabar'; $('bGrabar').setAttribute('aria-pressed', 'false');
+    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = true);
+    $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = 'Nivel de entrada';
+    this.pintarEstado(); navigator.vibrate && navigator.vibrate([40, 40, 40]);
+    Ficha.abrir(id);
+  },
+  pintarEstado() {
+    if (!G) { $('estadoGrab').innerHTML = ''; return; }
+    const seg = G.ultimoGuardado ? Math.round((Date.now() - G.ultimoGuardado) / 1000) : null;
+    $('estadoGrab').innerHTML = [
+      G.wake ? chip('🔆 Pantalla fija', 'ok') : chip('🔅 Pantalla sin fijar'),
+      G.conArchivo ? chip('🗄️ ' + mb(G.bytesArchivo)) : '', G.recorder ? chip('🔊 ' + mb(G.bytesConsulta)) : '',
+      seg != null ? chip(`💾 hace ${seg} s`, seg > 8 ? 'aviso' : 'ok') : chip('💾 …'),
+      chip(`🔖 ${G.marcas.length}`), G.huecos > 0.6 ? chip(`⚠️ huecos ${G.huecos.toFixed(1)} s`, 'mal') : '',
+      G.silencios.length ? chip(`🔇 ${G.silencios.length} tramo(s) sin audio`, 'aviso') : '', G.pausaDesde ? chip('⏸ En pausa', 'aviso') : ''
+    ].join('');
+  }
+};
+
+/** Clips a partir de las marcas: cada marca cierra un tramo; «otra vez» lo descarta. */
+function clipsDesdeMarcas(marcas, dur) {
+  if (!marcas || !marcas.length) return [];
+  const cortes = [0, ...marcas.map(m => m.t), dur], clips = [];
+  for (let i = 0; i < cortes.length - 1; i++) {
+    const desde = cortes[i], hasta = cortes[i + 1];
+    if (hasta - desde < 0.15) continue;
+    clips.push({ n: clips.length + 1, desde, hasta, etiqueta: '', texto: '', traduccion: '', descartado: i < marcas.length && marcas[i].tipo === 'otra vez' });
+  }
+  return clips;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!G) return;
+  Grabadora.evento(document.hidden ? 'pantalla oculta o bloqueada' : 'pantalla visible');
+  if (document.hidden) Grabadora.vaciar();
+  else { Grabadora.pantalla(true); if (G.ctx.state !== 'running' && !G.pausaDesde) G.ctx.resume().catch(() => {}); }
+});
+window.addEventListener('pagehide', () => { if (G) { Grabadora.evento('la app se cerró u ocultó'); Grabadora.vaciar(); } });
+window.addEventListener('beforeunload', e => { if (G) { e.preventDefault(); e.returnValue = ''; } });
+navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => G && Grabadora.evento('se conectó o desconectó un micrófono'));
+
+/* Grabaciones que no se cerraron (la app se cerró, el aparato se apagó…): se recupera lo guardado */
+async function revisarPendientes() {
+  const abiertas = (await DB.todas('grabaciones')).filter(r => r.estado === 'grabando' && (!G || r.id !== G.id));
+  const b = $('avisoRecuperar');
+  if (!abiertas.length) { b.classList.add('oculto'); return; }
+  b.classList.remove('oculto');
+  b.innerHTML = `⚠️ ${abiertas.length} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.<div class="fila fija"><button class="prim chico" id="bRecuperar">🛟 Recuperar</button></div>`;
+  $('bRecuperar').onclick = async () => {
+    for (const r of abiertas) {
+      const tr = await DB.porGrabacion('trozos', r.id);
+      const bytes = tr.filter(x => x.tipo === 'archivo').reduce((a, x) => a + x.datos.size, 0);
+      const dur = r.tecnica.conArchivo && bytes ? bytes / (2 * r.tecnica.canales) / r.tecnica.sr : (r.duracion || 0);
+      r.eventos = (r.eventos || []).concat([{ t: dur, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'recuperada', detalle: 'la grabación se cortó; se recuperó lo guardado' }]);
+      Object.assign(r, { estado: 'lista', recuperada: true, duracion: dur, frames: bytes / (2 * r.tecnica.canales), clips: clipsDesdeMarcas((r.marcas || []).filter(m => m.t < dur), dur), modificada: Date.now() });
+      await DB.poner('grabaciones', r);
+    }
+    b.classList.add('oculto'); avisar('🛟 Recuperada(s). Están en 📚 Acervo.'); Nav.ir('vAcervo');
+  };
+}
+
+$('bGrabar').onclick = () => G ? null : Grabadora.iniciar();
+$('bMarcar').onclick = () => Grabadora.marcar();
+$('bPausa').onclick = () => Grabadora.pausa();
+$('bDetener').onclick = () => Grabadora.detener();
+
+/* ═════════════════ MEDIOS: audios de cada grabación, tramos, WAV, Ogg Opus ═════════════════ */
+const Medios = {
+  cacheDecod: new Map(),
+  async trozos(reg) {
+    const t = (await DB.porGrabacion('trozos', reg.id)).sort((a, b) => a.n - b.n);
+    return { archivo: t.filter(x => x.tipo === 'archivo'), consulta: t.filter(x => x.tipo === 'consulta') };
+  },
+  nombreBase(reg) { return reg.id + '__' + (nombreArchivo(reg.ficha.titulo, 50) || 'grabacion'); },
+  /** Los dos audios completos de la grabación, como archivos. */
+  async archivos(reg) {
+    const tr = await this.trozos(reg), r = {}, base = this.nombreBase(reg), t = reg.tecnica;
+    const pcm = tr.archivo.map(x => x.datos), bytes = pcm.reduce((a, b) => a + b.size, 0);
+    if (bytes) r.wav = new File([cabeceraWav(bytes, t.sr, t.canales), ...pcm], base + '.wav', { type: 'audio/wav' });
+    if (tr.consulta.length) {
+      const mime = (t.mime || 'audio/webm').split(';')[0]; let b = new Blob(tr.consulta.map(x => x.datos));
+      if (/webm/.test(mime) && reg.duracion) b = await duracionWebm(b, reg.duracion);
+      r.consulta = new File([b], base + '.' + extensionDe(t.mime || ''), { type: mime });
+    }
+    return r;
+  },
+  /** PCM (Int16 intercalado) de un tramo, en segundos. Del audio de archivo; si no hay, decodifica la consulta. */
+  async pcmTramo(reg, desde, hasta) {
+    const t = reg.tecnica, ch = t.canales;
+    const tr = await this.trozos(reg);
+    if (tr.archivo.length) {
+      const f0 = Math.max(0, Math.floor(desde * t.sr)), f1 = Math.max(f0, Math.floor(hasta * t.sr));
+      const partes = []; let pos = 0;
+      for (const x of tr.archivo) {
+        const fr = x.frames || x.datos.size / (2 * ch), ini = pos, fin = pos + fr; pos = fin;
+        if (fin <= f0 || ini >= f1) continue;
+        const a = Math.max(f0, ini) - ini, b = Math.min(f1, fin) - ini;
+        partes.push(x.datos.slice(a * 2 * ch, b * 2 * ch));
+      }
+      return { pcm: new Int16Array(await new Blob(partes).arrayBuffer()), sr: t.sr, ch };
+    }
+    const ab = await this.decodificado(reg);
+    if (!ab) return null;
+    const i0 = Math.floor(desde * ab.sampleRate), i1 = Math.min(ab.length, Math.floor(hasta * ab.sampleRate)), n = Math.max(0, i1 - i0), out = new Int16Array(n * ab.numberOfChannels);
+    for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) { let s = d[i0 + i]; s = s < -1 ? -1 : s > 1 ? 1 : s; out[i * ab.numberOfChannels + c] = s < 0 ? s * 0x8000 : s * 0x7fff; } }
+    return { pcm: out, sr: ab.sampleRate, ch: ab.numberOfChannels };
+  },
+  async decodificado(reg) {
+    if (this.cacheDecod.has(reg.id)) return this.cacheDecod.get(reg.id);
+    if ((reg.duracion || 0) > 40 * 60) throw new Error('Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.');
+    const a = await this.archivos(reg); if (!a.consulta) return null;
+    const ctx = new (window.OfflineAudioContext)(reg.tecnica.canales, 48000, 48000);
+    const ab = await ctx.decodeAudioData(await a.consulta.arrayBuffer());
+    this.cacheDecod.clear(); this.cacheDecod.set(reg.id, ab);
+    return ab;
+  },
+  /** Ajusta el volumen para escuchar: pico a −1 dBFS, sin subir más de 20× (no altera el audio de archivo). */
+  normalizar(pcm) {
+    let pico = 1; for (let i = 0; i < pcm.length; i++) { const v = Math.abs(pcm[i]); if (v > pico) pico = v; }
+    const g = Math.min(20, (0.89 * 32767) / pico); if (g <= 1.05) return pcm;
+    const out = new Int16Array(pcm.length); for (let i = 0; i < pcm.length; i++) out[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * g)));
+    return out;
+  },
+  wav(pcm, sr, ch) { return new Blob([cabeceraWav(pcm.byteLength, sr, ch), pcm], { type: 'audio/wav' }); },
+  /** Ogg Opus con WebCodecs (Chrome, Edge). Devuelve null si el navegador no puede. */
+  async ogg(pcm, sr, ch) {
+    if (!window.AudioEncoder) return null;
+    if (sr !== 48000) { const r = await remuestrear(pcm, sr, ch, 48000); pcm = r; sr = 48000; }
+    const config = { codec: 'opus', sampleRate: 48000, numberOfChannels: ch, bitrate: ch === 2 ? 96000 : 48000 };
+    try { if (!(await AudioEncoder.isConfigSupported(config)).supported) return null; } catch (e) { return null; }
+    const paquetes = []; let preskip = 312, error = null;
+    const enc = new AudioEncoder({ output: (chunk, meta) => {
+      const b = new Uint8Array(chunk.byteLength); chunk.copyTo(b); paquetes.push(b);
+      const desc = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if (desc) { const d = new Uint8Array(desc.buffer ? desc.buffer.slice(desc.byteOffset || 0, (desc.byteOffset || 0) + desc.byteLength) : desc); if (d.length >= 12 && String.fromCharCode(...d.slice(0, 8)) === 'OpusHead') preskip = d[10] | (d[11] << 8); }
+    }, error: e => { error = e; } });
+    enc.configure(config);
+    const frames = pcm.length / ch, paso = 4800;
+    for (let i = 0; i < frames; i += paso) {
+      const n = Math.min(paso, frames - i), plano = new Float32Array(n * ch);
+      for (let c = 0; c < ch; c++) for (let k = 0; k < n; k++) plano[c * n + k] = pcm[(i + k) * ch + c] / 32768;
+      enc.encode(new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: ch, timestamp: Math.round(i / 48 * 1000), data: plano }));
+    }
+    await enc.flush(); enc.close();
+    if (error || !paquetes.length) return null;
+    return new Blob([muxOgg(paquetes, ch, preskip, frames)], { type: 'audio/ogg' });
+  }
+};
+
+/** El WebM del navegador no dice cuánto dura (no se puede adelantar en muchos reproductores): se le escribe la duración. */
+async function duracionWebm(blob, segundos) {
+  try {
+    const u = new Uint8Array(await blob.slice(0, Math.min(blob.size, 8192)).arrayBuffer());
+    let i = -1; for (let k = 0; k < u.length - 4; k++) if (u[k] === 0x15 && u[k + 1] === 0x49 && u[k + 2] === 0xa9 && u[k + 3] === 0x66) { i = k; break; }
+    if (i < 0) return blob;
+    const largo = 8 - Math.floor(Math.log2(u[i + 4])); if (largo < 1 || largo > 8) return blob;
+    let tam = u[i + 4] & (0xff >> largo); for (let k = 1; k < largo; k++) tam = tam * 256 + u[i + 4 + k];
+    const ini = i + 4 + largo, info = u.slice(ini, ini + tam);
+    for (let k = 0; k < info.length - 1; k++) if (info[k] === 0x44 && info[k + 1] === 0x89) return blob;   // ya la tiene
+    const dur = new Uint8Array(11); dur.set([0x44, 0x89, 0x88]); new DataView(dur.buffer).setFloat64(3, segundos * 1000);
+    const nuevo = tam + 11, v = new Uint8Array(8); v[0] = 0x01; for (let k = 7, n = nuevo; k >= 1; k--, n = Math.floor(n / 256)) v[k] = n & 0xff;
+    return new Blob([u.slice(0, i + 4), v, info, dur, blob.slice(ini + tam)], { type: blob.type });
+  } catch (e) { return blob; }
+}
+
 function cabeceraWav(bytes, sr, ch) {
   const h = new DataView(new ArrayBuffer(44)), w = (o, s) => { for (let i = 0; i < s.length; i++) h.setUint8(o + i, s.charCodeAt(i)); };
   w(0, 'RIFF'); h.setUint32(4, 36 + bytes, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true);
@@ -215,346 +759,811 @@ function cabeceraWav(bytes, sr, ch) {
   w(36, 'data'); h.setUint32(40, bytes, true);
   return h.buffer;
 }
-function formatoConsulta() {
-  const opciones = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm'];
-  return window.MediaRecorder ? (opciones.find(m => MediaRecorder.isTypeSupported(m)) || '') : '';
-}
-const extension = mime => /mp4/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : 'webm';
 
-/* ─────────── Grabación ─────────── */
-let G = null;   // la grabación en curso
-
-async function grabar() {
-  if (G) return;
-  const calidad = leerRadio('calidad'), canales = Number(leerRadio('canales')), mejora = $('mejora').checked;
-  const conArchivo = calidad !== 'consulta', conConsulta = calidad !== 'archivo';
-  let stream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: {
-      deviceId: $('mic').value ? { exact: $('mic').value } : undefined,
-      channelCount: { ideal: canales }, sampleRate: { ideal: 48000 },
-      echoCancellation: mejora, noiseSuppression: mejora, autoGainControl: mejora } });
-  } catch (e) { return aviso('No se pudo usar el micrófono: ' + e.message + '. Revisa el permiso del micrófono para esta página.', 'mal'); }
-  const track = stream.getAudioTracks()[0], ajustes = track.getSettings ? track.getSettings() : {};
-  let ctx;
-  try { ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
-  const sr = ctx.sampleRate;
-  const fuente = ctx.createMediaStreamSource(stream);
-  const analizador = ctx.createAnalyser(); analizador.fftSize = 2048; fuente.connect(analizador);
-  const ahora = Date.now();
-  G = { id: 's' + ahora, inicio: ahora, sr, canales, conArchivo, conConsulta, mejora, stream, track, ctx, analizador,
-    t0: performance.now(), pausado: 0, pausaDesde: 0, frames: 0, pendientes: [], nTrozo: 0, bytesPcm: 0, bytesComp: 0,
-    marcas: [], eventos: [], huecos: 0, ultimoGuardado: 0, mime: '', recorder: null, nodo: null, wake: null, picoMax: 0, saturado: 0 };
-  G.sesion = { id: G.id, version: VERSION, inicio: ahora, estado: 'grabando', sr, canales, conArchivo, conConsulta, mejora,
-    microfono: track.label || 'predeterminado', ajustesReales: ajustes, marcas: [], eventos: [], frames: 0, bytesPcm: 0, bytesComp: 0 };
-  evento('inicio', `ajustes reales: ${JSON.stringify({ sampleRate: ajustes.sampleRate, channelCount: ajustes.channelCount, echoCancellation: ajustes.echoCancellation, noiseSuppression: ajustes.noiseSuppression, autoGainControl: ajustes.autoGainControl })} · contexto ${sr} Hz`);
-
-  if (conArchivo) {
-    try {
-      const url = URL.createObjectURL(new Blob([CODIGO_CAPTURA], { type: 'application/javascript' }));
-      await ctx.audioWorklet.addModule(url);
-      const nodo = new AudioWorkletNode(ctx, 'captura', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: canales, channelCountMode: 'explicit', processorOptions: { canales } });
-      nodo.port.onmessage = e => { if (!G || G.cerrado) return; if (e.data.buf) { G.pendientes.push(e.data.buf); G.frames += e.data.frames; } else if (e.data.vaciado && G.alVaciar) G.alVaciar(); };
-      const mudo = ctx.createGain(); mudo.gain.value = 0;
-      fuente.connect(nodo); nodo.connect(mudo); mudo.connect(ctx.destination);
-      G.nodo = nodo;
-    } catch (e) { evento('error', 'no se pudo grabar en calidad de archivo: ' + e.message); G.conArchivo = G.sesion.conArchivo = false; }
-  }
-  if (conConsulta) {
-    G.mime = formatoConsulta();
-    if (!G.mime) evento('error', 'este navegador no puede grabar en calidad de consulta');
-    else {
-      const mr = new MediaRecorder(stream, { mimeType: G.mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
-      mr.ondataavailable = e => { if (e.data && e.data.size) guardarTrozo('comp', e.data); };
-      mr.onerror = e => evento('error', 'grabación de consulta: ' + (e.error && e.error.message));
-      mr.start(2000);
-      G.recorder = mr; G.sesion.mime = G.mime;
-    }
-  }
-  vigilar(track, ctx);
-  ultimoChequeo = performance.now();
-  await pantallaEncendida(true);
-  try { if (navigator.storage && navigator.storage.persist) G.sesion.persistente = await navigator.storage.persist(); } catch (e) {}
-  await DB.guardar('sesiones', G.sesion);
-  G.intervalo = setInterval(cadaSegundo, 1000);
-  G.cuadro = requestAnimationFrame(medir);
-  $('grabar').classList.add('on'); $('grabar').innerHTML = '●<br>Grabando'; $('grabar').setAttribute('aria-pressed', 'true');
-  ['marcar', 'pausa', 'detener'].forEach(b => $(b).disabled = false);
-  $('ajustes').querySelectorAll('input,select,button').forEach(x => x.disabled = true);
-  pintarEstado();
+async function remuestrear(pcm, sr, ch, nuevo) {
+  const frames = pcm.length / ch, ctx = new OfflineAudioContext(ch, Math.ceil(frames * nuevo / sr), nuevo);
+  const buf = ctx.createBuffer(ch, frames, sr);
+  for (let c = 0; c < ch; c++) { const d = buf.getChannelData(c); for (let i = 0; i < frames; i++) d[i] = pcm[i * ch + c] / 32768; }
+  const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start();
+  const r = await ctx.startRendering(), out = new Int16Array(r.length * ch);
+  for (let c = 0; c < ch; c++) { const d = r.getChannelData(c); for (let i = 0; i < r.length; i++) { const v = Math.max(-1, Math.min(1, d[i])); out[i * ch + c] = v < 0 ? v * 0x8000 : v * 0x7fff; } }
+  return out;
 }
 
-function transcurrido() { if (!G) return 0; const p = G.pausaDesde ? performance.now() - G.pausaDesde : 0; return (performance.now() - G.t0 - G.pausado - p) / 1000; }
-function segundosGrabados() { return G && G.conArchivo ? G.frames / G.sr : transcurrido(); }
-function evento(tipo, detalle = '') { const e = { t: Math.round(transcurrido() * 10) / 10, hora: new Date().toLocaleTimeString('es-MX'), tipo, detalle }; if (G) { G.eventos.push(e); G.sesion.eventos = G.eventos; } pintarEstado(); return e; }
-
-function vigilar(track, ctx) {
-  track.onmute = () => evento('micrófono silenciado por el sistema', 'p. ej. una llamada u otra app usando el micrófono');
-  track.onunmute = () => evento('micrófono de vuelta');
-  track.onended = () => { evento('el micrófono se desconectó'); };
-  ctx.onstatechange = () => evento('audio del sistema: ' + ctx.state);
-}
-document.addEventListener('visibilitychange', () => { if (!G) return; evento(document.hidden ? 'pantalla oculta o bloqueada' : 'pantalla visible'); if (document.hidden) vaciar(); if (!document.hidden) { pantallaEncendida(true); if (G.ctx.state !== 'running' && !G.pausaDesde) G.ctx.resume().catch(() => {}); } });
-window.addEventListener('pagehide', () => { if (G) { evento('la página se cerró o se ocultó'); vaciar(); } });
-document.addEventListener('freeze', () => G && evento('el sistema congeló la página'));
-document.addEventListener('resume', () => G && evento('el sistema reanudó la página'));
-window.addEventListener('online', () => G && evento('con internet'));
-window.addEventListener('offline', () => G && evento('sin internet'));
-
-async function pantallaEncendida(si) {
-  try {
-    if (si && 'wakeLock' in navigator && !G.wake) {
-      G.wake = await navigator.wakeLock.request('screen');
-      G.wake.addEventListener('release', () => { if (G) { G.wake = null; if (!G.cerrando) evento('la pantalla dejó de estar fija'); } });
-    } else if (!si && G && G.wake) { await G.wake.release(); G.wake = null; }
-  } catch (e) { if (si) evento('no se pudo mantener la pantalla encendida', e.message); }
-  pintarEstado();
-}
-
-async function guardarTrozo(tipo, blob, frames = 0) {
-  const id = G ? G.id : null; if (!id) return;
-  const n = ++G.nTrozo;
-  if (tipo === 'pcm') G.bytesPcm += blob.size; else G.bytesComp += blob.size;
-  try { await DB.guardar('trozos', { sesion: id, tipo, n, datos: blob, frames }); G.ultimoGuardado = Date.now(); }
-  catch (e) { evento('error al guardar', e.message + ' (¿espacio lleno?)'); }
-}
-function vaciar() {
-  if (!G || !G.pendientes.length) return;
-  const partes = G.pendientes; G.pendientes = [];
-  const frames = partes.reduce((a, b) => a + b.byteLength, 0) / (2 * G.canales);
-  guardarTrozo('pcm', new Blob(partes), frames);
-}
-
-let ultimoChequeo = 0;
-async function cadaSegundo() {
-  if (!G) return;
-  $('tiempo').textContent = reloj(transcurrido());
-  if (performance.now() - ultimoChequeo > 2000) {
-    ultimoChequeo = performance.now();
-    vaciar();
-    G.sesion.frames = G.frames; G.sesion.bytesPcm = G.bytesPcm; G.sesion.bytesComp = G.bytesComp; G.sesion.marcas = G.marcas; G.sesion.duracion = transcurrido();
-    DB.guardar('sesiones', G.sesion).catch(() => {});
-    // ¿Se perdió audio? Lo esperado según el reloj contra lo recibido del micrófono
-    if (G.conArchivo && !G.pausaDesde) {
-      const falta = transcurrido() - G.frames / G.sr;
-      if (falta > G.huecos + 0.5) { evento('hueco en la grabación', `faltan ${falta.toFixed(1)} s respecto al reloj`); G.huecos = falta; }
-    }
-    actualizarEspacio();
-  }
-  pintarEstado();
-}
-
-function medir() {
-  if (!G) return;
-  const a = G.analizador, d = new Float32Array(a.fftSize);
-  a.getFloatTimeDomainData(d);
-  let pico = 0, suma = 0; for (const v of d) { const x = Math.abs(v); if (x > pico) pico = x; suma += v * v; }
-  const rms = Math.sqrt(suma / d.length), db = v => v > 0 ? 20 * Math.log10(v) : -100;
-  const pos = v => Math.max(0, Math.min(100, (db(v) + 60) / 60 * 100));
-  $('nivel').style.width = pos(rms) + '%';
-  G.picoMax = Math.max(G.picoMax * 0.995, pico); $('pico').style.left = pos(G.picoMax) + '%';
-  if (pico > 0.98) { if (performance.now() - (G.ultSat || 0) > 1000) { G.saturado++; G.ultSat = performance.now(); } $('nivelNota').textContent = '⚠️ Satura: aleja el micrófono o habla más bajo'; }
-  else if (rms < 0.003 && transcurrido() > 3) $('nivelNota').textContent = 'Muy bajo: acerca el micrófono';
-  else $('nivelNota').textContent = `Nivel ${db(rms).toFixed(0)} dB · pico ${db(pico).toFixed(0)} dB`;
-  G.cuadro = requestAnimationFrame(medir);
-}
-
-/* Marcas: un toque = siguiente clip; dos toques seguidos = «otra vez» (el intento anterior queda descartado) */
-let ultimoToque = 0;
-function marcar() {
-  if (!G) return;
-  const t = Math.round(segundosGrabados() * 100) / 100, ahora = performance.now();
-  if (ahora - ultimoToque < 450 && G.marcas.length) { const m = G.marcas.at(-1); m.tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); }
-  else { G.marcas.push({ t, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
-  ultimoToque = ahora; G.sesion.marcas = G.marcas; pintarEstado();
-}
-
-async function pausa() {
-  if (!G) return;
-  if (!G.pausaDesde) {
-    G.pausaDesde = performance.now();
-    if (G.recorder && G.recorder.state === 'recording') G.recorder.pause();
-    await G.ctx.suspend().catch(() => {});
-    $('pausa').textContent = '▶ Seguir'; evento('pausa');
-  } else {
-    await G.ctx.resume().catch(() => {});
-    if (G.recorder && G.recorder.state === 'paused') G.recorder.resume();
-    G.pausado += performance.now() - G.pausaDesde; G.pausaDesde = 0;
-    $('pausa').textContent = '⏸ Pausa'; evento('continúa');
-  }
-}
-
-async function detener() {
-  if (!G) return;
-  G.cerrando = true;
-  $('detener').disabled = true;
-  if (G.pausaDesde) await pausa();
-  evento('fin');
-  if (G.recorder && G.recorder.state !== 'inactive') await new Promise(ok => { G.recorder.addEventListener('stop', () => setTimeout(ok, 50), { once: true }); G.recorder.stop(); });
-  if (G.nodo) await new Promise(ok => { G.alVaciar = ok; G.nodo.port.postMessage('vaciar'); setTimeout(ok, 800); });
-  G.cerrado = true;   // lo que llegue después de aquí ya no cuenta: así el archivo y su duración coinciden
-  vaciar();
-  await new Promise(ok => setTimeout(ok, 300));
-  clearInterval(G.intervalo); cancelAnimationFrame(G.cuadro);
-  G.stream.getTracks().forEach(t => t.stop());
-  await G.ctx.close().catch(() => {});
-  await pantallaEncendida(false);
-  Object.assign(G.sesion, { estado: 'terminada', fin: Date.now(), duracion: transcurrido(), frames: G.frames, bytesPcm: G.bytesPcm, bytesComp: G.bytesComp,
-    marcas: G.marcas, eventos: G.eventos, saturaciones: G.saturado, huecos: G.huecos });
-  await DB.guardar('sesiones', G.sesion);
-  G = null;
-  $('grabar').classList.remove('on'); $('grabar').innerHTML = '⏺<br>Grabar'; $('grabar').setAttribute('aria-pressed', 'false');
-  ['marcar', 'pausa', 'detener'].forEach(b => $(b).disabled = true);
-  $('ajustes').querySelectorAll('input,select,button').forEach(x => x.disabled = false);
-  $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = 'Nivel de entrada';
-  pintarEstado(); await pintarSesiones(); actualizarEspacio();
-}
-
-function pintarEstado(msg) {
-  if (!G) { $('estado').innerHTML = msg || ''; return; }
-  const seg = G.ultimoGuardado ? Math.round((Date.now() - G.ultimoGuardado) / 1000) : null;
-  $('estado').innerHTML = [
-    G.wake ? chip('🔆 Pantalla fija', 'ok') : chip('🔅 Pantalla sin fijar', 'aviso'),
-    G.conArchivo ? chip(`🗄️ Archivo ${mb(G.bytesPcm)}`) : '',
-    G.recorder ? chip(`🔊 Consulta ${mb(G.bytesComp)}`) : '',
-    seg != null ? chip(`💾 Guardado hace ${seg} s`, seg > 12 ? 'aviso' : 'ok') : chip('💾 Guardando…'),
-    chip(`🔖 ${G.marcas.length} marca(s)`),
-    G.huecos > 0.5 ? chip(`⚠️ Huecos: ${G.huecos.toFixed(1)} s`, 'mal') : '',
-    G.eventos.length > 1 ? chip(`📝 ${G.eventos.length - 1} evento(s)`) : '',
-    G.pausaDesde ? chip('⏸ En pausa', 'aviso') : ''
-  ].join(' ');
-}
-function aviso(texto, tipo) { $('estado').innerHTML = chip(texto, tipo); }
-
-/* ─────────── Archivos de cada sesión ─────────── */
-async function archivosDe(s) {
-  const trozos = (await DB.trozos(s.id)).sort((a, b) => a.n - b.n);
-  const pcm = trozos.filter(t => t.tipo === 'pcm').map(t => t.datos), comp = trozos.filter(t => t.tipo === 'comp').map(t => t.datos);
-  const bytes = pcm.reduce((a, b) => a + b.size, 0), base = 'virgula_' + sello(new Date(s.inicio));
-  const r = { bytesPcm: bytes, framesPcm: bytes / (2 * s.canales) };
-  if (bytes) r.wav = new File([cabeceraWav(bytes, s.sr, s.canales), ...pcm], base + '.wav', { type: 'audio/wav' });
-  if (comp.length) { const mime = (s.mime || 'audio/webm').split(';')[0]; r.consulta = new File(comp, base + '.' + extension(s.mime || ''), { type: mime }); }
-  return r;
-}
-
-async function pintarSesiones() {
-  const lista = (await DB.todas('sesiones')).filter(s => s.estado === 'terminada').sort((a, b) => b.inicio - a.inicio);
-  if (!lista.length) { $('sesiones').innerHTML = '<p class="nota">Todavía no hay grabaciones.</p>'; return; }
-  $('sesiones').innerHTML = lista.map(s => `<div class="sesion" data-id="${s.id}">
-      <h3>${fechaBonita(s.inicio)} · ${reloj(s.duracion || 0)}</h3>
-      <div>${[s.canales === 2 ? chip('Estéreo') : chip('Mono'), chip(`${s.sr} Hz`), s.mejora ? chip('Con «mejoramiento»', 'aviso') : chip('Sin «mejoramiento»', 'ok'),
-        chip(`🔖 ${(s.marcas || []).length}`), (s.huecos || 0) > 0.5 ? chip(`⚠️ Huecos ${s.huecos.toFixed(1)} s`, 'mal') : chip('Sin huecos', 'ok'),
-        s.recuperada ? chip('Recuperada', 'aviso') : '', s.saturaciones ? chip(`Saturó ${s.saturaciones} vez(es)`, 'aviso') : ''].join(' ')}</div>
-      <div class="audios"><p class="nota">Cargando…</p></div>
-      <div class="fila"><button data-acc="informe">📋 Informe</button><button data-acc="borrar">🗑 Borrar</button></div></div>`).join('');
-  for (const s of lista) {
-    const cont = document.querySelector(`.sesion[data-id="${s.id}"] .audios`);
-    try {
-      const a = await archivosDe(s);
-      cont.innerHTML = [a.wav ? audioHtml('🗄️ Archivo (WAV)', a.wav) : '', a.consulta ? audioHtml('🔊 Consulta', a.consulta) : ''].join('') || '<p class="nota">Sin audio guardado.</p>';
-      cont._archivos = a;
-    } catch (e) { cont.innerHTML = '<p class="nota">No se pudo leer: ' + esc(e.message) + '</p>'; }
-  }
-}
-function audioHtml(titulo, f) {
-  const url = URL.createObjectURL(f);
-  return `<p class="nota" style="margin-top:8px"><b>${titulo}</b> · ${mb(f.size)} · ${esc(f.name)}</p><audio controls preload="none" src="${url}"></audio>
-    <div class="fila"><button data-compartir="${esc(f.name)}">📤 Compartir</button><a href="${url}" download="${esc(f.name)}" style="flex:1 1 auto"><button style="width:100%">⬇️ Descargar</button></a></div>`;
-}
-$('sesiones').addEventListener('click', async e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const caja = b.closest('.sesion'), id = caja && caja.dataset.id;
-  if (b.dataset.compartir) {
-    const a = caja.querySelector('.audios')._archivos, f = [a.wav, a.consulta].find(x => x && x.name === b.dataset.compartir);
-    if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: f.name }); } catch (x) {} }
-    else alert('Este teléfono no permite compartir el archivo desde aquí: usa «Descargar».');
-  }
-  if (b.dataset.acc === 'borrar' && confirm('¿Borrar esta grabación de prueba del teléfono?')) { await DB.borrarSesion(id); pintarSesiones(); actualizarEspacio(); }
-  if (b.dataset.acc === 'informe') { const s = await DB.leer('sesiones', id); $('informe').textContent = await informe([s]); $('informe').closest('details').open = true; $('informe').scrollIntoView({ behavior: 'smooth' }); }
-});
-
-/* Grabaciones que no se cerraron (la página se cerró, el teléfono se apagó…) */
-async function revisarPendientes() {
-  const abiertas = (await DB.todas('sesiones')).filter(s => s.estado === 'grabando');
-  if (!abiertas.length) { $('recuperar').classList.add('oculto'); return; }
-  $('recuperar').classList.remove('oculto');
-  $('recuperar').innerHTML = `⚠️ Hay ${abiertas.length} grabación(es) que no se cerraron. Lo guardado hasta el último momento se puede recuperar.
-    <div class="fila"><button class="prim" id="recuperarSi">🛟 Recuperar</button></div>`;
-  $('recuperarSi').onclick = async () => {
-    for (const s of abiertas) {
-      const a = await archivosDe(s);
-      Object.assign(s, { estado: 'terminada', recuperada: true, frames: a.framesPcm || s.frames, duracion: a.framesPcm ? a.framesPcm / s.sr : (s.duracion || 0) });
-      (s.eventos = s.eventos || []).push({ t: s.duracion, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'recuperada', detalle: 'la grabación se cortó; se recuperó lo guardado' });
-      await DB.guardar('sesiones', s);
-    }
-    revisarPendientes(); pintarSesiones();
+/* Ogg (RFC 3533) con Opus (RFC 7845). CRC propio de Ogg: polinomio 0x04c11db7, sin reflejar. */
+const CRC_OGG = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let r = i << 24; for (let k = 0; k < 8; k++) r = r & 0x80000000 ? (r << 1) ^ 0x04c11db7 : r << 1; t[i] = r >>> 0; } return t; })();
+function crcOgg(b) { let c = 0; for (let i = 0; i < b.length; i++) c = ((c << 8) ^ CRC_OGG[((c >>> 24) ^ b[i]) & 0xff]) >>> 0; return c; }
+function muxOgg(paquetes, ch, preskip, frames) {
+  const serie = (Math.random() * 0xffffffff) >>> 0, paginas = []; let seq = 0;
+  const pagina = (datos, granulo, tipo) => {
+    const lac = []; datos.forEach(d => { let n = d.length; while (n >= 255) { lac.push(255); n -= 255; } lac.push(n); });
+    const cuerpo = datos.reduce((a, d) => a + d.length, 0), p = new Uint8Array(27 + lac.length + cuerpo), v = new DataView(p.buffer);
+    p.set([79, 103, 103, 83]); p[4] = 0; p[5] = tipo;
+    v.setUint32(6, granulo % 0x100000000, true); v.setUint32(10, Math.floor(granulo / 0x100000000), true);
+    v.setUint32(14, serie, true); v.setUint32(18, seq++, true); p[26] = lac.length; p.set(lac, 27);
+    let o = 27 + lac.length; datos.forEach(d => { p.set(d, o); o += d.length; });
+    v.setUint32(22, crcOgg(p), true); paginas.push(p);
   };
+  const head = new Uint8Array(19), hv = new DataView(head.buffer);
+  head.set([79, 112, 117, 115, 72, 101, 97, 100]); head[8] = 1; head[9] = ch; hv.setUint16(10, preskip, true); hv.setUint32(12, 48000, true); hv.setInt16(16, 0, true); head[18] = 0;
+  const vendor = new TextEncoder().encode('Virgula'), tags = new Uint8Array(8 + 4 + vendor.length + 4), tv = new DataView(tags.buffer);
+  tags.set([79, 112, 117, 115, 84, 97, 103, 115]); tv.setUint32(8, vendor.length, true); tags.set(vendor, 12); tv.setUint32(12 + vendor.length, 0, true);
+  pagina([head], 0, 0x02); pagina([tags], 0, 0);
+  let granulo = preskip, grupo = [], segs = 0;
+  paquetes.forEach((d, i) => {
+    const s = Math.floor(d.length / 255) + 1;
+    if (segs + s > 255) { pagina(grupo, Math.min(granulo, preskip + frames), 0); grupo = []; segs = 0; }
+    grupo.push(d); segs += s; granulo += 960;
+    if (i === paquetes.length - 1) pagina(grupo, preskip + frames, 0x04);
+  });
+  return new Blob(paginas);
 }
 
-/* ─────────── Espacio ─────────── */
-async function actualizarEspacio() {
-  if (!navigator.storage || !navigator.storage.estimate) { $('espacio').textContent = ''; return; }
-  const e = await navigator.storage.estimate(), libre = (e.quota || 0) - (e.usage || 0);
-  const canales = Number(leerRadio('canales')), cal = leerRadio('calidad');
-  const porMin = (cal !== 'consulta' ? 48000 * 2 * canales * 60 : 0) + (cal !== 'archivo' ? (canales === 2 ? 96000 : 48000) / 8 * 60 : 0);
-  $('espacio').textContent = `💾 Usado por Vírgula: ${mb(e.usage || 0)} · disponible para grabar: ${mb(libre)} (unas ${Math.floor(libre / porMin / 60)} h ${Math.floor(libre / porMin) % 60} min con estos ajustes).`;
-}
-document.querySelectorAll('input[name="calidad"],input[name="canales"]').forEach(r => r.addEventListener('change', actualizarEspacio));
+/* ═════════════════ ACERVO: todas las grabaciones del aparato ═════════════════ */
+const Acervo = {
+  sel: new Set(), q: '',
+  async lista() { return (await DB.todas('grabaciones')).filter(r => r.estado === 'lista').sort((a, b) => b.creada - a.creada); },
+  texto(r) { const f = r.ficha; return [f.titulo, f.descripcion, f.lugar, f.lenguas, f.claves, f.notas, f.transcripcion.texto, ...(f.traducciones || []).map(t => t.texto), ...(f.participantes || []).map(p => p.nombre), ...(r.clips || []).map(c => c.etiqueta + ' ' + c.texto), r.id].join(' ').toLowerCase().normalize('NFD').replace(/\p{M}/gu, ''); },
+  async pintar() {
+    const todas = await this.lista(), q = this.q.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim();
+    const lista = q ? todas.filter(r => this.texto(r).includes(q)) : todas;
+    const sinResp = todas.filter(r => !r.respaldo || r.modificada > r.respaldo);
+    $('avisoRespaldo').innerHTML = sinResp.length ? `<div class="banda aviso">💾 ${sinResp.length} grabación(es) sin respaldo o con cambios desde el último. Selecciónalas y usa 📦 Exportar para guardarlas en Drive, en otra computadora o donde prefieras.</div>` : (todas.length ? '<div class="banda ok">✅ Todo respaldado.</div>' : '');
+    const adj = {}; (await DB.todas('adjuntos')).forEach(a => { adj[a.grabacion] = (adj[a.grabacion] || 0) + 1; });
+    $('lista').innerHTML = lista.length ? lista.map(r => {
+      const f = r.ficha, c = f.consentimiento.estado, clips = (r.clips || []).filter(x => !x.descartado).length;
+      return `<div class="tarjeta"><input type="checkbox" data-sel="${r.id}" ${this.sel.has(r.id) ? 'checked' : ''} aria-label="Elegir ${esc(f.titulo)}">
+        <div class="cuerpo" data-abrir="${r.id}"><h3>${esc(f.titulo)}</h3>
+        <div class="nota">${fechaBonita(r.creada)} · ${reloj(r.duracion)}${f.lugar ? ' · ' + esc(f.lugar) : ''}</div>
+        <div>${chip(c === 'otorgado' ? '✔ consentimiento' : c === 'no aplica' ? 'consentimiento no aplica' : '⏳ consentimiento pendiente', c === 'pendiente' ? 'aviso' : 'ok')}
+        ${clips ? chip('🔖 ' + clips + ' clip(s)') : ''}${adj[r.id] ? chip('📎 ' + adj[r.id]) : ''}${f.transcripcion.texto ? chip('✍️ transcripción') : ''}${(f.traducciones || []).length ? chip('🌐 ' + f.traducciones.length + ' traducción(es)') : ''}
+        ${f.confidencial ? chip('🔒 confidencial', 'aviso') : ''}${r.recuperada ? chip('🛟 recuperada', 'aviso') : ''}${!r.respaldo || r.modificada > r.respaldo ? chip('💾 sin respaldo', 'aviso') : ''}</div></div></div>`;
+    }).join('') : `<p class="nota">${todas.length ? 'Nada coincide con la búsqueda.' : 'Todavía no hay grabaciones. Ve a ⏺ Grabar.'}</p>`;
+    this.contar();
+  },
+  contar() { $('nSel').textContent = this.sel.size; $('bExportarSel').disabled = !this.sel.size; }
+};
+$('lista').addEventListener('click', e => {
+  const s = e.target.closest('[data-sel]'); if (s) { s.checked ? Acervo.sel.add(s.dataset.sel) : Acervo.sel.delete(s.dataset.sel); Acervo.contar(); return; }
+  const a = e.target.closest('[data-abrir]'); if (a) Ficha.abrir(a.dataset.abrir);
+});
+$('buscar').addEventListener('input', () => { Acervo.q = $('buscar').value; clearTimeout(Acervo._t); Acervo._t = setTimeout(() => Acervo.pintar(), 250); });
+$('bTodas').onclick = async () => { const l = await Acervo.lista(); if (Acervo.sel.size === l.length) Acervo.sel.clear(); else l.forEach(r => Acervo.sel.add(r.id)); Acervo.pintar(); };
+$('bExportarSel').onclick = () => Exportar.abrir([...Acervo.sel]);
+$('bImportar').onclick = () => $('archivoImportar').click();
+$('archivoImportar').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) Importar.paquete(f); };
 
-/* ─────────── Micrófonos ─────────── */
-async function buscarMicrofonos() {
-  try {
-    const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop());
-    const lista = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
-    $('mic').innerHTML = '<option value="">El del teléfono (predeterminado)</option>' + lista.filter(d => d.deviceId && d.deviceId !== 'default')
-      .map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Micrófono ' + (i + 1))}</option>`).join('');
-    $('micNota').textContent = `${lista.length} micrófono(s) encontrado(s).`;
-  } catch (e) { $('micNota').textContent = 'No se pudo revisar: ' + e.message; }
-}
-navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => { if (G) evento('cambió un micrófono (se conectó o desconectó)'); });
+/* ═════════════════ FICHA: todo lo que acompaña a una grabación ═════════════════ */
+const PAPELES = { foto: '📷 Foto', transcripcion: '✍️ Transcripción o traducción', letra: '🎵 Letra, acordes o partitura', apoyo: '📚 Material de apoyo', consentimiento: '🤝 Consentimiento', otro: '📎 Otro' };
+const USOS = { '': '— Sin especificar —', lengua: 'Lengua', patrimonio: 'Patrimonio y celebraciones', bitacora: 'Bitácora de campo', naturaleza: 'Sonidos de la naturaleza', entrevista: 'Entrevista o sesión de investigación', otro: 'Otro' };
+const ROLES = ['Hablante', 'Cantante', 'Músico', 'Intérprete', 'Traductor', 'Entrevistador', 'Investigador', 'Narrador', 'Otro'];
+const FORMAS_CONS = { '': '— Cómo se dio —', oral: 'Oral (grabado)', firma: 'Firma en la pantalla', documento: 'Documento firmado', verbal: 'De palabra, sin registro', comunidad: 'Acuerdo comunitario', otro: 'Otro' };
+const iconoDe = (tipo, nombre) => /^image\//.test(tipo) ? '🖼️' : /^audio\//.test(tipo) ? '🔊' : /^video\//.test(tipo) ? '🎞️' : /pdf/.test(tipo) || /\.pdf$/i.test(nombre) ? '📕'
+  : /word|\.docx?$|opendocument\.text|\.odt$/i.test(tipo + nombre) ? '📘' : /sheet|excel|\.xlsx?$|\.ods$|\.csv$/i.test(tipo + nombre) ? '📗' : /presentation|powerpoint|\.pptx?$|\.odp$/i.test(tipo + nombre) ? '📙'
+  : /^text\//.test(tipo) ? '📄' : /zip|compressed/.test(tipo) ? '🗜️' : '📎';
 
-/* ─────────── Informe ─────────── */
-async function informe(sesiones) {
-  const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : {};
-  const l = [`Vírgula · prueba técnica (${VERSION}) · ${new Date().toLocaleString('es-MX')}`,
-    `Teléfono/navegador: ${navigator.userAgent}`,
-    `Instalada como app: ${matchMedia('(display-mode: standalone)').matches ? 'sí' : 'no'} · Pantalla fija disponible: ${'wakeLock' in navigator ? 'sí' : 'no'} · Formato de consulta: ${formatoConsulta() || 'ninguno'}`,
-    `Espacio: usado ${mb(e.usage || 0)} de ${mb(e.quota || 0)}`, ''];
-  for (const s of sesiones) {
-    const a = await archivosDe(s);
-    l.push(`— Grabación ${fechaBonita(s.inicio)}${s.recuperada ? ' (RECUPERADA)' : ''}`,
-      `  Duración: ${reloj(s.duracion || 0)} · audio de archivo: ${reloj((a.framesPcm || 0) / s.sr)} · huecos: ${(s.huecos || 0).toFixed(1)} s · saturaciones: ${s.saturaciones || 0}`,
-      `  Ajustes pedidos: ${s.canales === 2 ? 'estéreo' : 'mono'}, ${s.conArchivo ? 'archivo' : ''}${s.conArchivo && s.conConsulta ? ' + ' : ''}${s.conConsulta ? 'consulta' : ''}, mejoramiento ${s.mejora ? 'encendido' : 'apagado'}`,
-      `  Ajustes reales del micrófono: ${JSON.stringify(s.ajustesReales || {})}`,
-      `  Micrófono: ${s.microfono} · ${s.sr} Hz · consulta: ${s.mime || '—'}`,
-      `  Tamaños: archivo ${a.wav ? mb(a.wav.size) : '—'} · consulta ${a.consulta ? mb(a.consulta.size) : '—'} · marcas: ${(s.marcas || []).length} (${(s.marcas || []).filter(m => m.tipo === 'otra vez').length} «otra vez»)`,
-      `  Eventos:`, ...(s.eventos || []).map(ev => `    ${reloj(ev.t)} (${ev.hora}) ${ev.tipo}${ev.detalle ? ' — ' + ev.detalle : ''}`), '');
+/** Texto con enlaces: [palabras](adjunto:ID) o [palabras](https://…). Solo eso, más saltos de línea. */
+const RE_ENLACE = /\[([^\]\n]{1,200})\]\((adjunto:[\w-]+|https?:\/\/[^\s)]+)\)/g;
+function textoConEnlaces(s, adjuntos, rutaAdj) {
+  return esc(s).replace(/\[([^\]\n]{1,200})\]\((adjunto:[\w-]+|https?:\/\/[^\s)]+)\)/g, (m, txt, dest) => {
+    if (dest.startsWith('adjunto:')) {
+      const a = adjuntos.find(x => x.id === dest.slice(8));
+      if (!a) return `${txt} <span class="chip mal">adjunto no disponible</span>`;
+      return rutaAdj ? `<a href="${esc(rutaAdj(a))}">${txt}</a>` : `<a href="#" data-adj="${a.id}">${txt}</a>`;
+    }
+    return `<a href="${dest}" target="_blank" rel="noopener">${txt}</a>`;
+  });
+}
+
+const Ficha = {
+  reg: null, adjuntos: [],
+  async abrir(id) {
+    const reg = await DB.leer('grabaciones', id); if (!reg) return avisar('No se encontró la grabación.');
+    this.reg = reg; this.adjuntos = await DB.porGrabacion('adjuntos', id);
+    Nav.ir('vFicha'); this.pintar(); this.cargarAudio();
+  },
+  guardar(inmediato) {
+    clearTimeout(this._t);
+    const f = async () => { this.reg.modificada = Date.now(); await DB.poner('grabaciones', this.reg); $('fGuardado') && ($('fGuardado').textContent = '💾 Guardado ' + new Date().toLocaleTimeString('es-MX')); };
+    if (inmediato) return f(); this._t = setTimeout(f, 500);
+  },
+  campoTexto(id, etiqueta, valor, { largo, max = 4000, ph = '', enlaces } = {}) {
+    return `<label for="${id}">${etiqueta}</label>` + (largo
+      ? `<textarea id="${id}" data-c="${id}" maxlength="${max}" placeholder="${esc(ph)}">${esc(valor)}</textarea>${enlaces ? `<div class="fila fija"><button class="chico" data-enlazar="${id}">🔗 Enlazar a un adjunto o página</button></div><div class="vista-texto oculto" id="vista-${id}"></div>` : ''}`
+      : `<input type="text" id="${id}" data-c="${id}" maxlength="${max}" value="${esc(valor)}" placeholder="${esc(ph)}">`);
+  },
+  pintar() {
+    const r = this.reg, f = r.ficha, t = r.tecnica, c = f.consentimiento;
+    const opts = (o, v) => Object.entries(o).map(([k, n]) => `<option value="${esc(k)}" ${k === v ? 'selected' : ''}>${esc(n)}</option>`).join('');
+    $('vFicha').innerHTML = `
+      <div class="fila fija"><button class="chico" id="fVolver">← Acervo</button><span class="nota" id="fGuardado"></span></div>
+      <div class="panel">
+        <h2>${esc(f.titulo)}</h2>
+        <div class="nota">${r.id} · ${fechaBonita(r.creada)} · ${reloj(r.duracion)}</div>
+        <div>${t.conArchivo ? chip('🗄️ archivo WAV') : ''}${t.mime ? chip('🔊 consulta') : ''}${chip(t.canales === 2 ? 'estéreo' : 'mono')}${chip(t.sr + ' Hz')}
+          ${(r.silencios || []).length ? chip('🔇 ' + r.silencios.length + ' tramo(s) sin audio', 'aviso') : ''}${r.huecos > 0.6 ? chip('⚠️ huecos ' + r.huecos.toFixed(1) + ' s', 'mal') : ''}${r.recuperada ? chip('🛟 recuperada', 'aviso') : ''}</div>
+        <div id="fAudios"><p class="nota">Cargando audio…</p></div>
+      </div>
+
+      <details class="sec" open><summary>🧾 Ficha</summary>
+        ${this.campoTexto('titulo', 'Título *', f.titulo, { max: 200 })}
+        ${this.campoTexto('descripcion', 'Descripción', f.descripcion, { largo: true, max: 20000, enlaces: true, ph: 'Qué se grabó, en qué contexto, quiénes participan…' })}
+        <div class="fila"><div><label for="fechaHora">Fecha y hora</label><input type="datetime-local" id="fechaHora" data-c="fechaHora" value="${esc(f.fechaHora.slice(0, 16))}"></div>
+          <div><label for="uso">Uso</label><select id="uso" data-c="uso">${opts(USOS, f.uso || '')}</select></div></div>
+        ${this.campoTexto('lugar', 'Lugar (comunidad, municipio, sitio)', f.lugar, { max: 300 })}
+        <div id="fUbic"></div>
+        ${this.campoTexto('lenguas', 'Lengua(s) o variante(s)', f.lenguas, { max: 300, ph: 'Ej. wixárika (variante de San Andrés)' })}
+        ${this.campoTexto('claves', 'Palabras clave', f.claves, { max: 500, ph: 'Separadas por comas' })}
+        <label>Participantes</label><div id="fPart"></div>
+        <div class="fila fija"><button class="chico" data-agregar="participantes">＋ Participante</button></div>
+        ${this.campoTexto('quien', 'Quién grabó', f.quien, { max: 200 })}
+        ${this.campoTexto('derechos', 'Derechos y licencia', f.derechos, { max: 500 })}
+        ${this.campoTexto('notas', 'Notas', f.notas, { largo: true, max: 20000, enlaces: true })}
+        <div class="op" style="margin-top:10px"><label><input type="checkbox" id="confidencial" ${f.confidencial ? 'checked' : ''}> 🔒 Confidencial</label></div>
+        <p class="nota">Confidencial: sin ubicación, participantes solo con código y un aviso antes de exportar.</p>
+      </details>
+
+      <details class="sec" ${f.transcripcion.texto || (f.traducciones || []).length ? 'open' : ''}><summary>✍️ Transcripción y traducciones</summary>
+        <div class="fila"><div><label for="transLengua">Lengua de la transcripción</label><input type="text" id="transLengua" data-c="transcripcion.lengua" value="${esc(f.transcripcion.lengua)}" maxlength="120"></div></div>
+        ${this.campoTexto('transTexto', 'Transcripción (lo que se dice, escrito en su lengua)', f.transcripcion.texto, { largo: true, max: 100000, enlaces: true })}
+        <h3>Traducciones</h3><div id="fTrad"></div>
+        <div class="fila fija"><button class="chico" data-agregar="traducciones">＋ Traducción</button></div>
+      </details>
+
+      <details class="sec" ${(r.clips || []).length ? 'open' : ''}><summary>🔖 Clips (${(r.clips || []).filter(x => !x.descartado).length})</summary>
+        <p class="nota">Cada marca cortó un clip. Escribe su etiqueta (por ejemplo, la palabra que se dijo): al exportar, cada clip sale con ese nombre, listo para traerlo al catálogo de lenguas.</p>
+        <div id="fClips"></div>
+        <div class="fila fija"><button class="chico" id="bClipNuevo">＋ Clip a mano</button></div>
+      </details>
+
+      <details class="sec" ${(f.fuentes || []).length ? 'open' : ''}><summary>📚 Fuentes y enlaces</summary>
+        <div id="fFuentes"></div>
+        <div class="fila fija"><button class="chico" data-agregar="fuentes">＋ Fuente</button></div>
+      </details>
+
+      <details class="sec" open><summary>🤝 Consentimiento</summary>
+        <div class="op" role="radiogroup">${['pendiente', 'otorgado', 'no aplica'].map(v => `<label><input type="radio" name="consEstado" value="${v}" ${c.estado === v ? 'checked' : ''}> ${{ pendiente: '⏳ Pendiente', otorgado: '✔ Otorgado', 'no aplica': 'No aplica' }[v]}</label>`).join('')}</div>
+        <p class="nota">«No aplica» sirve, por ejemplo, para sonidos de la naturaleza o espacios públicos sin personas identificables.</p>
+        <div class="fila"><div><label for="consForma">Cómo se dio</label><select id="consForma" data-c="consentimiento.forma">${opts(FORMAS_CONS, c.forma)}</select></div></div>
+        ${this.campoTexto('consNota', 'Condiciones o notas (qué usos se aceptaron, quién lo dio…)', c.nota, { largo: true, max: 4000 })}
+        <div class="fila"><button class="chico" id="bFirma">✍️ Firmar con el dedo</button><button class="chico" id="bConsOral">🎙️ Grabar consentimiento</button><button class="chico" data-adjuntar="consentimiento">📄 Adjuntar documento</button></div>
+      </details>
+
+      <details class="sec" open><summary>📎 Adjuntos (<span id="nAdj">${this.adjuntos.length}</span>)</summary>
+        <p class="nota">Fotos, documentos, letras, materiales… de cualquier tipo. Se guarda una copia dentro de Vírgula.</p>
+        <div id="fAdj"></div>
+        <div class="fila"><button data-adjuntar="">📎 Adjuntar archivo</button><button data-adjuntar="foto" data-camara="1">📷 Tomar foto</button></div>
+        <input type="file" id="fileAdj" multiple class="oculto">
+      </details>
+
+      <details class="sec"><summary>⚙️ Datos técnicos y eventos</summary>
+        <pre>${esc(this.tecnicaTexto())}</pre>
+      </details>
+
+      <div class="fila"><button class="prim" id="bExportarUna">📦 Exportar esta grabación</button><button class="peligro" id="bBorrar">🗑 Borrar</button></div>`;
+    this.pintarUbic(); this.pintarRep(); this.pintarClips(); this.pintarAdj(); this.vistas();
+    $('fVolver').onclick = () => Nav.ir('vAcervo');
+    $('bExportarUna').onclick = () => Exportar.abrir([r.id]);
+    $('bBorrar').onclick = () => this.borrar();
+    $('bClipNuevo').onclick = () => this.clipNuevo();
+    $('bFirma').onclick = () => this.firmar();
+    $('bConsOral').onclick = () => this.consentimientoOral();
+    $('confidencial').onchange = e => { f.confidencial = e.target.checked; if (f.confidencial && f.ubicacion) { f.ubicacion = null; avisar('🔒 Se quitó la ubicación.'); } this.pintarUbic(); this.guardar(); };
+    document.querySelectorAll('input[name="consEstado"]').forEach(x => x.onchange = () => { c.estado = x.value; this.guardar(); });
+  },
+  tecnicaTexto() {
+    const r = this.reg, t = r.tecnica;
+    return [`Código: ${r.id}`, `Duración: ${reloj(r.duracion)} (${(r.duracion || 0).toFixed(1)} s)`,
+      `Archivo WAV: ${t.conArchivo ? 'sí, ' + t.sr + ' Hz, 16 bits, ' + t.canales + ' canal(es)' : 'no'} · Consulta: ${t.mime || 'no'}${t.ganancia ? ' (volumen de consulta ×' + t.ganancia + ')' : ''}`,
+      `Ajustes pedidos: volumen automático ${t.ajustesPedidos.volAuto ? 'sí' : 'no'}, quitar ruido ${t.ajustesPedidos.ruido ? 'sí' : 'no'}, quitar eco ${t.ajustesPedidos.eco ? 'sí' : 'no'}`,
+      `Ajustes reales del micrófono: ${JSON.stringify(t.ajustesReales)}`, `Micrófono: ${t.microfono}`, `Aparato: ${t.aparato}`, `Versión de Vírgula: ${r.version}`,
+      `Saturaciones: ${r.saturaciones || 0} · Huecos: ${(r.huecos || 0).toFixed(1)} s · Tramos sin audio: ${(r.silencios || []).map(s => relojFino(s.desde) + '–' + relojFino(s.hasta)).join(', ') || 'ninguno'}`,
+      '', 'Eventos:', ...(r.eventos || []).map(e => `  ${relojFino(e.t)} (${e.hora}) ${e.tipo}${e.detalle ? ' — ' + e.detalle : ''}`)].join('\n');
+  },
+  async cargarAudio() {
+    try {
+      const a = await Medios.archivos(this.reg), url = f => URL.createObjectURL(f);
+      $('fAudios').innerHTML = [a.consulta ? `<p class="nota" style="margin-top:8px">🔊 Consulta · ${mb(a.consulta.size)}</p><audio controls preload="metadata" src="${url(a.consulta)}" style="width:100%"></audio>` : '',
+        a.wav ? `<p class="nota" style="margin-top:8px">🗄️ Archivo (WAV, sin alterar) · ${mb(a.wav.size)}</p><audio controls preload="none" src="${url(a.wav)}" style="width:100%"></audio>` : ''].join('') || '<p class="nota">Sin audio guardado.</p>';
+    } catch (e) { $('fAudios').innerHTML = '<p class="nota">No se pudo leer el audio: ' + esc(e.message) + '</p>'; }
+  },
+  pintarUbic() {
+    const f = this.reg.ficha, u = f.ubicacion, modos = { exacta: 'exacta', aprox1: 'aproximada (~1 km)', aprox10: 'aproximada (~10 km)' };
+    $('fUbic').innerHTML = f.confidencial ? '<p class="nota">🔒 Confidencial: sin ubicación.</p>' : u
+      ? `<p class="nota">📍 ${u.lat}, ${u.lon} · ${modos[u.modo] || u.modo}${u.precisionM ? ' · precisión del aparato ±' + Math.round(u.precisionM) + ' m' : ''} · <a href="https://www.openstreetmap.org/?mlat=${u.lat}&mlon=${u.lon}#map=${u.modo === 'exacta' ? 16 : u.modo === 'aprox1' ? 13 : 10}/${u.lat}/${u.lon}" target="_blank" rel="noopener">ver mapa</a></p><div class="fila fija"><button class="chico" id="bUbic">📍 Volver a tomar</button><button class="chico" id="bUbicQuitar">✕ Quitar ubicación</button></div>`
+      : `<div class="fila fija"><button class="chico" id="bUbic">📍 Agregar ubicación</button><select id="ubicModo" style="width:auto">${Object.entries(modos).map(([k, n]) => `<option value="${k}" ${k === Ajustes.v.ubic ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`;
+    if ($('bUbic')) $('bUbic').onclick = () => this.ubicar(u ? u.modo : $('ubicModo').value);
+    if ($('bUbicQuitar')) $('bUbicQuitar').onclick = () => { f.ubicacion = null; this.pintarUbic(); this.guardar(); };
+  },
+  ubicar(modo) {
+    if (!navigator.geolocation) return avisar('Este aparato no da la ubicación.');
+    avisar('📍 Buscando ubicación… puede tardar al aire libre.', 4000);
+    navigator.geolocation.getCurrentPosition(p => {
+      const dec = modo === 'exacta' ? 6 : modo === 'aprox1' ? 2 : 1, red = x => Number(x.toFixed(dec));
+      this.reg.ficha.ubicacion = { lat: red(p.coords.latitude), lon: red(p.coords.longitude), precisionM: modo === 'exacta' ? p.coords.accuracy : null, altitud: modo === 'exacta' && p.coords.altitude != null ? Math.round(p.coords.altitude) : null, modo, fecha: Date.now() };
+      this.pintarUbic(); this.guardar(); avisar('📍 Ubicación guardada.');
+    }, e => avisar('No se pudo obtener la ubicación: ' + e.message, 5000), { enableHighAccuracy: modo === 'exacta', timeout: 30000, maximumAge: 60000 });
+  },
+  pintarRep() {
+    const f = this.reg.ficha, conf = f.confidencial;
+    $('fPart').innerHTML = (f.participantes || []).map((p, i) => `<div class="rep"><div class="fila">
+      <input type="text" data-rep="participantes" data-i="${i}" data-k="nombre" value="${esc(p.nombre)}" maxlength="200" placeholder="${conf ? 'Código (p. ej. P01)' : 'Nombre o código'}" aria-label="Nombre">
+      <input type="text" data-rep="participantes" data-i="${i}" data-k="rol" value="${esc(p.rol)}" list="dlRoles" placeholder="Rol" aria-label="Rol" style="max-width:180px">
+      <button class="chico" data-quitar="participantes" data-i="${i}" aria-label="Quitar">✕</button></div>
+      ${conf ? '' : `<input type="text" data-rep="participantes" data-i="${i}" data-k="nota" value="${esc(p.nota || '')}" maxlength="300" placeholder="Comunidad, edad aproximada, otros datos que acepte compartir" style="margin-top:6px">`}</div>`).join('')
+      + `<datalist id="dlRoles">${ROLES.map(x => `<option value="${x}">`).join('')}</datalist>`;
+    $('fTrad').innerHTML = (f.traducciones || []).map((t, i) => `<div class="rep"><div class="fila">
+      <input type="text" data-rep="traducciones" data-i="${i}" data-k="lengua" value="${esc(t.lengua)}" maxlength="120" placeholder="Lengua" aria-label="Lengua">
+      <input type="text" data-rep="traducciones" data-i="${i}" data-k="autor" value="${esc(t.autor)}" maxlength="200" placeholder="Quién tradujo" aria-label="Quién tradujo">
+      <button class="chico" data-quitar="traducciones" data-i="${i}" aria-label="Quitar">✕</button></div>
+      <textarea data-rep="traducciones" data-i="${i}" data-k="texto" id="trad-${i}" maxlength="100000" placeholder="Traducción" style="margin-top:6px">${esc(t.texto)}</textarea>
+      <div class="fila fija"><button class="chico" data-enlazar="trad-${i}">🔗 Enlazar</button></div><div class="vista-texto oculto" id="vista-trad-${i}"></div></div>`).join('');
+    $('fFuentes').innerHTML = (f.fuentes || []).map((s, i) => `<div class="rep"><div class="fila">
+      <input type="text" data-rep="fuentes" data-i="${i}" data-k="titulo" value="${esc(s.titulo)}" maxlength="300" placeholder="Título o referencia" aria-label="Título">
+      <button class="chico" data-quitar="fuentes" data-i="${i}" aria-label="Quitar">✕</button></div>
+      <input type="url" data-rep="fuentes" data-i="${i}" data-k="enlace" value="${esc(s.enlace)}" maxlength="1000" placeholder="https://… (opcional)" style="margin-top:6px"></div>`).join('');
+    this.vistas();
+  },
+  pintarClips() {
+    const clips = this.reg.clips || [];
+    $('fClips').innerHTML = clips.length ? clips.map((c, i) => `<div class="clip ${c.descartado ? 'descartado' : ''}">
+      <div class="fila fija"><b>#${c.n}</b><span class="t">${relojFino(c.desde)} → ${relojFino(c.hasta)} · ${(c.hasta - c.desde).toFixed(1)} s</span>
+        <button class="chico" data-oirclip="${i}">▶ Oír</button>
+        <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--texto)"><input type="checkbox" data-clip="${i}" data-k="descartado" ${c.descartado ? 'checked' : ''}> descartado</label></div>
+      <div class="fila"><input type="text" data-clip="${i}" data-k="etiqueta" value="${esc(c.etiqueta)}" maxlength="120" placeholder="Etiqueta (p. ej. la palabra)" aria-label="Etiqueta del clip ${c.n}">
+        <input type="text" data-clip="${i}" data-k="traduccion" value="${esc(c.traduccion)}" maxlength="300" placeholder="Traducción (opcional)" aria-label="Traducción"></div>
+      <details style="margin-top:4px"><summary class="nota">Ajustar o anotar</summary>
+        <div class="fila"><div><label>Desde (s)</label><input type="text" inputmode="decimal" data-clip="${i}" data-k="desde" value="${c.desde.toFixed(2)}"></div><div><label>Hasta (s)</label><input type="text" inputmode="decimal" data-clip="${i}" data-k="hasta" value="${c.hasta.toFixed(2)}"></div></div>
+        <input type="text" data-clip="${i}" data-k="texto" value="${esc(c.texto)}" maxlength="2000" placeholder="Transcripción o nota del clip" style="margin-top:6px">
+        <div class="fila fija"><button class="chico" data-quitarclip="${i}">✕ Quitar clip</button></div></details>
+      <div id="clipAudio-${i}"></div></div>`).join('') : '<p class="nota">Sin clips: esta grabación no tiene marcas. Puedes cortar clips a mano.</p>';
+  },
+  pintarAdj() {
+    $('nAdj').textContent = this.adjuntos.length;
+    $('fAdj').innerHTML = this.adjuntos.length ? this.adjuntos.map(a => `<div class="adj"><span class="ico">${iconoDe(a.tipo, a.nombre)}</span>
+      <div class="info"><b>${esc(a.nombre)}</b><span class="nota">${mb(a.tam)}</span>
+        <select data-adjk="papel" data-id="${a.id}" style="margin-top:4px">${Object.entries(PAPELES).map(([k, n]) => `<option value="${k}" ${k === a.papel ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <input type="text" data-adjk="nota" data-id="${a.id}" value="${esc(a.nota || '')}" maxlength="500" placeholder="Nota (qué es, quién lo hizo…)" style="margin-top:4px">
+        <div class="fila fija"><button class="chico" data-adj="${a.id}">👁 Abrir</button><button class="chico" data-quitaradj="${a.id}">✕ Quitar</button></div></div></div>`).join('') : '<p class="nota">Sin adjuntos.</p>';
+  },
+  vistas() {
+    document.querySelectorAll('#vFicha textarea').forEach(t => {
+      const v = $('vista-' + t.id); if (!v) return;
+      const tiene = RE_ENLACE.test(t.value); RE_ENLACE.lastIndex = 0;
+      v.classList.toggle('oculto', !tiene); if (tiene) v.innerHTML = '🔗 ' + textoConEnlaces(t.value, this.adjuntos);
+    });
+  },
+  /* ── Edición ── */
+  poner(ruta, valor) {
+    const f = this.reg.ficha, mapa = { transLengua: 'transcripcion.lengua', transTexto: 'transcripcion.texto', consNota: 'consentimiento.nota' };
+    const p = (mapa[ruta] || ruta).split('.'); let o = f; for (let i = 0; i < p.length - 1; i++) o = o[p[i]];
+    o[p.at(-1)] = ruta === 'fechaHora' ? (valor ? valor + ':00' : '') : valor;
+    this.guardar();
+  },
+  async agregarAdjuntos(archivos, papel) {
+    let n = 0;
+    for (const f of archivos) {
+      const a = { id: 'A' + Date.now().toString(36) + azar(4), grabacion: this.reg.id, nombre: f.name || ('adjunto-' + n), tipo: f.type || '', tam: f.size,
+        papel: papel || (/^image\//.test(f.type) ? 'foto' : 'otro'), nota: '', blob: f, fecha: Date.now() };
+      try { await DB.poner('adjuntos', a); this.adjuntos.push(a); n++; } catch (e) { avisar('No se pudo guardar «' + f.name + '»: ' + e.message, 5000); }
+    }
+    if (n) { this.reg.modificada = Date.now(); await this.guardar(true); this.pintarAdj(); avisar(`📎 ${n} adjunto(s) guardado(s).`); }
+  },
+  abrirAdjunto(id) {
+    const a = this.adjuntos.find(x => x.id === id); if (!a) return;
+    const url = URL.createObjectURL(new File([a.blob], a.nombre, { type: a.tipo || 'application/octet-stream' }));
+    if (/^(image|audio|video|text)\/|pdf/.test(a.tipo)) window.open(url, '_blank');
+    else { const l = document.createElement('a'); l.href = url; l.download = a.nombre; document.body.appendChild(l); l.click(); l.remove(); }
+  },
+  async quitarAdjunto(id) {
+    const a = this.adjuntos.find(x => x.id === id); if (!a || !confirm(`¿Quitar «${a.nombre}» de esta grabación?`)) return;
+    await DB.quitar('adjuntos', id); this.adjuntos = this.adjuntos.filter(x => x.id !== id);
+    this.reg.modificada = Date.now(); await this.guardar(true); this.pintarAdj(); this.vistas();
+  },
+  enlazar(idCampo) {
+    const t = $(idCampo); if (!t) return;
+    const sel = t.value.slice(t.selectionStart, t.selectionEnd), ini = t.selectionStart, fin = t.selectionEnd;
+    const v = Ventana.abrir(`<h2>🔗 Enlazar</h2>
+      <label for="enTexto">Palabras que se verán</label><input type="text" id="enTexto" value="${esc(sel)}" maxlength="200" placeholder="Ej. la letra completa">
+      <label for="enAdj">A un adjunto de esta grabación</label><select id="enAdj"><option value="">—</option>${this.adjuntos.map(a => `<option value="${a.id}">${iconoDe(a.tipo, a.nombre)} ${esc(a.nombre)}</option>`).join('')}</select>
+      <label for="enUrl">o a una página web</label><input type="url" id="enUrl" placeholder="https://…">
+      <p class="nota">En el texto queda así: [palabras](adjunto) — al exportar, el enlace abre el archivo dentro del paquete.</p>
+      <div class="fila"><button class="prim" id="enOk">Insertar</button><button id="enNo">Cancelar</button></div>`);
+    $('enNo').onclick = () => Ventana.cerrar();
+    $('enOk').onclick = () => {
+      const txt = $('enTexto').value.trim().replace(/[\[\]]/g, ''), dest = $('enAdj').value ? 'adjunto:' + $('enAdj').value : $('enUrl').value.trim();
+      if (!txt) return avisar('Escribe las palabras que se verán.');
+      if (!dest || (!dest.startsWith('adjunto:') && !/^https?:\/\/\S+$/.test(dest))) return avisar('Elige un adjunto o escribe una dirección que empiece con https://');
+      t.value = t.value.slice(0, ini) + `[${txt}](${dest})` + t.value.slice(fin);
+      t.dispatchEvent(new Event('input', { bubbles: true })); Ventana.cerrar(); t.focus();
+    };
+  },
+  /* ── Clips ── */
+  async oirClip(i) {
+    const c = this.reg.clips[i], donde = $('clipAudio-' + i);
+    donde.innerHTML = '<p class="nota">Preparando…</p>';
+    try {
+      const t = await Medios.pcmTramo(this.reg, c.desde, c.hasta); if (!t) throw new Error('sin audio');
+      donde.innerHTML = `<audio controls autoplay src="${URL.createObjectURL(Medios.wav(Medios.normalizar(t.pcm), t.sr, t.ch))}" style="width:100%;margin-top:6px"></audio>`;
+    } catch (e) { donde.innerHTML = '<p class="nota">No se pudo: ' + esc(e.message) + '</p>'; }
+  },
+  clipNuevo() {
+    const clips = this.reg.clips = this.reg.clips || [], ult = clips.at(-1);
+    const desde = ult ? ult.hasta : 0, hasta = Math.min(this.reg.duracion, desde + 2);
+    if (hasta - desde < 0.2) return avisar('No queda audio después del último clip.');
+    clips.push({ n: (clips.reduce((m, x) => Math.max(m, x.n), 0)) + 1, desde, hasta, etiqueta: '', texto: '', traduccion: '', descartado: false });
+    this.pintarClips(); this.guardar();
+  },
+  /* ── Consentimiento ── */
+  firmar() {
+    Ventana.abrir(`<h2>✍️ Firma de consentimiento</h2><p class="nota">Firma con el dedo. Queda como adjunto «Consentimiento».</p>
+      <canvas class="firma" id="lienzo" width="900" height="360" aria-label="Espacio para firmar"></canvas>
+      <input type="text" id="firmaNombre" maxlength="200" placeholder="Nombre o código de quien firma" style="margin-top:8px">
+      <div class="fila"><button class="prim" id="firmaOk">Guardar firma</button><button id="firmaBorrar">Borrar</button><button id="firmaNo">Cancelar</button></div>`);
+    const cv = $('lienzo'), cx = cv.getContext('2d'); let dib = false, hay = false;
+    cx.lineWidth = 5; cx.lineCap = 'round'; cx.strokeStyle = '#111';
+    const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+    cv.onpointerdown = e => { dib = true; hay = true; cv.setPointerCapture(e.pointerId); cx.beginPath(); cx.moveTo(...pos(e)); };
+    cv.onpointermove = e => { if (dib) { cx.lineTo(...pos(e)); cx.stroke(); } };
+    cv.onpointerup = cv.onpointercancel = () => { dib = false; };
+    $('firmaBorrar').onclick = () => { cx.clearRect(0, 0, cv.width, cv.height); hay = false; };
+    $('firmaNo').onclick = () => Ventana.cerrar();
+    $('firmaOk').onclick = () => {
+      if (!hay) return avisar('Primero firma en el recuadro.');
+      const quien = $('firmaNombre').value.trim();
+      cx.fillStyle = '#111'; cx.font = '22px sans-serif'; cx.fillText(`${quien ? quien + ' · ' : ''}${new Date().toLocaleString('es-MX')} · ${this.reg.id}`, 12, cv.height - 14);
+      cv.toBlob(async b => {
+        await this.agregarAdjuntos([new File([b], `consentimiento_firma${quien ? '_' + nombreArchivo(quien, 30) : ''}.png`, { type: 'image/png' })], 'consentimiento');
+        const c = this.reg.ficha.consentimiento; if (!c.forma) c.forma = 'firma'; if (c.estado === 'pendiente') c.estado = 'otorgado';
+        await this.guardar(true); Ventana.cerrar(); this.pintar(); this.cargarAudio();
+      }, 'image/png');
+    };
+  },
+  async consentimientoOral() {
+    let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { return avisar('No se pudo usar el micrófono: ' + e.message); }
+    const mime = formatoConsulta(), mr = new MediaRecorder(stream, mime ? { mimeType: mime } : {}), partes = [], t0 = Date.now();
+    mr.ondataavailable = e => e.data.size && partes.push(e.data); mr.start(1000);
+    Ventana.abrir(`<h2>🎙️ Consentimiento oral</h2><p class="nota">Pide a la persona que diga su nombre (o código), la fecha y para qué usos da su permiso.</p>
+      <div id="tiempoCons" style="font-size:34px;text-align:center;font-variant-numeric:tabular-nums">00:00:00</div>
+      <div class="fila"><button class="prim" id="consFin">⏹ Terminar y guardar</button><button id="consNo">Cancelar</button></div>`, () => { if (mr.state !== 'inactive') mr.stop(); stream.getTracks().forEach(x => x.stop()); clearInterval(iv); });
+    const iv = setInterval(() => $('tiempoCons') && ($('tiempoCons').textContent = reloj((Date.now() - t0) / 1000)), 500);
+    $('consNo').onclick = () => { partes.length = 0; Ventana.cerrar(); };
+    $('consFin').onclick = () => {
+      mr.onstop = async () => {
+        stream.getTracks().forEach(x => x.stop()); clearInterval(iv);
+        if (!partes.length) return;
+        const tipo = (mime || 'audio/webm').split(';')[0];
+        await this.agregarAdjuntos([new File(partes, `consentimiento_oral_${sello(new Date())}.${extensionDe(tipo)}`, { type: tipo })], 'consentimiento');
+        const c = this.reg.ficha.consentimiento; if (!c.forma) c.forma = 'oral'; if (c.estado === 'pendiente') c.estado = 'otorgado';
+        await this.guardar(true); this.pintar(); this.cargarAudio();
+      };
+      mr.stop(); const v = $('velo'); if (v) v.remove();
+    };
+  },
+  async borrar() {
+    const f = this.reg.ficha;
+    if (!confirm(`¿Borrar «${f.titulo}» de este aparato, con su audio y sus adjuntos?${!this.reg.respaldo ? '\n\n⚠️ Esta grabación NO tiene respaldo.' : ''}`)) return;
+    if (!this.reg.respaldo && prompt('Para confirmar, escribe BORRAR') !== 'BORRAR') return;
+    await DB.borrarGrabacion(this.reg.id); Acervo.sel.delete(this.reg.id); avisar('🗑 Borrada.'); Nav.ir('vAcervo');
   }
-  return l.join('\n');
-}
-async function informeCompleto() { const s = (await DB.todas('sesiones')).filter(x => x.estado === 'terminada').sort((a, b) => a.inicio - b.inicio); return informe(s); }
-$('informeCopiar').onclick = async () => { const t = await informeCompleto(); $('informe').textContent = t; try { await navigator.clipboard.writeText(t); $('informeCopiar').textContent = '✅ Copiado'; setTimeout(() => $('informeCopiar').textContent = '📋 Copiar informe', 2000); } catch (e) { $('informe').closest('details').open = true; } };
-$('informeCompartir').onclick = async () => {
-  const t = await informeCompleto(); $('informe').textContent = t;
-  // Como archivo .txt: algunas apps recortan los textos largos que se comparten
-  const f = new File([t], 'informe_virgula_' + sello(new Date()) + '.txt', { type: 'text/plain' });
-  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Informe Vírgula' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
 };
 
-/* ─────────── Instalar ─────────── */
-let pedirInstalar = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedirInstalar = e; $('instalar').classList.remove('oculto'); });
-$('instalar').onclick = async () => { if (!pedirInstalar) return; pedirInstalar.prompt(); await pedirInstalar.userChoice; pedirInstalar = null; $('instalar').classList.add('oculto'); };
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+/* Eventos de la ficha (delegados) */
+$('vFicha').addEventListener('input', e => {
+  const x = e.target, f = Ficha.reg && Ficha.reg.ficha; if (!f) return;
+  if (x.dataset.c) { Ficha.poner(x.dataset.c, x.value); if (x.tagName === 'TEXTAREA') Ficha.vistas(); return; }
+  if (x.dataset.rep) { f[x.dataset.rep][x.dataset.i][x.dataset.k] = x.value; Ficha.guardar(); if (x.tagName === 'TEXTAREA') Ficha.vistas(); return; }
+  if (x.dataset.clip && x.type !== 'checkbox') {
+    const c = Ficha.reg.clips[x.dataset.clip], k = x.dataset.k;
+    if (k === 'desde' || k === 'hasta') { const v = parseFloat(x.value.replace(',', '.')); if (!isNaN(v) && v >= 0 && v <= Ficha.reg.duracion) c[k] = v; } else c[k] = x.value;
+    Ficha.guardar(); return;
+  }
+  if (x.dataset.adjk) { const a = Ficha.adjuntos.find(y => y.id === x.dataset.id); a[x.dataset.adjk] = x.value; DB.poner('adjuntos', a); Ficha.reg.modificada = Date.now(); Ficha.guardar(); }
+});
+$('vFicha').addEventListener('change', e => {
+  const x = e.target;
+  if (x.dataset.clip && x.type === 'checkbox') { Ficha.reg.clips[x.dataset.clip].descartado = x.checked; x.closest('.clip').classList.toggle('descartado', x.checked); Ficha.guardar(); }
+  if (x.dataset.c && x.tagName === 'SELECT') Ficha.poner(x.dataset.c, x.value);
+  if (x.dataset.adjk === 'papel') { const a = Ficha.adjuntos.find(y => y.id === x.dataset.id); a.papel = x.value; DB.poner('adjuntos', a); Ficha.reg.modificada = Date.now(); Ficha.guardar(); }
+  if (x.id === 'fileAdj' && x.files.length) { Ficha.agregarAdjuntos([...x.files], x.dataset.papel); x.value = ''; }
+});
+$('vFicha').addEventListener('click', e => {
+  const b = e.target.closest('[data-agregar],[data-quitar],[data-enlazar],[data-adj],[data-quitaradj],[data-adjuntar],[data-oirclip],[data-quitarclip]'); if (!b) return;
+  const f = Ficha.reg.ficha;
+  if (b.dataset.agregar) { const nuevo = { participantes: { nombre: '', rol: '', nota: '' }, traducciones: { lengua: '', autor: '', texto: '' }, fuentes: { titulo: '', enlace: '' } }[b.dataset.agregar]; (f[b.dataset.agregar] = f[b.dataset.agregar] || []).push(nuevo); Ficha.pintarRep(); Ficha.guardar(); }
+  if (b.dataset.quitar) { f[b.dataset.quitar].splice(Number(b.dataset.i), 1); Ficha.pintarRep(); Ficha.guardar(); }
+  if (b.dataset.enlazar) Ficha.enlazar(b.dataset.enlazar);
+  if (b.dataset.adj) { e.preventDefault(); Ficha.abrirAdjunto(b.dataset.adj); }
+  if (b.dataset.quitaradj) Ficha.quitarAdjunto(b.dataset.quitaradj);
+  if (b.dataset.adjuntar !== undefined) { const inp = $('fileAdj'); inp.dataset.papel = b.dataset.adjuntar; inp.accept = b.dataset.camara ? 'image/*' : ''; b.dataset.camara ? inp.setAttribute('capture', 'environment') : inp.removeAttribute('capture'); inp.click(); }
+  if (b.dataset.oirclip) Ficha.oirClip(Number(b.dataset.oirclip));
+  if (b.dataset.quitarclip && confirm('¿Quitar este clip? El audio de la grabación no cambia.')) { Ficha.reg.clips.splice(Number(b.dataset.quitarclip), 1); Ficha.pintarClips(); Ficha.guardar(); }
+});
 
-/* ─────────── Arranque ─────────── */
-$('grabar').onclick = () => G ? null : grabar();
-$('marcar').onclick = marcar; $('pausa').onclick = pausa; $('detener').onclick = detener;
-$('buscarMic').onclick = buscarMicrofonos;
-window.addEventListener('beforeunload', e => { if (G) { e.preventDefault(); e.returnValue = ''; } });
-if (!navigator.mediaDevices || !window.AudioContext) aviso('Este navegador no puede grabar. Usa Chrome en Android.', 'mal');
-(async () => { await revisarPendientes(); await pintarSesiones(); actualizarEspacio(); })();
+/* ═════════════════ EXPORTAR: paquetes .zip para archivo, respaldo y catálogo ═════════════════ */
+/* ZIP propio, sin compresión (el audio ya viene comprimido o es WAV, y así no se carga todo en memoria). */
+const CRC32 = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; } return t; })();
+async function crc32Blob(b, alAvanzar) {
+  let c = 0xffffffff; const paso = 8 * 1048576;
+  for (let o = 0; o < b.size; o += paso) {
+    const u = new Uint8Array(await b.slice(o, o + paso).arrayBuffer());
+    for (let i = 0; i < u.length; i++) c = CRC32[(c ^ u[i]) & 0xff] ^ (c >>> 8);
+    alAvanzar && alAvanzar(Math.min(paso, b.size - o));
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+const ZIP_MAX = 4 * 1024 * 1048576 - 65536;
+async function hacerZip(entradas, alAvanzar) {   // entradas: [{ruta, datos: Blob|string, fecha}]
+  const partes = [], central = [], enc = new TextEncoder(); let pos = 0;
+  for (const e of entradas) {
+    const datos = typeof e.datos === 'string' ? new Blob([e.datos]) : e.datos, nombre = enc.encode(e.ruta), crc = await crc32Blob(datos, alAvanzar);
+    const d = new Date(e.fecha || Date.now()), hora = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dia = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    const loc = new DataView(new ArrayBuffer(30));
+    loc.setUint32(0, 0x04034b50, true); loc.setUint16(4, 20, true); loc.setUint16(6, 0x0800, true); loc.setUint16(8, 0, true);
+    loc.setUint16(10, hora, true); loc.setUint16(12, dia, true); loc.setUint32(14, crc, true); loc.setUint32(18, datos.size, true); loc.setUint32(22, datos.size, true);
+    loc.setUint16(26, nombre.length, true); loc.setUint16(28, 0, true);
+    const cen = new DataView(new ArrayBuffer(46));
+    cen.setUint32(0, 0x02014b50, true); cen.setUint16(4, 0x031e, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x0800, true); cen.setUint16(10, 0, true);
+    cen.setUint16(12, hora, true); cen.setUint16(14, dia, true); cen.setUint32(16, crc, true); cen.setUint32(20, datos.size, true); cen.setUint32(24, datos.size, true);
+    cen.setUint16(28, nombre.length, true); cen.setUint32(38, (0o100644 << 16) >>> 0, true); cen.setUint32(42, pos, true);
+    partes.push(loc.buffer, nombre, datos); central.push(cen.buffer, nombre);
+    pos += 30 + nombre.length + datos.size;
+    if (pos > ZIP_MAX) throw new Error('El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.');
+  }
+  const tamCentral = central.reduce((a, b) => a + b.byteLength, 0), fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, entradas.length, true); fin.setUint16(10, entradas.length, true);
+  fin.setUint32(12, tamCentral, true); fin.setUint32(16, pos, true);
+  return new Blob([...partes, ...central, fin.buffer], { type: 'application/zip' });
+}
+
+const csv = filas => '﻿' + filas.map(f => f.map(v => { const s = v == null ? '' : String(v); return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\r\n') + '\r\n';
+const etiquetaClip = (c, reg) => nombreArchivo(c.etiqueta, 60) || ('clip ' + c.n);
+const rutaClip = (c, reg, ext) => `clips/${etiquetaClip(c, reg)}__${reg.id}-${dos(c.n)}.${ext}`;
+/** Nombre del .zip solo con letras básicas: algunos navegadores descartan nombres con ñ, acentos o comillas. */
+const ascii = s => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\w.\- ]+/g, '').replace(/\s+/g, '-');
+const rutaAdjunto = a => `adjuntos/${a.grabacion}/${a.id}__${nombreArchivo(a.nombre, 80) || 'archivo'}`;
+
+const Exportar = {
+  async abrir(ids) {
+    if (!ids.length) return avisar('Elige al menos una grabación.');
+    const regs = (await Promise.all(ids.map(id => DB.leer('grabaciones', id)))).filter(Boolean);
+    const adj = {}; for (const r of regs) adj[r.id] = await DB.porGrabacion('adjuntos', r.id);
+    const tam = {}; for (const r of regs) { const tr = await Medios.trozos(r); tam[r.id] = { archivo: tr.archivo.reduce((a, x) => a + x.datos.size, 0), consulta: tr.consulta.reduce((a, x) => a + x.datos.size, 0) }; }
+    this.regs = regs; this.adj = adj; this.tam = tam;
+    const nAdj = Object.values(adj).reduce((a, l) => a + l.length, 0), nClips = regs.reduce((a, r) => a + (r.clips || []).filter(c => !c.descartado).length, 0);
+    const conf = regs.filter(r => r.ficha.confidencial).length, sinCons = regs.filter(r => r.ficha.consentimiento.estado === 'pendiente').length, ogg = !!window.AudioEncoder;
+    const op = (n, v, txt, on) => `<label><input type="radio" name="${n}" value="${v}" ${on ? 'checked' : ''}> ${txt}</label>`;
+    Ventana.abrir(`<h2>📦 Exportar ${regs.length === 1 ? '«' + esc(regs[0].ficha.titulo) + '»' : regs.length + ' grabaciones'}</h2>
+      ${conf ? `<div class="banda aviso">🔒 ${conf} grabación(es) son confidenciales. Comparte el paquete solo con quien deba tenerlo.</div>` : ''}
+      ${sinCons ? `<div class="banda aviso">⏳ ${sinCons} grabación(es) tienen el consentimiento pendiente.</div>` : ''}
+      <h3>Audio completo</h3><div class="op">
+        ${op('eAudio', 'ambos', '🗄️ Archivo (WAV) + 🔊 consulta', true)}${op('eAudio', 'consulta', '🔊 Solo consulta (ligero)')}${op('eAudio', 'archivo', '🗄️ Solo archivo (WAV)')}${op('eAudio', 'ninguno', 'Sin audio completo (solo fichas y clips)')}</div>
+      ${nClips ? `<h3>Clips (${nClips})</h3><div class="op">
+        ${op('eClips', 'wavogg', '🎯 WAV + Ogg, con nombre de su etiqueta (para el catálogo)', ogg)}${op('eClips', 'wav', 'Solo WAV', !ogg)}${op('eClips', 'no', 'Sin clips')}</div>
+        <p class="nota">Los clips salen con el volumen ajustado para escuchar. Su nombre es la etiqueta: el catálogo de lenguas los reconoce con «📥 Traer audios en lote».</p>` : ''}
+      ${nAdj ? `<h3>Adjuntos (${nAdj})</h3><div class="op">${op('eAdj', 'todos', 'Todos', true)}${op('eAdj', 'ninguno', 'Ninguno')}${op('eAdj', 'elegir', 'Elegir…')}</div>
+        <div id="eAdjLista" class="oculto">${regs.map(r => adj[r.id].length ? `<p class="nota" style="margin:8px 0 2px"><b>${esc(r.ficha.titulo)}</b></p>` + adj[r.id].map(a => `<label class="op"><input type="checkbox" data-eadj="${a.id}" checked> ${iconoDe(a.tipo, a.nombre)} ${esc(a.nombre)} · ${mb(a.tam)}${a.papel === 'consentimiento' ? ' · 🤝' : ''}</label>`).join('') : '').join('')}</div>` : ''}
+      ${regs.length > 1 ? `<h3>Empaque</h3><div class="op">${op('eZip', 'uno', 'Un solo paquete', true)}${op('eZip', 'cada', 'Un paquete por grabación')}</div>` : ''}
+      <div class="panel" id="eTam" style="margin-top:12px"></div>
+      <div id="eProgreso" class="nota"></div>
+      <div class="fila"><button class="prim" id="eOk">📦 Preparar y compartir</button><button id="eNo">Cancelar</button></div>`);
+    const v = $('velo');
+    v.addEventListener('change', e => { if (e.target.name === 'eAdj') $('eAdjLista').classList.toggle('oculto', e.target.value !== 'elegir'); this.estimar(); });
+    $('eNo').onclick = () => Ventana.cerrar();
+    $('eOk').onclick = () => this.hacer();
+    this.estimar();
+  },
+  opciones() {
+    const adjElegidos = new Set([...document.querySelectorAll('[data-eadj]:checked')].map(x => x.dataset.eadj)), modoAdj = leerRadio('eAdj') || 'todos';
+    return { audio: leerRadio('eAudio') || 'ambos', clips: leerRadio('eClips') || 'no', zip: leerRadio('eZip') || 'uno',
+      adj: a => modoAdj === 'todos' || (modoAdj === 'elegir' && adjElegidos.has(a.id)), modoAdj };
+  },
+  tamanos(o) {
+    return this.regs.map(r => {
+      const t = this.tam[r.id], s = r.tecnica.sr, ch = r.tecnica.canales;
+      let b = 20000 + (o.audio === 'ambos' || o.audio === 'archivo' ? t.archivo + (t.archivo ? 44 : 0) : 0) + (o.audio === 'ambos' || o.audio === 'consulta' ? t.consulta : 0);
+      if (o.clips !== 'no') (r.clips || []).filter(c => !c.descartado).forEach(c => { const d = c.hasta - c.desde; b += d * s * ch * 2 + 44 + (o.clips === 'wavogg' ? d * (ch === 2 ? 12000 : 6000) : 0); });
+      this.adj[r.id].filter(o.adj).forEach(a => { b += a.tam; });
+      return b;
+    });
+  },
+  estimar() {
+    const o = this.opciones(), t = this.tamanos(o), total = t.reduce((a, b) => a + b, 0), mayor = o.zip === 'cada' ? Math.max(...t) : total;
+    const canal = mayor < 16 * 1048576 ? ['ok', '✅ Cabe en WhatsApp como documento, correo (hasta ~20 MB) o Drive.']
+      : mayor < 100 * 1048576 ? ['ok', '✅ WhatsApp como documento, Drive o cable USB. Para correo es grande: usa Drive.']
+      : mayor < 2 * 1024 * 1048576 ? ['aviso', '📁 Mejor Drive, cable USB o memoria. WhatsApp acepta documentos de hasta 2 GB pero puede tardar mucho con datos móviles.']
+      : ['mal', '⚠️ Muy grande: elige «un paquete por grabación», «solo consulta» o menos adjuntos. Por cable o Drive con wifi.'];
+    $('eTam').innerHTML = `<b>Tamaño aproximado: ${mb(total)}</b>${o.zip === 'cada' && t.length > 1 ? ` · ${t.length} paquetes, el mayor de ${mb(mayor)}` : ''}
+      <div class="banda ${canal[0]}" style="margin-top:8px">${canal[1]}</div>
+      <p class="nota">Referencia: 1 hora de archivo WAV mono ≈ 330 MB; la consulta ≈ 21 MB. Antes de compartir, el aparato necesita espacio libre parecido al tamaño del paquete.</p>`;
+  },
+  async hacer() {
+    const o = this.opciones(), boton = $('eOk'), prog = $('eProgreso');
+    boton.disabled = true;
+    try {
+      const grupos = o.zip === 'cada' ? this.regs.map(r => [r]) : [this.regs], archivos = [];
+      let hecho = 0; const total = this.tamanos(o).reduce((a, b) => a + b, 0), avance = n => { hecho += n; prog.textContent = `Preparando… ${Math.min(99, Math.round(hecho / total * 100))} %`; };
+      for (const g of grupos) {
+        const entradas = await this.entradas(g, o, txt => { prog.textContent = txt; });
+        const zip = await hacerZip(entradas, avance);
+        const nombre = g.length === 1 ? `${ascii(Medios.nombreBase(g[0]))}.zip` : `Virgula_${sello(new Date())}_${g.length}_grabaciones.zip`;
+        archivos.push(new File([zip], nombre, { type: 'application/zip' }));
+      }
+      // El menú de compartir pide un toque reciente: por eso se ofrece aquí, con el paquete ya listo
+      const puede = navigator.canShare && navigator.canShare({ files: archivos });
+      prog.innerHTML = `<div class="banda ok">✅ Listo: ${archivos.length} paquete(s), ${mb(archivos.reduce((a, f) => a + f.size, 0))}.</div>
+        <div class="fila"><button class="prim" id="eGuardar">⬇️ Guardar en el aparato</button>${puede ? '<button id="eCompartir">📤 Compartir</button>' : ''}</div>
+        <p class="nota">${puede ? '' : 'Este navegador no deja compartir .zip directamente: guárdalo y compártelo desde Descargas o Archivos (WhatsApp, Drive, correo…). '}En la computadora queda en Descargas.</p>`;
+      boton.remove();
+      const listo = async r => { if (r === 'cancelado') return; await this.marcarRespaldo(o); avisar(r === 'compartido' ? '📦 Paquete compartido.' : '📦 Paquete guardado en Descargas.', 5000); Ventana.cerrar(); if (Nav.actual === 'vAcervo') Acervo.pintar(); };
+      $('eGuardar').onclick = async () => listo(await descargarArchivos(archivos));
+      if (puede) $('eCompartir').onclick = async () => listo(await compartirArchivos(archivos, 'Vírgula · grabaciones'));
+    } catch (e) { prog.textContent = '⚠️ ' + e.message; boton.disabled = false; }
+  },
+  async marcarRespaldo(o) {
+    // Es respaldo completo si van los audios tal como se grabaron y todos los adjuntos
+    if (o.audio !== 'ambos' || o.modoAdj !== 'todos') return;
+    const ahora = Date.now();
+    for (const r of this.regs) { const x = await DB.leer('grabaciones', r.id); if (x) { x.respaldo = ahora; if (x.modificada > ahora) x.modificada = ahora; await DB.poner('grabaciones', x); } }
+  },
+  /** Todo lo que va dentro de un paquete. */
+  async entradas(regs, o, decir) {
+    const e = [], datos = [], ahora = Date.now();
+    for (const r of regs) {
+      decir(`Preparando «${r.ficha.titulo}»…`);
+      const a = await Medios.archivos(r), base = Medios.nombreBase(r), rutas = {};
+      if (a.wav && (o.audio === 'ambos' || o.audio === 'archivo')) { rutas.archivo = 'audios/' + a.wav.name; e.push({ ruta: rutas.archivo, datos: a.wav, fecha: r.creada }); }
+      if (a.consulta && (o.audio === 'ambos' || o.audio === 'consulta')) { rutas.consulta = 'audios/' + a.consulta.name; e.push({ ruta: rutas.consulta, datos: a.consulta, fecha: r.creada }); }
+      const clips = [];
+      for (const c of (r.clips || [])) {
+        const x = Object.assign({}, c);
+        if (!c.descartado && o.clips !== 'no') {
+          decir(`Cortando clip ${c.n} de «${r.ficha.titulo}»…`);
+          const t = await Medios.pcmTramo(r, c.desde, c.hasta);
+          if (t && t.pcm.length) {
+            const pcm = Medios.normalizar(t.pcm);
+            x.archivoWav = rutaClip(c, r, 'wav'); e.push({ ruta: x.archivoWav, datos: Medios.wav(pcm, t.sr, t.ch), fecha: r.creada });
+            if (o.clips === 'wavogg') { const ogg = await Medios.ogg(pcm, t.sr, t.ch); if (ogg) { x.archivoOgg = rutaClip(c, r, 'ogg'); e.push({ ruta: x.archivoOgg, datos: ogg, fecha: r.creada }); } }
+          }
+        }
+        clips.push(x);
+      }
+      const adjuntos = this.adj[r.id].map(ad => { const m = { id: ad.id, nombre: ad.nombre, tipo: ad.tipo, tam: ad.tam, papel: ad.papel, nota: ad.nota, fecha: ad.fecha };
+        if (o.adj(ad)) { m.archivo = rutaAdjunto(ad); e.push({ ruta: m.archivo, datos: ad.blob, fecha: ad.fecha }); } else m.noIncluido = true; return m; });
+      const copia = JSON.parse(JSON.stringify(r)); delete copia.estado;
+      datos.push(Object.assign(copia, { clips, adjuntos, archivos: rutas }));
+    }
+    const paquete = { formato: FORMATO_PAQUETE, app: 'Vírgula · memoria sonora viva', version: VERSION, exportado: fechaISO(ahora), grabaciones: datos };
+    e.unshift({ ruta: 'fichas.json', datos: JSON.stringify(paquete, null, 1), fecha: ahora },
+      { ruta: 'fichas.csv', datos: this.csvFichas(datos), fecha: ahora }, { ruta: 'clips.csv', datos: this.csvClips(datos), fecha: ahora },
+      { ruta: 'indice.html', datos: indiceHtml(paquete), fecha: ahora }, { ruta: 'LEEME.txt', datos: LEEME, fecha: ahora });
+    return e;
+  },
+  csvFichas(d) {
+    const cab = ['codigo', 'titulo', 'fecha_hora', 'duracion_s', 'uso', 'lugar', 'latitud', 'longitud', 'precision_ubicacion', 'lenguas', 'palabras_clave', 'participantes', 'quien_grabo',
+      'descripcion', 'transcripcion_lengua', 'transcripcion', 'traducciones', 'fuentes', 'derechos', 'consentimiento', 'consentimiento_forma', 'consentimiento_nota', 'confidencial',
+      'notas', 'archivo_wav', 'archivo_consulta', 'adjuntos', 'clips', 'tramos_sin_audio', 'frecuencia_hz', 'canales', 'microfono', 'ajustes_aparato', 'creada', 'modificada'];
+    return csv([cab, ...d.map(r => { const f = r.ficha, u = f.ubicacion || {}, t = r.tecnica;
+      return [r.id, f.titulo, f.fechaHora, (r.duracion || 0).toFixed(2), USOS[f.uso || ''] && f.uso ? USOS[f.uso] : '', f.lugar, u.lat, u.lon, u.modo, f.lenguas, f.claves,
+        (f.participantes || []).map(p => p.nombre + (p.rol ? ' (' + p.rol + ')' : '')).join('; '), f.quien, f.descripcion, f.transcripcion.lengua, f.transcripcion.texto,
+        (f.traducciones || []).map(x => `[${x.lengua}${x.autor ? ', ' + x.autor : ''}] ${x.texto}`).join('\n'), (f.fuentes || []).map(x => x.titulo + (x.enlace ? ' <' + x.enlace + '>' : '')).join('; '),
+        f.derechos, f.consentimiento.estado, f.consentimiento.forma, f.consentimiento.nota, f.confidencial ? 'sí' : 'no', f.notas, r.archivos.archivo, r.archivos.consulta,
+        r.adjuntos.map(a => a.archivo || a.nombre + ' (no incluido)').join('; '), (r.clips || []).filter(c => !c.descartado).length,
+        (r.silencios || []).map(s => relojFino(s.desde) + '-' + relojFino(s.hasta)).join('; '), t.sr, t.canales, t.microfono,
+        `volumen automático ${t.ajustesPedidos.volAuto ? 'sí' : 'no'}, quitar ruido ${t.ajustesPedidos.ruido ? 'sí' : 'no'}, quitar eco ${t.ajustesPedidos.eco ? 'sí' : 'no'}`, fechaISO(r.creada), fechaISO(r.modificada)]; })]);
+  },
+  csvClips(d) {
+    const filas = [['codigo_grabacion', 'titulo_grabacion', 'clip', 'etiqueta', 'desde_s', 'hasta_s', 'texto', 'traduccion', 'descartado', 'archivo_wav', 'archivo_ogg']];
+    d.forEach(r => (r.clips || []).forEach(c => filas.push([r.id, r.ficha.titulo, c.n, c.etiqueta, c.desde.toFixed(2), c.hasta.toFixed(2), c.texto, c.traduccion, c.descartado ? 'sí' : 'no', c.archivoWav, c.archivoOgg])));
+    return csv(filas);
+  }
+};
+
+const LEEME = `VÍRGULA · memoria sonora viva — paquete de grabaciones
+
+Abre indice.html con cualquier navegador para ver las fichas, escuchar los audios y abrir los adjuntos (primero extrae o descomprime el .zip).
+
+Contenido
+  indice.html   Las fichas para leer y escuchar, sin conexión.
+  fichas.json   Todos los datos, completos. Es lo que lee Vírgula al importar este paquete.
+  fichas.csv    Una fila por grabación (se abre en Excel, LibreOffice o Google Sheets).
+  clips.csv     Una fila por clip.
+  audios/       Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).
+  clips/        Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».
+  adjuntos/     Fotos, documentos y consentimientos, en una carpeta por grabación.
+
+Para volver a tener estas grabaciones en Vírgula: 📚 Acervo → 📥 Importar paquete.
+Respeta las condiciones de consentimiento y derechos anotadas en cada ficha.
+`;
+
+/** Página autónoma para leer el paquete sin Vírgula. */
+function indiceHtml(p) {
+  const rutaAdj = a => a.archivo || '#';
+  const t = (s, adj) => textoConEnlaces(s || '', adj, rutaAdj).replace(/\n/g, '<br>');
+  const fila = (k, v) => v ? `<tr><th>${k}</th><td>${v}</td></tr>` : '';
+  const fichas = p.grabaciones.map(r => {
+    const f = r.ficha, u = f.ubicacion, c = f.consentimiento, adj = r.adjuntos;
+    const audio = (ruta, tipo) => ruta ? `<p>${tipo}: <a href="${esc(ruta)}">${esc(ruta.split('/').pop())}</a></p><audio controls preload="none" src="${esc(ruta)}"></audio>` : '';
+    return `<article id="${r.id}"><h2>${esc(f.titulo)}</h2><p class="m">${r.id} · ${esc(f.fechaHora.replace('T', ' '))} · ${reloj(r.duracion)}${f.confidencial ? ' · 🔒 confidencial' : ''}</p>
+      ${audio(r.archivos.consulta, '🔊 Consulta')}${audio(r.archivos.archivo, '🗄️ Archivo')}
+      <table>${fila('Descripción', t(f.descripcion, adj))}${fila('Uso', esc(USOS[f.uso || ''] && f.uso ? USOS[f.uso] : ''))}${fila('Lugar', esc(f.lugar))}
+      ${fila('Ubicación', u ? `<a href="https://www.openstreetmap.org/?mlat=${u.lat}&mlon=${u.lon}">${u.lat}, ${u.lon}</a> (${esc(u.modo)})` : '')}
+      ${fila('Lenguas', esc(f.lenguas))}${fila('Palabras clave', esc(f.claves))}
+      ${fila('Participantes', (f.participantes || []).map(x => esc(x.nombre) + (x.rol ? ' — ' + esc(x.rol) : '') + (x.nota ? ' (' + esc(x.nota) + ')' : '')).join('<br>'))}
+      ${fila('Grabó', esc(f.quien))}${fila('Derechos', esc(f.derechos))}
+      ${fila('Consentimiento', esc(c.estado) + (c.forma ? ' · ' + esc(FORMAS_CONS[c.forma] || c.forma) : '') + (c.nota ? '<br>' + t(c.nota, adj) : ''))}
+      ${fila('Fuentes', (f.fuentes || []).map(x => x.enlace ? `<a href="${esc(x.enlace)}">${esc(x.titulo || x.enlace)}</a>` : esc(x.titulo)).join('<br>'))}
+      ${fila('Notas', t(f.notas, adj))}${fila('Tramos sin audio', (r.silencios || []).map(s => relojFino(s.desde) + '–' + relojFino(s.hasta)).join(', '))}</table>
+      ${f.transcripcion.texto ? `<h3>Transcripción${f.transcripcion.lengua ? ' (' + esc(f.transcripcion.lengua) + ')' : ''}</h3><div class="txt">${t(f.transcripcion.texto, adj)}</div>` : ''}
+      ${(f.traducciones || []).map(x => `<h3>Traducción${x.lengua ? ' — ' + esc(x.lengua) : ''}${x.autor ? ' · ' + esc(x.autor) : ''}</h3><div class="txt">${t(x.texto, adj)}</div>`).join('')}
+      ${(r.clips || []).some(x => !x.descartado) ? `<h3>Clips</h3><table>${r.clips.filter(x => !x.descartado).map(x => `<tr><th>#${x.n} ${esc(x.etiqueta)}</th><td>${relojFino(x.desde)}–${relojFino(x.hasta)}${x.traduccion ? ' · ' + esc(x.traduccion) : ''}${x.texto ? '<br>' + esc(x.texto) : ''}${x.archivoWav ? `<br><audio controls preload="none" src="${esc(x.archivoOgg || x.archivoWav)}"></audio>` : ''}</td></tr>`).join('')}</table>` : ''}
+      ${adj.length ? `<h3>Adjuntos</h3><ul>${adj.map(a => `<li>${a.archivo ? `<a href="${esc(a.archivo)}">${esc(a.nombre)}</a>` : esc(a.nombre) + ' <i>(no incluido)</i>'} · ${esc(PAPELES[a.papel] || a.papel)}${a.nota ? ' — ' + esc(a.nota) : ''}${/^image\//.test(a.tipo) && a.archivo ? `<br><img src="${esc(a.archivo)}" alt="${esc(a.nota || a.nombre)}" loading="lazy">` : ''}</li>`).join('')}</ul>` : ''}
+    </article>`;
+  }).join('');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vírgula · ${p.grabaciones.length} grabación(es)</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px;color:#1a1d24;background:#fbfaf6}h1{font-size:24px}article{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;margin:16px 0}
+.m{color:#666;margin-top:-8px}table{border-collapse:collapse;width:100%}th{text-align:left;vertical-align:top;padding:4px 10px 4px 0;width:28%;color:#444}td{padding:4px 0}audio{width:100%}img{max-width:100%;max-height:320px;margin-top:6px;border-radius:8px}
+.txt{white-space:normal;background:#f6f4ee;border-radius:8px;padding:10px}nav a{display:block}@media(prefers-color-scheme:dark){body{background:#12151c;color:#e8e6df}article{background:#1b1f29;border-color:#333}th,.m{color:#aaa}.txt{background:#232836}a{color:#f4c542}}</style></head>
+<body><h1>Vírgula · memoria sonora viva</h1><p>${p.grabaciones.length} grabación(es) · exportado el ${esc(p.exportado.replace('T', ' '))} · versión ${esc(p.version)}</p>
+<nav>${p.grabaciones.map(r => `<a href="#${r.id}">${esc(r.ficha.titulo)}</a>`).join('')}</nav>${fichas}
+<p class="m">Respeta las condiciones de consentimiento y derechos de cada ficha.</p></body></html>`;
+}
+
+/* ═════════════════ IMPORTAR: un paquete .zip de Vírgula (propio o de otra persona) ═════════════════ */
+async function leerZip(file) {
+  const cola = Math.min(file.size, 65557), fin = new DataView(await file.slice(file.size - cola).arrayBuffer());
+  let p = -1; for (let i = cola - 22; i >= 0; i--) if (fin.getUint32(i, true) === 0x06054b50) { p = i; break; }
+  if (p < 0) throw new Error('No parece un archivo .zip.');
+  const n = fin.getUint16(p + 10, true), tam = fin.getUint32(p + 12, true), ini = fin.getUint32(p + 16, true);
+  if (ini === 0xffffffff) throw new Error('Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.');
+  const cd = new DataView(await file.slice(ini, ini + tam).arrayBuffer()), dec = new TextDecoder(), entradas = {};
+  for (let i = 0, o = 0; i < n; i++) {
+    if (cd.getUint32(o, true) !== 0x02014b50) throw new Error('El .zip está dañado.');
+    const metodo = cd.getUint16(o + 10, true), comp = cd.getUint32(o + 20, true), real = cd.getUint32(o + 24, true),
+      ln = cd.getUint16(o + 28, true), le = cd.getUint16(o + 30, true), lc = cd.getUint16(o + 32, true), loc = cd.getUint32(o + 42, true);
+    const nombre = dec.decode(new Uint8Array(cd.buffer, o + 46, ln));
+    if (!nombre.endsWith('/')) entradas[nombre] = { metodo, comp, real, loc };
+    o += 46 + ln + le + lc;
+  }
+  const leer = async ruta => {
+    const e = entradas[ruta]; if (!e) return null;
+    const h = new DataView(await file.slice(e.loc, e.loc + 30).arrayBuffer()), datos = e.loc + 30 + h.getUint16(26, true) + h.getUint16(28, true);
+    const b = file.slice(datos, datos + e.comp);
+    if (e.metodo === 0) return b;
+    if (e.metodo === 8) { if (!window.DecompressionStream) throw new Error('Este navegador no descomprime .zip.'); return new Response(b.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob(); }
+    throw new Error('Compresión no reconocida en ' + ruta);
+  };
+  return { rutas: Object.keys(entradas), leer };
+}
+/** Quita la cabecera de un WAV (busca el bloque «data»; no da por hecho 44 bytes). */
+async function pcmDeWav(blob) {
+  const h = new DataView(await blob.slice(0, Math.min(blob.size, 4096)).arrayBuffer()), t = (o) => String.fromCharCode(h.getUint8(o), h.getUint8(o + 1), h.getUint8(o + 2), h.getUint8(o + 3));
+  if (t(0) !== 'RIFF' || t(8) !== 'WAVE') return null;
+  let o = 12, info = {};
+  while (o + 8 <= h.byteLength) {
+    const id = t(o), n = h.getUint32(o + 4, true);
+    if (id === 'fmt ') info = { ch: h.getUint16(o + 10, true), sr: h.getUint32(o + 12, true), bits: h.getUint16(o + 22, true) };
+    if (id === 'data') return Object.assign(info, { datos: blob.slice(o + 8, Math.min(blob.size, o + 8 + n)) });
+    o += 8 + n + (n & 1);
+  }
+  return null;
+}
+
+const Importar = {
+  async paquete(file) {
+    avisar('📥 Leyendo el paquete…');
+    let z, p;
+    try {
+      z = await leerZip(file);
+      const rj = z.rutas.find(r => /(^|\/)fichas\.json$/.test(r)); if (!rj) throw new Error('El paquete no tiene fichas.json: no es un paquete de Vírgula.');
+      this.raiz = rj.slice(0, -'fichas.json'.length);
+      p = JSON.parse(await (await z.leer(rj)).text());
+      if (!p || !/^virgula-paquete-/.test(p.formato) || !Array.isArray(p.grabaciones)) throw new Error('fichas.json no tiene el formato de Vírgula.');
+    } catch (e) { return avisar('⚠️ ' + e.message, 6000); }
+    const ya = [];
+    for (const g of p.grabaciones) if (await DB.leer('grabaciones', g.id)) ya.push(g);
+    const nuevas = p.grabaciones.length - ya.length;
+    Ventana.abrir(`<h2>📥 Importar paquete</h2>
+      <p>${esc(file.name)} · ${mb(file.size)}<br>${p.grabaciones.length} grabación(es) · exportado el ${esc(String(p.exportado || '').replace('T', ' '))}</p>
+      <ul>${p.grabaciones.slice(0, 12).map(g => `<li>${esc(g.ficha.titulo)} · ${reloj(g.duracion)}${ya.includes(g) ? ' <span class="chip aviso">ya está</span>' : ''}</li>`).join('')}${p.grabaciones.length > 12 ? '<li>…</li>' : ''}</ul>
+      ${ya.length ? `<div class="op"><label><input type="radio" name="iYa" value="saltar" checked> Dejar como están las ${ya.length} que ya tengo</label><label><input type="radio" name="iYa" value="reemplazar"> Reemplazarlas con las del paquete</label></div>` : ''}
+      <p class="nota" id="iProg"></p>
+      <div class="fila"><button class="prim" id="iOk" ${!nuevas && !ya.length ? 'disabled' : ''}>📥 Importar</button><button id="iNo">Cancelar</button></div>`);
+    $('iNo').onclick = () => Ventana.cerrar();
+    $('iOk').onclick = async () => {
+      const reemplazar = leerRadio('iYa') === 'reemplazar'; $('iOk').disabled = true;
+      let n = 0, aviso = [];
+      for (const g of p.grabaciones) {
+        if (ya.includes(g) && !reemplazar) continue;
+        $('iProg').textContent = `Importando «${g.ficha.titulo}»…`;
+        try { aviso.push(...await this.una(z, g, ya.includes(g))); n++; } catch (e) { aviso.push(`«${g.ficha.titulo}»: ${e.message}`); }
+      }
+      Ventana.cerrar();
+      avisar(`📥 ${n} grabación(es) importada(s).${aviso.length ? ' ⚠️ ' + aviso.join(' · ') : ''}`, aviso.length ? 9000 : 4000);
+      Nav.ir('vAcervo');
+    };
+  },
+  async una(z, g, reemplazar) {
+    const avisos = [], ruta = r => r ? this.raiz + r : null, ahora = Date.now();
+    if (reemplazar) await DB.borrarGrabacion(g.id);
+    const reg = Object.assign({}, g, { estado: 'lista', respaldo: ahora, modificada: ahora, importada: ahora });
+    const archivos = reg.archivos || {}, adjuntos = reg.adjuntos || [];
+    delete reg.archivos; delete reg.adjuntos;
+    reg.clips = (reg.clips || []).map(c => { const x = Object.assign({}, c); delete x.archivoWav; delete x.archivoOgg; return x; });
+    let n = 0;
+    if (archivos.archivo) {
+      const w = await z.leer(ruta(archivos.archivo)), d = w && await pcmDeWav(w);
+      if (d) { await DB.poner('trozos', { grabacion: reg.id, tipo: 'archivo', n: ++n, datos: d.datos, frames: d.datos.size / (2 * d.ch) }); reg.tecnica.conArchivo = true; reg.tecnica.sr = d.sr; reg.tecnica.canales = d.ch; }
+      else avisos.push(`falta el WAV de «${reg.ficha.titulo}»`);
+    } else reg.tecnica.conArchivo = false;
+    if (archivos.consulta) {
+      const c = await z.leer(ruta(archivos.consulta));
+      if (c) await DB.poner('trozos', { grabacion: reg.id, tipo: 'consulta', n: ++n, datos: new Blob([c], { type: (reg.tecnica.mime || '').split(';')[0] }), frames: 0 });
+      else avisos.push(`falta la consulta de «${reg.ficha.titulo}»`);
+    } else reg.tecnica.mime = '';
+    for (const a of adjuntos) {
+      if (!a.archivo) continue;   // no venía en el paquete
+      const b = await z.leer(ruta(a.archivo));
+      if (!b) { avisos.push(`falta el adjunto «${a.nombre}»`); continue; }
+      await DB.poner('adjuntos', { id: a.id, grabacion: reg.id, nombre: a.nombre, tipo: a.tipo || '', tam: b.size, papel: a.papel || 'otro', nota: a.nota || '', blob: new Blob([b], { type: a.tipo || '' }), fecha: a.fecha || ahora });
+    }
+    const sinIncluir = adjuntos.filter(a => !a.archivo).length;
+    if (sinIncluir) reg.eventos = (reg.eventos || []).concat([{ t: 0, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'importada', detalle: `${sinIncluir} adjunto(s) no venían en el paquete` }]);
+    await DB.poner('grabaciones', reg);
+    return avisos;
+  }
+};
+
+/* ═════════════════ ARRANQUE ═════════════════ */
+$('vAjustes').addEventListener('change', e => { if (e.target.closest('input,select')) Ajustes.leerFormulario(); });
+$('vAjustes').addEventListener('input', e => { if (e.target.type === 'text') { clearTimeout(Ajustes._t); Ajustes._t = setTimeout(() => Ajustes.leerFormulario(), 400); } });
+
+$('bBuscarMic').onclick = async () => {
+  try {
+    // Los nombres de los micrófonos solo aparecen después de dar permiso
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop());
+    const mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+    $('aMic').innerHTML = '<option value="">Predeterminado del aparato</option>' + mics.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Micrófono ' + (i + 1))}</option>`).join('');
+    $('aMic').value = mics.some(d => d.deviceId === Ajustes.v.mic) ? Ajustes.v.mic : '';
+    Ajustes.leerFormulario(); avisar(`🎙️ ${mics.length} micrófono(s) encontrado(s).`);
+  } catch (e) { avisar('No se pudo ver los micrófonos: ' + e.message, 5000); }
+};
+
+/* Instalar como app */
+let pedidoInstalar = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; $('bInstalar').classList.remove('oculto'); });
+$('bInstalar').onclick = async () => { if (!pedidoInstalar) return; pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; $('bInstalar').classList.add('oculto'); };
+window.addEventListener('appinstalled', () => { $('bInstalar').classList.add('oculto'); avisar('✅ Vírgula quedó instalada.'); });
+
+/* Funciona sin conexión; avisa cuando hay versión nueva (nunca recarga en medio de una grabación) */
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  const habia = !!navigator.serviceWorker.controller;   // en la primera visita no se recarga
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (habia && !G) location.reload(); });
+  navigator.serviceWorker.register('sw.js').then(r => {
+    r.addEventListener('updatefound', () => {
+      const n = r.installing; if (!n) return;
+      n.addEventListener('statechange', () => {
+        if (n.state === 'installed' && navigator.serviceWorker.controller) {
+          const b = $('avisoRecuperar');
+          if (!b.classList.contains('oculto')) return;
+          b.classList.remove('oculto', 'aviso'); b.classList.add('ok');
+          b.innerHTML = '✨ Hay una versión nueva de Vírgula. <div class="fila fija"><button class="chico prim" id="bActualizar">Actualizar ahora</button></div>';
+          $('bActualizar').onclick = () => { if (G) return avisar('Termina la grabación antes de actualizar.'); n.postMessage('saltar'); };
+        }
+      });
+    });
+  }).catch(() => {});
+}
+
+(async () => {
+  $('version').textContent = VERSION;
+  try { await DB.abrir(); } catch (e) { $('avisoRecuperar').classList.remove('oculto'); $('avisoRecuperar').textContent = '⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.'; return; }
+  await Ajustes.cargar();
+  await revisarPendientes();
+  Espacio.actualizar();
+  if (new URLSearchParams(location.search).get('v') === 'acervo') Nav.ir('vAcervo');
+})();
+
 </script>
 </body>
 </html>

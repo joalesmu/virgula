@@ -1,7 +1,7 @@
 # Aviso de derechos y términos adicionales
 
 **Vírgula · memoria sonora viva**
-Copyright (c) 2025 Alejandro Estrada
+Copyright (c) 2026 Alejandro Estrada
 
 Este programa es software libre: puedes redistribuirlo y modificarlo según los términos de la **Licencia Pública General Affero de GNU, versión 3** (AGPL-3.0-only), publicada por la Free Software Foundation, con los términos adicionales que se indican abajo conforme a su sección 7.
 
@@ -34,7 +34,7 @@ Estos términos se refieren únicamente al programa. **Las grabaciones, fichas, 
 ## English translation (for reference only; the Spanish text above governs)
 
 **Vírgula · living sound memory**
-Copyright (c) 2025 Alejandro Estrada
+Copyright (c) 2026 Alejandro Estrada
 
 This program is free software under the **GNU Affero General Public License, version 3** (AGPL-3.0-only), with the following additional terms under its section 7. It is distributed WITHOUT ANY WARRANTY; see [LICENSE](LICENSE).
 

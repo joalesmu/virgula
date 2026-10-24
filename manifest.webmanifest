@@ -1,7 +1,7 @@
 {
-  "name": "Vírgula · prueba técnica",
+  "name": "Vírgula · memoria sonora viva",
   "short_name": "Vírgula",
-  "description": "Memoria sonora viva. Página de prueba técnica de grabación.",
+  "description": "Grabadora de campo: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
@@ -9,6 +9,7 @@
   "orientation": "portrait",
   "background_color": "#1e3a5f",
   "theme_color": "#1e3a5f",
+  "categories": ["education", "utilities", "music"],
   "icons": [
     { "src": "icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
