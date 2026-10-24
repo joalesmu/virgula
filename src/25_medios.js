@@ -7,10 +7,10 @@ const Medios = {
   },
   nombreBase(reg) { return reg.id + '__' + (nombreArchivo(reg.ficha.titulo, 50) || 'grabacion'); },
   /** Los dos audios completos de la grabación, como archivos. */
-  async archivos(reg) {
+  async archivos(reg, { bwf } = {}) {
     const tr = await this.trozos(reg), r = {}, base = this.nombreBase(reg), t = reg.tecnica;
     const pcm = tr.archivo.map(x => x.datos), bytes = pcm.reduce((a, b) => a + b.size, 0);
-    if (bytes) r.wav = new File([cabeceraWav(bytes, t.sr, t.canales), ...pcm], base + '.wav', { type: 'audio/wav' });
+    if (bytes) r.wav = new File([cabeceraWav(bytes, t.sr, t.canales, bwf ? metaWav(reg) : []), ...pcm], base + '.wav', { type: 'audio/wav' });
     if (tr.consulta.length) {
       const mime = (t.mime || 'audio/webm').split(';')[0]; let b = new Blob(tr.consulta.map(x => x.datos));
       if (/webm/.test(mime) && reg.duracion) b = await duracionWebm(b, reg.duracion);
@@ -41,7 +41,7 @@ const Medios = {
   },
   async decodificado(reg) {
     if (this.cacheDecod.has(reg.id)) return this.cacheDecod.get(reg.id);
-    if ((reg.duracion || 0) > 40 * 60) throw new Error('Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.');
+    if ((reg.duracion || 0) > 40 * 60) throw new Error(t('Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.'));
     const a = await this.archivos(reg); if (!a.consulta) return null;
     const ctx = new (window.OfflineAudioContext)(reg.tecnica.canales, 48000, 48000);
     const ab = await ctx.decodeAudioData(await a.consulta.arrayBuffer());
@@ -55,7 +55,7 @@ const Medios = {
     const out = new Int16Array(pcm.length); for (let i = 0; i < pcm.length; i++) out[i] = Math.max(-32768, Math.min(32767, Math.round(pcm[i] * g)));
     return out;
   },
-  wav(pcm, sr, ch) { return new Blob([cabeceraWav(pcm.byteLength, sr, ch), pcm], { type: 'audio/wav' }); },
+  wav(pcm, sr, ch, extras) { return new Blob([cabeceraWav(pcm.byteLength, sr, ch, extras || []), pcm], { type: 'audio/wav' }); },
   /** Ogg Opus con WebCodecs (Chrome, Edge). Devuelve null si el navegador no puede. */
   async ogg(pcm, sr, ch) {
     if (!window.AudioEncoder) return null;
@@ -97,12 +97,14 @@ async function duracionWebm(blob, segundos) {
   } catch (e) { return blob; }
 }
 
-function cabeceraWav(bytes, sr, ch) {
-  const h = new DataView(new ArrayBuffer(44)), w = (o, s) => { for (let i = 0; i < s.length; i++) h.setUint8(o + i, s.charCodeAt(i)); };
-  w(0, 'RIFF'); h.setUint32(4, 36 + bytes, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true);
+/** Cabecera WAV; «extras» son bloques ya armados (bext, LIST/INFO) que van entre «fmt » y «data». */
+function cabeceraWav(bytes, sr, ch, extras = []) {
+  const ext = extras.reduce((a, b) => a + b.byteLength, 0), buf = new Uint8Array(44 + ext), h = new DataView(buf.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) h.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); h.setUint32(4, 36 + ext + bytes, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true);
   h.setUint16(22, ch, true); h.setUint32(24, sr, true); h.setUint32(28, sr * ch * 2, true); h.setUint16(32, ch * 2, true); h.setUint16(34, 16, true);
-  w(36, 'data'); h.setUint32(40, bytes, true);
-  return h.buffer;
+  let o = 36; extras.forEach(x => { buf.set(new Uint8Array(x), o); o += x.byteLength; });
+  w(o, 'data'); h.setUint32(o + 4, bytes, true);
+  return buf.buffer;
 }
 
 async function remuestrear(pcm, sr, ch, nuevo) {

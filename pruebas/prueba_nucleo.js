@@ -1,0 +1,84 @@
+const { chromium } = require('playwright');
+const path = require('path'), fs = require('fs');
+const BASE = 'http://localhost:8765/', OUT = require('os').tmpdir();
+const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.exitCode = 1; };
+(async () => {
+  const b = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  const ctx = await b.newContext({ permissions: ['microphone', 'geolocation'], geolocation: { latitude: 21.8853, longitude: -104.4567 }, acceptDownloads: true, viewport: { width: 400, height: 860 } });
+  const p = await ctx.newPage(); const errores = [];
+  p.on('pageerror', e => errores.push(e.message)); p.on('console', m => m.type() === 'error' && errores.push(m.text()));
+  p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'BORRAR' : undefined));
+  await p.goto(BASE); await p.waitForTimeout(800);
+  ok(await p.textContent('#version') === '1.0', 'versión visible');
+  await p.screenshot({ path: OUT + '/1_grabar.png' });
+  // Grabar
+  await p.click('#bGrabar'); await p.waitForTimeout(3000);
+  await p.click('#bMarcar'); await p.waitForTimeout(2000);
+  await p.click('#bMarcar'); await p.waitForTimeout(150); await p.click('#bMarcar'); await p.waitForTimeout(2200);
+  await p.screenshot({ path: OUT + '/2_grabando.png' });
+  await p.click('#bDetener'); await p.waitForSelector('#vFicha h2', { timeout: 8000 }); await p.waitForTimeout(1200);
+  const reg = await p.evaluate(async () => { const l = await DB.todas('grabaciones'); return l[0]; });
+  ok(reg && reg.estado === 'lista', 'grabación lista');
+  ok(reg.duracion > 6.5 && reg.duracion < 9, 'duración ' + reg.duracion.toFixed(2));
+  ok(reg.clips.length === 3 && reg.clips.filter(c => c.descartado).length === 1, 'clips 3, uno descartado: ' + JSON.stringify(reg.clips.map(c => [c.desde.toFixed(1), c.hasta.toFixed(1), c.descartado])));
+  const tr = await p.evaluate(async id => { const t = await DB.porGrabacion('trozos', id); return { a: t.filter(x => x.tipo === 'archivo').reduce((s, x) => s + x.datos.size, 0), c: t.filter(x => x.tipo === 'consulta').reduce((s, x) => s + x.datos.size, 0) }; }, reg.id);
+  ok(Math.abs(tr.a - reg.duracion * 48000 * 2) < 48000 * 2 * 0.3, `WAV bytes ${tr.a} ≈ duración`);
+  ok(tr.c > 1000, 'consulta bytes ' + tr.c);
+  ok(await p.locator('#fAudios audio').count() === 2, 'dos reproductores');
+  // Ficha
+  await p.fill('#titulo', 'Canto de prueba ñ «á»'); await p.fill('#lugar', 'San Andrés Cohamiata');
+  await p.click('[data-agregar="participantes"]'); await p.fill('[data-rep="participantes"][data-k="nombre"]', 'P01'); await p.fill('[data-rep="participantes"][data-k="rol"]', 'Cantante');
+  fs.writeFileSync(OUT + '/letra.txt', 'Letra de prueba\nDo Re Mi');
+  await p.setInputFiles('#fileAdj', [OUT + '/letra.txt', OUT + '/1_grabar.png']); await p.waitForTimeout(800);
+  ok(await p.locator('#fAdj .adj').count() === 2, 'dos adjuntos');
+  const idAdj = await p.evaluate(() => Ficha.adjuntos.find(a => a.nombre === 'letra.txt').id);
+  await p.click('summary:has-text("Transcripción")');
+  await p.fill('#transTexto', `Primera línea. Ver [la letra](adjunto:${idAdj}) y [fuente](https://example.org/x).`);
+  ok(await p.locator('#vista-transTexto a').count() === 2, 'vista con 2 enlaces');
+  await p.click('[data-agregar="traducciones"]'); await p.fill('[data-rep="traducciones"][data-k="lengua"]', 'español'); await p.fill('#trad-0', 'Traducción de prueba');
+  await p.fill('[data-clip="0"][data-k="etiqueta"]', 'kuyuuri'); await p.fill('[data-clip="2"][data-k="etiqueta"]', 'hai');
+  await p.click('[data-oirclip="0"]'); await p.waitForSelector('#clipAudio-0 audio', { timeout: 5000 }); ok(true, 'clip se puede oír');
+  await p.click('#bUbic'); await p.waitForTimeout(800);
+  ok((await p.textContent('#fUbic')).includes('21.89'), 'ubicación aproximada 21.89: ' + (await p.textContent('#fUbic')).slice(0, 60));
+  await p.check('input[name="consEstado"][value="otorgado"]');
+  await p.click('#bFirma'); const cv = await p.locator('#lienzo').boundingBox();
+  await p.mouse.move(cv.x + 20, cv.y + 40); await p.mouse.down(); await p.mouse.move(cv.x + 150, cv.y + 90, { steps: 8 }); await p.mouse.up();
+  await p.fill('#firmaNombre', 'P01'); await p.click('#firmaOk'); await p.waitForTimeout(1200);
+  ok(await p.locator('#fAdj .adj').count() === 3, 'firma como adjunto');
+  await p.waitForTimeout(700);
+  await p.screenshot({ path: OUT + '/3_ficha.png', fullPage: true });
+  // Acervo y exportar
+  await p.click('nav.abajo [data-vista="vAcervo"]'); await p.waitForTimeout(500);
+  await p.screenshot({ path: OUT + '/4_acervo.png' });
+  await p.check('[data-sel]'); await p.click('#bExportarSel'); await p.waitForSelector('#eTam b');
+  await p.screenshot({ path: OUT + '/5_exportar.png' });
+  await p.click('#eOk'); await p.waitForSelector('#eGuardar', { timeout: 20000 });
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#eGuardar')]);
+  const zipRuta = OUT + '/' + dl.suggestedFilename(); await dl.saveAs(zipRuta); console.log('zip:', dl.suggestedFilename());
+  await p.waitForTimeout(800);
+  ok((await p.textContent('#eProgreso')).includes('Guardado en Descargas') && await p.locator('#eFin').count() === 1, 'muestra «Guardado en Descargas»');
+  await p.screenshot({ path: OUT + '/6_guardado.png' }); await p.click('#eFin');
+  ok(await p.evaluate(async id => !!(await DB.leer('grabaciones', id)).respaldo, reg.id), 'marcada con respaldo');
+  ok(errores.length === 0, 'sin errores: ' + errores.join(' | '));
+  // Importar en otro aparato (contexto limpio)
+  const ctx2 = await b.newContext({ acceptDownloads: true }); const q = await ctx2.newPage(); const err2 = [];
+  q.on('pageerror', e => err2.push(e.message)); q.on('dialog', d => d.accept());
+  await q.goto(BASE); await q.click('nav.abajo [data-vista="vAcervo"]');
+  await q.setInputFiles('#archivoImportar', zipRuta); await q.waitForSelector('#iOk'); await q.click('#iOk'); await q.waitForTimeout(1500);
+  const r2 = await q.evaluate(async () => { const l = await DB.todas('grabaciones'); const r = l[0]; const a = await DB.porGrabacion('adjuntos', r.id); const t = await DB.porGrabacion('trozos', r.id);
+    return { titulo: r.ficha.titulo, clips: r.clips.length, et: r.clips[0].etiqueta, adj: a.map(x => x.nombre + ':' + x.tam), trozos: t.map(x => x.tipo + ':' + x.datos.size + ':' + x.frames), trans: r.ficha.transcripcion.texto }; });
+  console.log(JSON.stringify(r2));
+  ok(r2.titulo === 'Canto de prueba ñ «á»' && r2.clips === 3 && r2.adj.length === 3, 'importado completo');
+  ok(r2.trozos.some(x => x.startsWith('archivo:' + tr.a)), 'WAV importado del mismo tamaño');
+  await q.click('[data-abrir]'); await q.waitForTimeout(1000);
+  await q.click('[data-oirclip="0"]'); await q.waitForSelector('#clipAudio-0 audio', { timeout: 5000 }); ok(true, 'clip se oye tras importar');
+  ok(await q.locator('#vista-transTexto a[data-adj]').count() === 1, 'enlace a adjunto funciona tras importar');
+  // reimportar: debe detectar que ya está
+  await q.click('#fVolver'); await q.setInputFiles('#archivoImportar', zipRuta); await q.waitForSelector('#iOk');
+  ok((await q.textContent('#velo')).includes('ya está'), 'detecta duplicado'); await q.click('#iNo');
+  ok(err2.length === 0, 'sin errores al importar: ' + err2.join(' | '));
+  // Borrar
+  await q.click('[data-abrir]'); await q.waitForTimeout(500); await q.click('#bBorrar'); await q.waitForTimeout(800);
+  ok(await q.evaluate(async () => (await DB.todas('trozos')).length + (await DB.todas('adjuntos')).length) === 0, 'borrar quita trozos y adjuntos');
+  await b.close();
+})();

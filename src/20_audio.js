@@ -30,10 +30,12 @@ const extensionDe = mime => /mp4|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'o
 
 function nuevoCodigo(t) { return 'VRG-' + sello(new Date(t)) + '-' + azar(4); }
 
-function fichaVacia(t) {
-  return { titulo: 'Grabación ' + new Date(t).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }), descripcion: '', fechaHora: fechaISO(t), lugar: '', ubicacion: null,
+function fichaVacia(ms) {
+  const f = { titulo: t('Grabación {fecha}', { fecha: new Date(ms).toLocaleString(Idioma.locale, { dateStyle: 'short', timeStyle: 'short' }) }), descripcion: '', fechaHora: fechaISO(ms), lugar: '', ubicacion: null,
     participantes: [], lenguas: '', claves: '', transcripcion: { lengua: '', texto: '' }, traducciones: [], fuentes: [], derechos: Ajustes.v.derechos || '',
-    consentimiento: { estado: 'pendiente', forma: '', nota: '' }, notas: '', quien: Ajustes.v.quien || '', confidencial: false, uso: '' };
+    consentimiento: { estado: 'pendiente', forma: '', nota: '' }, notas: '', quien: Ajustes.v.quien || '', confidencial: false, uso: '', extra: {} };
+  Plantillas.aplicarPredet(f, Plantillas.actual());
+  return f;
 }
 
 const Grabadora = {
@@ -46,8 +48,8 @@ const Grabadora = {
         deviceId: v.mic ? { exact: v.mic } : undefined, channelCount: { ideal: canales }, sampleRate: { ideal: 48000 },
         echoCancellation: v.eco, noiseSuppression: v.ruido, autoGainControl: v.volAuto } });
     } catch (e) {
-      if (v.mic && e.name === 'OverconstrainedError') { Ajustes.v.mic = ''; Ajustes.guardar(); avisar('El micrófono elegido no está conectado: usa el predeterminado.'); return this.iniciar(); }
-      avisar('No se pudo usar el micrófono: ' + e.message + '. Revisa el permiso del micrófono.', 6000); return;
+      if (v.mic && e.name === 'OverconstrainedError') { Ajustes.v.mic = ''; Ajustes.guardar(); avisar(t('El micrófono elegido no está conectado: usa el predeterminado.')); return this.iniciar(); }
+      avisar(t('No se pudo usar el micrófono: {error}. Revisa el permiso del micrófono.', { error: e.message }), 6000); return;
     }
     const track = stream.getAudioTracks()[0], reales = track.getSettings ? track.getSettings() : {};
     let ctx; try { ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
@@ -60,9 +62,9 @@ const Grabadora = {
     G.reg = { id, creada: ahora, estado: 'grabando', version: VERSION,
       tecnica: { sr, canales, conArchivo, conConsulta, mime: '', ajustesPedidos: { volAuto: v.volAuto, ruido: v.ruido, eco: v.eco },
         ajustesReales: { sampleRate: reales.sampleRate, channelCount: reales.channelCount, autoGainControl: reales.autoGainControl, noiseSuppression: reales.noiseSuppression, echoCancellation: reales.echoCancellation },
-        microfono: track.label || 'predeterminado', aparato: navigator.userAgent },
+        microfono: track.label || t('predeterminado'), aparato: navigator.userAgent },
       marcas: [], eventos: [], silencios: [], huecos: 0, frames: 0, bytes: { archivo: 0, consulta: 0 }, duracion: 0, clips: [], ficha: fichaVacia(ahora), respaldo: null, modificada: ahora };
-    this.evento('inicio', `${sr} Hz · ${canales === 2 ? 'estéreo' : 'mono'}`);
+    this.evento(t('inicio'), `${sr} Hz · ${canales === 2 ? t('estéreo') : t('mono')}`);
 
     if (conArchivo) {
       try {
@@ -73,11 +75,11 @@ const Grabadora = {
         const mudo = ctx.createGain(); mudo.gain.value = 0;
         fuente.connect(nodo); nodo.connect(mudo); mudo.connect(ctx.destination);
         G.nodo = nodo;
-      } catch (e) { this.evento('error', 'no se pudo grabar en calidad de archivo: ' + e.message); G.conArchivo = G.reg.tecnica.conArchivo = false; }
+      } catch (e) { this.evento('error', t('no se pudo grabar en calidad de archivo: {error}', { error: e.message })); G.conArchivo = G.reg.tecnica.conArchivo = false; }
     }
     if (conConsulta) {
       const mime = formatoConsulta();
-      if (!mime) this.evento('error', 'este navegador no graba en calidad de consulta');
+      if (!mime) this.evento('error', t('este navegador no graba en calidad de consulta'));
       else {
         // Volumen automático y limitador SOLO para la consulta
         const g = ctx.createGain(); g.gain.value = 1;
@@ -86,7 +88,7 @@ const Grabadora = {
         fuente.connect(g); g.connect(lim); lim.connect(dest);
         const mr = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
         mr.ondataavailable = e => { if (e.data && e.data.size) this.guardarTrozo('consulta', e.data); };
-        mr.onerror = e => this.evento('error', 'consulta: ' + (e.error && e.error.message));
+        mr.onerror = e => this.evento('error', t('consulta: {error}', { error: e.error && e.error.message }));
         mr.start(2000);
         Object.assign(G, { recorder: mr, gananciaNodo: g }); G.reg.tecnica.mime = mime;
       }
@@ -97,7 +99,7 @@ const Grabadora = {
     await DB.poner('grabaciones', G.reg);
     G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
     G.cuadro = requestAnimationFrame(() => this.medir());
-    $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>Grabando'; $('bGrabar').setAttribute('aria-pressed', 'true');
+    $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>' + tH('Grabando'); $('bGrabar').setAttribute('aria-pressed', 'true');
     ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
     navigator.vibrate && navigator.vibrate(40);
     this.pintarEstado();
@@ -113,20 +115,20 @@ const Grabadora = {
   },
   cerrarSilencio(hasta) {
     const desde = G.silencioDesde; G.silencioDesde = null;
-    if (hasta - desde >= 1) { G.silencios.push({ desde, hasta }); G.reg.silencios = G.silencios; this.evento('sin audio', `de ${relojFino(desde)} a ${relojFino(hasta)} (posible llamada u otra app usando el micrófono)`); }
+    if (hasta - desde >= 1) { G.silencios.push({ desde, hasta }); G.reg.silencios = G.silencios; this.evento(t('sin audio'), t('de {desde} a {hasta} (posible llamada u otra app usando el micrófono)', { desde: relojFino(desde), hasta: relojFino(hasta) })); }
   },
   transcurrido() { if (!G) return 0; const p = G.pausaDesde ? performance.now() - G.pausaDesde : 0; return (performance.now() - G.t0 - G.pausado - p) / 1000; },
   segundos() { return G && G.conArchivo ? G.frames / G.sr : this.transcurrido(); },
   evento(tipo, detalle = '') {
     if (!G) return;
-    G.eventos.push({ t: Math.round(this.segundos() * 10) / 10, hora: new Date().toLocaleTimeString('es-MX'), tipo, detalle });
+    G.eventos.push({ t: Math.round(this.segundos() * 10) / 10, hora: horaBonita(Date.now()), tipo, detalle });
     G.reg.eventos = G.eventos; this.pintarEstado();
   },
   vigilar() {
-    G.track.onmute = () => this.evento('micrófono ocupado por el sistema', 'p. ej. una llamada');
-    G.track.onunmute = () => this.evento('micrófono de vuelta');
-    G.track.onended = () => this.evento('el micrófono se desconectó');
-    G.ctx.onstatechange = () => this.evento('audio del sistema: ' + G.ctx.state);
+    G.track.onmute = () => this.evento(t('micrófono ocupado por el sistema'), t('p. ej. una llamada'));
+    G.track.onunmute = () => this.evento(t('micrófono de vuelta'));
+    G.track.onended = () => this.evento(t('el micrófono se desconectó'));
+    G.ctx.onstatechange = () => this.evento(t('audio del sistema: {estado}', { estado: G.ctx.state }));
   },
   async pantalla(si) {
     try {
@@ -141,7 +143,7 @@ const Grabadora = {
     if (!G) return; const id = G.id, n = ++G.nTrozo;
     if (tipo === 'archivo') G.bytesArchivo += blob.size; else G.bytesConsulta += blob.size;
     try { await DB.poner('trozos', { grabacion: id, tipo, n, datos: blob, frames }); G && (G.ultimoGuardado = Date.now()); }
-    catch (e) { this.evento('error al guardar', e.message + ' (¿espacio lleno?)'); avisar('⚠️ No se pudo guardar: revisa el espacio del aparato.', 6000); }
+    catch (e) { this.evento(t('error al guardar'), e.message + ' ' + t('(¿espacio lleno?)')); Bitacora.poner('guardar', e.message); avisar(t('⚠️ No se pudo guardar: revisa el espacio del aparato.'), 6000); }
   },
   vaciar() {
     if (!G || !G.pendientes.length) return;
@@ -159,7 +161,7 @@ const Grabadora = {
       DB.poner('grabaciones', G.reg).catch(() => {});
       if (G.conArchivo && !G.pausaDesde && G.ctx.state === 'running') {
         const falta = this.transcurrido() - G.frames / G.sr;
-        if (falta > G.huecos + 0.6) { this.evento('hueco', `faltan ${falta.toFixed(1)} s respecto al reloj`); G.huecos = falta; G.reg.huecos = falta; }
+        if (falta > G.huecos + 0.6) { this.evento(t('hueco'), t('faltan {s} s respecto al reloj', { s: falta.toFixed(1) })); G.huecos = falta; G.reg.huecos = falta; }
       }
     }
     this.pintarEstado();
@@ -177,18 +179,18 @@ const Grabadora = {
       G.ganancia = G.ganancia + (deseada - G.ganancia) * (deseada < G.ganancia ? 0.08 : 0.01);
       G.gananciaNodo.gain.setTargetAtTime(G.ganancia, G.ctx.currentTime, 0.3);
     }
-    if (pico > 0.98) { if (performance.now() - G.ultSat > 1000) { G.saturado++; G.ultSat = performance.now(); } $('nivelNota').textContent = '⚠️ Satura: aleja el micrófono'; }
-    else if (rms < 0.003 && this.transcurrido() > 3) $('nivelNota').textContent = 'Muy bajo: acerca el micrófono (20–30 cm)';
-    else $('nivelNota').textContent = `Nivel ${db(rms).toFixed(0)} dB`;
+    if (pico > 0.98) { if (performance.now() - G.ultSat > 1000) { G.saturado++; G.ultSat = performance.now(); } $('nivelNota').textContent = t('⚠️ Satura: aleja el micrófono'); }
+    else if (rms < 0.003 && this.transcurrido() > 3) $('nivelNota').textContent = t('Muy bajo: acerca el micrófono (20–30 cm)');
+    else $('nivelNota').textContent = t('Nivel {db} dB', { db: db(rms).toFixed(0) });
     G.cuadro = requestAnimationFrame(() => this.medir());
   },
   /* 1 toque: siguiente clip · 2 toques seguidos: «otra vez» (el intento que termina ahí queda descartado) */
   ultimoToque: 0,
   marcar() {
     if (!G) return;
-    const t = Math.round(this.segundos() * 100) / 100, ahora = performance.now();
-    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); avisar('↩ Otra vez: ese intento queda descartado', 1500); }
-    else { G.marcas.push({ t, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
+    const tm = Math.round(this.segundos() * 100) / 100, ahora = performance.now();
+    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); avisar(t('↩ Otra vez: ese intento queda descartado'), 1500); }
+    else { G.marcas.push({ t: tm, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
     this.ultimoToque = ahora; G.reg.marcas = G.marcas; this.pintarEstado();
   },
   async pausa() {
@@ -197,19 +199,19 @@ const Grabadora = {
       G.pausaDesde = performance.now();
       if (G.recorder && G.recorder.state === 'recording') G.recorder.pause();
       await G.ctx.suspend().catch(() => {});
-      $('bPausa').textContent = '▶ Seguir'; this.evento('pausa');
+      $('bPausa').textContent = t('▶ Seguir'); this.evento(t('pausa'));
     } else {
       await G.ctx.resume().catch(() => {});
       if (G.recorder && G.recorder.state === 'paused') G.recorder.resume();
       G.pausado += performance.now() - G.pausaDesde; G.pausaDesde = 0;
-      $('bPausa').textContent = '⏸ Pausa'; this.evento('continúa');
+      $('bPausa').textContent = t('⏸ Pausa'); this.evento(t('continúa'));
     }
   },
   async detener() {
     if (!G) return;
     $('bDetener').disabled = true;
     if (G.pausaDesde) await this.pausa();
-    this.evento('fin');
+    this.evento(t('fin'));
     if (G.recorder && G.recorder.state !== 'inactive') await new Promise(ok => { G.recorder.addEventListener('stop', () => setTimeout(ok, 60), { once: true }); G.recorder.stop(); });
     if (G.nodo) await new Promise(ok => { G.alVaciar = ok; G.nodo.port.postMessage('vaciar'); setTimeout(ok, 800); });
     if (G.silencioDesde != null) this.cerrarSilencio(G.frames / G.sr);
@@ -224,9 +226,9 @@ const Grabadora = {
     if (G.reg.tecnica.mime) G.reg.tecnica.ganancia = Math.round(G.ganancia * 10) / 10;
     await DB.poner('grabaciones', G.reg);
     const id = G.id; G = null;
-    $('bGrabar').classList.remove('on'); $('bGrabar').innerHTML = '⏺<br>Grabar'; $('bGrabar').setAttribute('aria-pressed', 'false');
+    $('bGrabar').classList.remove('on'); $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bGrabar').setAttribute('aria-pressed', 'false');
     ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = true);
-    $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = 'Nivel de entrada';
+    $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = t('Nivel de entrada');
     this.pintarEstado(); navigator.vibrate && navigator.vibrate([40, 40, 40]);
     Ficha.abrir(id);
   },
@@ -234,11 +236,11 @@ const Grabadora = {
     if (!G) { $('estadoGrab').innerHTML = ''; return; }
     const seg = G.ultimoGuardado ? Math.round((Date.now() - G.ultimoGuardado) / 1000) : null;
     $('estadoGrab').innerHTML = [
-      G.wake ? chip('🔆 Pantalla fija', 'ok') : chip('🔅 Pantalla sin fijar'),
+      G.wake ? chip(tH('🔆 Pantalla fija'), 'ok') : chip(tH('🔅 Pantalla sin fijar')),
       G.conArchivo ? chip('🗄️ ' + mb(G.bytesArchivo)) : '', G.recorder ? chip('🔊 ' + mb(G.bytesConsulta)) : '',
-      seg != null ? chip(`💾 hace ${seg} s`, seg > 8 ? 'aviso' : 'ok') : chip('💾 …'),
-      chip(`🔖 ${G.marcas.length}`), G.huecos > 0.6 ? chip(`⚠️ huecos ${G.huecos.toFixed(1)} s`, 'mal') : '',
-      G.silencios.length ? chip(`🔇 ${G.silencios.length} tramo(s) sin audio`, 'aviso') : '', G.pausaDesde ? chip('⏸ En pausa', 'aviso') : ''
+      seg != null ? chip(tH('💾 hace {s} s', { s: seg }), seg > 8 ? 'aviso' : 'ok') : chip('💾 …'),
+      chip(`🔖 ${G.marcas.length}`), G.huecos > 0.6 ? chip(tH('⚠️ huecos {s} s', { s: G.huecos.toFixed(1) }), 'mal') : '',
+      G.silencios.length ? chip(tH('🔇 {n} tramo(s) sin audio', { n: G.silencios.length }), 'aviso') : '', G.pausaDesde ? chip(tH('⏸ En pausa'), 'aviso') : ''
     ].join('');
   }
 };
@@ -257,13 +259,13 @@ function clipsDesdeMarcas(marcas, dur) {
 
 document.addEventListener('visibilitychange', () => {
   if (!G) return;
-  Grabadora.evento(document.hidden ? 'pantalla oculta o bloqueada' : 'pantalla visible');
+  Grabadora.evento(document.hidden ? t('pantalla oculta o bloqueada') : t('pantalla visible'));
   if (document.hidden) Grabadora.vaciar();
   else { Grabadora.pantalla(true); if (G.ctx.state !== 'running' && !G.pausaDesde) G.ctx.resume().catch(() => {}); }
 });
-window.addEventListener('pagehide', () => { if (G) { Grabadora.evento('la app se cerró u ocultó'); Grabadora.vaciar(); } });
+window.addEventListener('pagehide', () => { if (G) { Grabadora.evento(t('la app se cerró u ocultó')); Grabadora.vaciar(); } });
 window.addEventListener('beforeunload', e => { if (G) { e.preventDefault(); e.returnValue = ''; } });
-navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => G && Grabadora.evento('se conectó o desconectó un micrófono'));
+navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => G && Grabadora.evento(t('se conectó o desconectó un micrófono')));
 
 /* Grabaciones que no se cerraron (la app se cerró, el aparato se apagó…): se recupera lo guardado */
 async function revisarPendientes() {
@@ -271,17 +273,17 @@ async function revisarPendientes() {
   const b = $('avisoRecuperar');
   if (!abiertas.length) { b.classList.add('oculto'); return; }
   b.classList.remove('oculto');
-  b.innerHTML = `⚠️ ${abiertas.length} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.<div class="fila fija"><button class="prim chico" id="bRecuperar">🛟 Recuperar</button></div>`;
+  b.innerHTML = `${tH('⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.', { n: abiertas.length })}<div class="fila fija"><button class="prim chico" id="bRecuperar">${tH('🛟 Recuperar')}</button></div>`;
   $('bRecuperar').onclick = async () => {
     for (const r of abiertas) {
       const tr = await DB.porGrabacion('trozos', r.id);
       const bytes = tr.filter(x => x.tipo === 'archivo').reduce((a, x) => a + x.datos.size, 0);
       const dur = r.tecnica.conArchivo && bytes ? bytes / (2 * r.tecnica.canales) / r.tecnica.sr : (r.duracion || 0);
-      r.eventos = (r.eventos || []).concat([{ t: dur, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'recuperada', detalle: 'la grabación se cortó; se recuperó lo guardado' }]);
+      r.eventos = (r.eventos || []).concat([{ t: dur, hora: horaBonita(Date.now()), tipo: t('recuperada'), detalle: t('la grabación se cortó; se recuperó lo guardado') }]);
       Object.assign(r, { estado: 'lista', recuperada: true, duracion: dur, frames: bytes / (2 * r.tecnica.canales), clips: clipsDesdeMarcas((r.marcas || []).filter(m => m.t < dur), dur), modificada: Date.now() });
       await DB.poner('grabaciones', r);
     }
-    b.classList.add('oculto'); avisar('🛟 Recuperada(s). Están en 📚 Acervo.'); Nav.ir('vAcervo');
+    b.classList.add('oculto'); avisar(t('🛟 Recuperada(s). Están en 📚 Acervo.')); Nav.ir('vAcervo');
   };
 }
 

@@ -2,12 +2,12 @@
 async function leerZip(file) {
   const cola = Math.min(file.size, 65557), fin = new DataView(await file.slice(file.size - cola).arrayBuffer());
   let p = -1; for (let i = cola - 22; i >= 0; i--) if (fin.getUint32(i, true) === 0x06054b50) { p = i; break; }
-  if (p < 0) throw new Error('No parece un archivo .zip.');
+  if (p < 0) throw new Error(t('No parece un archivo .zip.'));
   const n = fin.getUint16(p + 10, true), tam = fin.getUint32(p + 12, true), ini = fin.getUint32(p + 16, true);
-  if (ini === 0xffffffff) throw new Error('Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.');
+  if (ini === 0xffffffff) throw new Error(t('Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.'));
   const cd = new DataView(await file.slice(ini, ini + tam).arrayBuffer()), dec = new TextDecoder(), entradas = {};
   for (let i = 0, o = 0; i < n; i++) {
-    if (cd.getUint32(o, true) !== 0x02014b50) throw new Error('El .zip está dañado.');
+    if (cd.getUint32(o, true) !== 0x02014b50) throw new Error(t('El .zip está dañado.'));
     const metodo = cd.getUint16(o + 10, true), comp = cd.getUint32(o + 20, true), real = cd.getUint32(o + 24, true),
       ln = cd.getUint16(o + 28, true), le = cd.getUint16(o + 30, true), lc = cd.getUint16(o + 32, true), loc = cd.getUint32(o + 42, true);
     const nombre = dec.decode(new Uint8Array(cd.buffer, o + 46, ln));
@@ -19,14 +19,14 @@ async function leerZip(file) {
     const h = new DataView(await file.slice(e.loc, e.loc + 30).arrayBuffer()), datos = e.loc + 30 + h.getUint16(26, true) + h.getUint16(28, true);
     const b = file.slice(datos, datos + e.comp);
     if (e.metodo === 0) return b;
-    if (e.metodo === 8) { if (!window.DecompressionStream) throw new Error('Este navegador no descomprime .zip.'); return new Response(b.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob(); }
-    throw new Error('Compresión no reconocida en ' + ruta);
+    if (e.metodo === 8) { if (!window.DecompressionStream) throw new Error(t('Este navegador no descomprime .zip.')); return new Response(b.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob(); }
+    throw new Error(t('Compresión no reconocida en {ruta}', { ruta }));
   };
   return { rutas: Object.keys(entradas), leer };
 }
 /** Quita la cabecera de un WAV (busca el bloque «data»; no da por hecho 44 bytes). */
 async function pcmDeWav(blob) {
-  const h = new DataView(await blob.slice(0, Math.min(blob.size, 4096)).arrayBuffer()), t = (o) => String.fromCharCode(h.getUint8(o), h.getUint8(o + 1), h.getUint8(o + 2), h.getUint8(o + 3));
+  const h = new DataView(await blob.slice(0, Math.min(blob.size, 65536)).arrayBuffer()), t = (o) => String.fromCharCode(h.getUint8(o), h.getUint8(o + 1), h.getUint8(o + 2), h.getUint8(o + 3));
   if (t(0) !== 'RIFF' || t(8) !== 'WAVE') return null;
   let o = 12, info = {};
   while (o + 8 <= h.byteLength) {
@@ -40,35 +40,37 @@ async function pcmDeWav(blob) {
 
 const Importar = {
   async paquete(file) {
-    avisar('📥 Leyendo el paquete…');
+    avisar(t('📥 Leyendo el paquete…'));
     let z, p;
     try {
       z = await leerZip(file);
-      const rj = z.rutas.find(r => /(^|\/)fichas\.json$/.test(r)); if (!rj) throw new Error('El paquete no tiene fichas.json: no es un paquete de Vírgula.');
+      const rj = z.rutas.find(r => /(^|\/)fichas\.json$/.test(r)); if (!rj) throw new Error(t('El paquete no tiene fichas.json: no es un paquete de Vírgula.'));
       this.raiz = rj.slice(0, -'fichas.json'.length);
       p = JSON.parse(await (await z.leer(rj)).text());
-      if (!p || !/^virgula-paquete-/.test(p.formato) || !Array.isArray(p.grabaciones)) throw new Error('fichas.json no tiene el formato de Vírgula.');
+      if (!p || !/^virgula-paquete-/.test(p.formato) || !Array.isArray(p.grabaciones)) throw new Error(t('fichas.json no tiene el formato de Vírgula.'));
     } catch (e) { return avisar('⚠️ ' + e.message, 6000); }
     const ya = [];
     for (const g of p.grabaciones) if (await DB.leer('grabaciones', g.id)) ya.push(g);
     const nuevas = p.grabaciones.length - ya.length;
-    Ventana.abrir(`<h2>📥 Importar paquete</h2>
-      <p>${esc(file.name)} · ${mb(file.size)}<br>${p.grabaciones.length} grabación(es) · exportado el ${esc(String(p.exportado || '').replace('T', ' '))}</p>
-      <ul>${p.grabaciones.slice(0, 12).map(g => `<li>${esc(g.ficha.titulo)} · ${reloj(g.duracion)}${ya.includes(g) ? ' <span class="chip aviso">ya está</span>' : ''}</li>`).join('')}${p.grabaciones.length > 12 ? '<li>…</li>' : ''}</ul>
-      ${ya.length ? `<div class="op"><label><input type="radio" name="iYa" value="saltar" checked> Dejar como están las ${ya.length} que ya tengo</label><label><input type="radio" name="iYa" value="reemplazar"> Reemplazarlas con las del paquete</label></div>` : ''}
+    Ventana.abrir(`<h2>${tH('📥 Importar paquete')}</h2>
+      <p>${esc(file.name)} · ${mb(file.size)}<br>${tH('{n} grabación(es)', { n: p.grabaciones.length })} · ${tH('exportado el {fecha}', { fecha: String(p.exportado || '').replace('T', ' ') })}</p>
+      <ul>${p.grabaciones.slice(0, 12).map(g => `<li>${esc(g.ficha.titulo)} · ${reloj(g.duracion)}${ya.includes(g) ? ` <span class="chip aviso">${tH('ya está')}</span>` : ''}</li>`).join('')}${p.grabaciones.length > 12 ? '<li>…</li>' : ''}</ul>
+      ${ya.length ? `<div class="op"><label><input type="radio" name="iYa" value="saltar" checked> ${tH('Dejar como están las {n} que ya tengo', { n: ya.length })}</label><label><input type="radio" name="iYa" value="reemplazar"> ${tH('Reemplazarlas con las del paquete')}</label></div>` : ''}
+      ${(p.plantillas || []).length ? `<p class="nota">${tH('Trae {n} plantilla(s); las que no tengas se agregan.', { n: p.plantillas.length })}</p>` : ''}
       <p class="nota" id="iProg"></p>
-      <div class="fila"><button class="prim" id="iOk" ${!nuevas && !ya.length ? 'disabled' : ''}>📥 Importar</button><button id="iNo">Cancelar</button></div>`);
+      <div class="fila"><button class="prim" id="iOk" ${!nuevas && !ya.length ? 'disabled' : ''}>${tH('📥 Importar')}</button><button id="iNo">${tH('Cancelar')}</button></div>`);
     $('iNo').onclick = () => Ventana.cerrar();
     $('iOk').onclick = async () => {
       const reemplazar = leerRadio('iYa') === 'reemplazar'; $('iOk').disabled = true;
       let n = 0, aviso = [];
+      for (const pl of (p.plantillas || [])) { try { await Plantillas.incorporar(pl, false); } catch (e) {} }
       for (const g of p.grabaciones) {
         if (ya.includes(g) && !reemplazar) continue;
-        $('iProg').textContent = `Importando «${g.ficha.titulo}»…`;
+        $('iProg').textContent = t('Importando «{titulo}»…', { titulo: g.ficha.titulo });
         try { aviso.push(...await this.una(z, g, ya.includes(g))); n++; } catch (e) { aviso.push(`«${g.ficha.titulo}»: ${e.message}`); }
       }
       Ventana.cerrar();
-      avisar(`📥 ${n} grabación(es) importada(s).${aviso.length ? ' ⚠️ ' + aviso.join(' · ') : ''}`, aviso.length ? 9000 : 4000);
+      avisar(t('📥 {n} grabación(es) importada(s).', { n }) + (aviso.length ? ' ⚠️ ' + aviso.join(' · ') : ''), aviso.length ? 9000 : 4000);
       Nav.ir('vAcervo');
     };
   },
@@ -83,21 +85,21 @@ const Importar = {
     if (archivos.archivo) {
       const w = await z.leer(ruta(archivos.archivo)), d = w && await pcmDeWav(w);
       if (d) { await DB.poner('trozos', { grabacion: reg.id, tipo: 'archivo', n: ++n, datos: d.datos, frames: d.datos.size / (2 * d.ch) }); reg.tecnica.conArchivo = true; reg.tecnica.sr = d.sr; reg.tecnica.canales = d.ch; }
-      else avisos.push(`falta el WAV de «${reg.ficha.titulo}»`);
+      else avisos.push(t('falta el WAV de «{titulo}»', { titulo: reg.ficha.titulo }));
     } else reg.tecnica.conArchivo = false;
     if (archivos.consulta) {
       const c = await z.leer(ruta(archivos.consulta));
       if (c) await DB.poner('trozos', { grabacion: reg.id, tipo: 'consulta', n: ++n, datos: new Blob([c], { type: (reg.tecnica.mime || '').split(';')[0] }), frames: 0 });
-      else avisos.push(`falta la consulta de «${reg.ficha.titulo}»`);
+      else avisos.push(t('falta la consulta de «{titulo}»', { titulo: reg.ficha.titulo }));
     } else reg.tecnica.mime = '';
     for (const a of adjuntos) {
       if (!a.archivo) continue;   // no venía en el paquete
       const b = await z.leer(ruta(a.archivo));
-      if (!b) { avisos.push(`falta el adjunto «${a.nombre}»`); continue; }
+      if (!b) { avisos.push(t('falta el adjunto «{nombre}»', { nombre: a.nombre })); continue; }
       await DB.poner('adjuntos', { id: a.id, grabacion: reg.id, nombre: a.nombre, tipo: a.tipo || '', tam: b.size, papel: a.papel || 'otro', nota: a.nota || '', blob: new Blob([b], { type: a.tipo || '' }), fecha: a.fecha || ahora });
     }
     const sinIncluir = adjuntos.filter(a => !a.archivo).length;
-    if (sinIncluir) reg.eventos = (reg.eventos || []).concat([{ t: 0, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'importada', detalle: `${sinIncluir} adjunto(s) no venían en el paquete` }]);
+    if (sinIncluir) reg.eventos = (reg.eventos || []).concat([{ t: 0, hora: horaBonita(Date.now()), tipo: t('importada'), detalle: t('{n} adjunto(s) no venían en el paquete', { n: sinIncluir }) }]);
     await DB.poner('grabaciones', reg);
     return avisos;
   }

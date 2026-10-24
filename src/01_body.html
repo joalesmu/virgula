@@ -2,41 +2,43 @@
 <main>
   <header class="app">
     <img src="icono-192.png" alt="">
-    <h1>Vírgula<small>memoria sonora viva</small></h1>
+    <h1>Vírgula<small data-t>memoria sonora viva</small></h1>
     <span class="esp"></span>
-    <button id="bInstalar" class="chico oculto">⬇️ Instalar</button>
+    <button id="bInstalar" class="chico oculto" data-t>⬇️ Instalar</button>
+    <button id="bIdiomaCabeza" class="chico" data-ta="Idioma">🌐</button>
   </header>
 
   <div id="avisoRecuperar" class="banda aviso oculto" role="alert"></div>
+  <div id="avisoGlobal"></div>
 
   <!-- ───── Grabar ───── -->
   <section id="vGrabar" class="vista">
     <div class="panel">
-      <button id="bGrabar" aria-pressed="false">⏺<br>Grabar</button>
+      <button id="bGrabar" aria-pressed="false"></button>
       <div id="tiempo">00:00:00</div>
       <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
-      <p class="nota" id="nivelNota" style="text-align:center">Nivel de entrada</p>
+      <p class="nota" id="nivelNota" style="text-align:center"></p>
       <div class="controles">
-        <button id="bMarcar" disabled>🔖 Marcar<small>1 toque: siguiente · 2 toques: otra vez</small></button>
-        <button id="bPausa" disabled>⏸ Pausa</button>
-        <button id="bDetener" disabled>⏹ Detener</button>
+        <button id="bMarcar" disabled><span data-t>🔖 Marcar</span><small data-t>1 toque: siguiente · 2 toques: otra vez</small></button>
+        <button id="bPausa" disabled></button>
+        <button id="bDetener" disabled data-t>⏹ Detener</button>
       </div>
       <div id="estadoGrab" class="fila fija" aria-live="polite"></div>
       <p class="resumen-ajustes" id="resumenAjustes"></p>
     </div>
-    <p class="nota" style="text-align:center">Graba primero; la ficha se completa después, con calma.</p>
+    <p class="nota" style="text-align:center" data-t>Graba primero; la ficha se completa después, con calma.</p>
   </section>
 
   <!-- ───── Acervo ───── -->
   <section id="vAcervo" class="vista oculto">
     <div id="avisoRespaldo"></div>
     <div class="fila">
-      <input type="search" id="buscar" placeholder="🔍 Buscar en títulos, descripciones, transcripciones…" aria-label="Buscar">
+      <input type="search" id="buscar" data-tp="🔍 Buscar en títulos, descripciones, transcripciones…" data-ta="Buscar">
     </div>
     <div class="fila">
-      <button id="bExportarSel" class="prim" disabled>📦 Exportar (<span id="nSel">0</span>)</button>
-      <button id="bTodas">☑ Todas</button>
-      <button id="bImportar">📥 Importar paquete</button>
+      <button id="bExportarSel" class="prim" disabled><span data-t>📦 Exportar</span> (<span id="nSel">0</span>)</button>
+      <button id="bTodas" data-t>☑ Todas</button>
+      <button id="bImportar" data-t>📥 Importar paquete</button>
     </div>
     <input type="file" id="archivoImportar" accept=".zip,application/zip" class="oculto">
     <div id="lista"></div>
@@ -47,59 +49,97 @@
 
   <!-- ───── Ajustes ───── -->
   <section id="vAjustes" class="vista oculto">
+    <div class="panel" id="panelIdioma">
+      <h2>🌐 <span data-t>Idioma de la interfaz</span></h2>
+      <div id="idiomas"></div>
+      <div class="fila"><button id="bIdiomaRed" class="chico" data-t>🔄 Ver idiomas publicados</button><button id="bIdiomaInstalar" class="chico" data-t>📥 Instalar idioma desde archivo</button></div>
+      <input type="file" id="archivoIdioma" accept=".json,.csv,application/json,text/csv" class="oculto">
+      <details class="sec" style="margin-top:12px"><summary data-t>✍️ Traducir Vírgula a otra lengua</summary>
+        <p class="nota" data-t>1. Descarga la plantilla: es una hoja con todos los textos de Vírgula y una columna vacía para la traducción.</p>
+        <p class="nota" data-t>2. Llénala en Google Sheets, Excel o LibreOffice (puede ser poco a poco: lo que falte se ve en español) y guárdala como CSV.</p>
+        <p class="nota" data-t>3. Pruébala aquí mismo: Vírgula cambia al instante y ves cómo queda cada texto.</p>
+        <p class="nota" data-t>4. Envíala por correo o GitHub. Tras la revisión, se publica para todos.</p>
+        <label for="tBase" data-t>Partir de</label>
+        <select id="tBase"></select>
+        <div class="fila"><button id="bTPlantilla" data-t>⬇️ Descargar plantilla</button><button id="bTProbar" data-t>📥 Probar mi traducción</button><button id="bTEnviar" data-t>📨 Enviar traducción</button></div>
+        <input type="file" id="archivoTraduccion" accept=".csv,.json,text/csv,application/json" class="oculto">
+      </details>
+    </div>
     <div class="panel">
-      <h2>🎙️ Grabación</h2>
-      <label for="aMic">Micrófono</label>
-      <select id="aMic"><option value="">Predeterminado del aparato</option></select>
-      <div class="fila fija"><button id="bBuscarMic" class="chico">🔎 Buscar micrófonos</button></div>
-      <label>Calidad</label>
+      <h2>🎙️ <span data-t>Grabación</span></h2>
+      <label for="aMic" data-t>Micrófono</label>
+      <select id="aMic"><option value="" data-t>Predeterminado del aparato</option></select>
+      <div class="fila fija"><button id="bBuscarMic" class="chico" data-t>🔎 Buscar micrófonos</button></div>
+      <label data-t>Calidad</label>
       <div class="op" role="radiogroup">
-        <label><input type="radio" name="aCalidad" value="ambas"> Archivo + consulta</label>
-        <label><input type="radio" name="aCalidad" value="archivo"> Solo archivo (WAV)</label>
-        <label><input type="radio" name="aCalidad" value="consulta"> Solo consulta</label>
+        <label><input type="radio" name="aCalidad" value="ambas"> <span data-t>Archivo + consulta</span></label>
+        <label><input type="radio" name="aCalidad" value="archivo"> <span data-t>Solo archivo (WAV)</span></label>
+        <label><input type="radio" name="aCalidad" value="consulta"> <span data-t>Solo consulta</span></label>
       </div>
-      <p class="nota">Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).</p>
-      <label>Canales</label>
+      <p class="nota" data-t>Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).</p>
+      <label data-t>Canales</label>
       <div class="op" role="radiogroup">
-        <label><input type="radio" name="aCanales" value="1"> Mono</label>
-        <label><input type="radio" name="aCanales" value="2"> Estéreo</label>
+        <label><input type="radio" name="aCanales" value="1"> <span data-t>Mono</span></label>
+        <label><input type="radio" name="aCanales" value="2"> <span data-t>Estéreo</span></label>
       </div>
-      <label>Ajustes del aparato (afectan también el audio de archivo)</label>
+      <label data-t>Ajustes del aparato (afectan también el audio de archivo)</label>
       <div class="op">
-        <label><input type="checkbox" id="aVolAuto"> Volumen automático</label>
-        <label><input type="checkbox" id="aRuido"> Quitar ruido</label>
-        <label><input type="checkbox" id="aEco"> Quitar eco</label>
+        <label><input type="checkbox" id="aVolAuto"> <span data-t>Volumen automático</span></label>
+        <label><input type="checkbox" id="aRuido"> <span data-t>Quitar ruido</span></label>
+        <label><input type="checkbox" id="aEco"> <span data-t>Quitar eco</span></label>
       </div>
-      <p class="nota">Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.</p>
+      <p class="nota" data-t>Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.</p>
       <p class="nota" id="espacio"></p>
     </div>
     <div class="panel">
-      <h2>🧾 Fichas</h2>
-      <label for="aQuien">Quién graba (se propone en cada ficha)</label>
-      <input type="text" id="aQuien" maxlength="200" placeholder="Nombre o equipo">
-      <label for="aDerechos">Derechos y licencia (se propone en cada ficha)</label>
-      <input type="text" id="aDerechos" maxlength="300" placeholder="Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos">
-      <label>Ubicación al llenar la ficha</label>
-      <div class="op" role="radiogroup">
-        <label><input type="radio" name="aUbic" value="exacta"> Exacta</label>
-        <label><input type="radio" name="aUbic" value="aprox1"> Aproximada (~1 km)</label>
-        <label><input type="radio" name="aUbic" value="aprox10"> Aproximada (~10 km)</label>
-      </div>
-      <p class="nota">La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.</p>
+      <h2>🧩 <span data-t>Plantillas de ficha</span></h2>
+      <p class="nota" data-t>La plantilla decide qué campos tiene la ficha. «Usar» la deja para las grabaciones nuevas; en cada ficha se puede cambiar.</p>
+      <div id="plantillas"></div>
+      <div class="fila"><button id="bPlNueva" data-t>＋ Nueva plantilla</button><button id="bPlImportar" data-t>📥 Importar plantilla</button></div>
+      <input type="file" id="archivoPlantilla" accept=".json,application/json" class="oculto">
     </div>
     <div class="panel">
-      <h2>ℹ️ Acerca de</h2>
-      <p class="nota">Vírgula · memoria sonora viva · versión <span id="version"></span>. Todo se guarda en este aparato y no se envía a ningún lado: respalda con 📦 Exportar.</p>
-      <p class="nota">En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
-      <p class="nota">Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0 · <a href="https://github.com/joalesmu/virgula" target="_blank" rel="noopener">código</a></p>
+      <h2>🧾 <span data-t>Fichas</span></h2>
+      <label for="aQuien" data-t>Quién graba (se propone en cada ficha)</label>
+      <input type="text" id="aQuien" maxlength="200" data-tp="Nombre o equipo">
+      <label for="aDerechos" data-t>Derechos y licencia (se propone en cada ficha)</label>
+      <input type="text" id="aDerechos" maxlength="300" data-tp="Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos">
+      <label data-t>Ubicación al llenar la ficha</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aUbic" value="exacta"> <span data-t>Exacta</span></label>
+        <label><input type="radio" name="aUbic" value="aprox1"> <span data-t>Aproximada (~1 km)</span></label>
+        <label><input type="radio" name="aUbic" value="aprox10"> <span data-t>Aproximada (~10 km)</span></label>
+      </div>
+      <p class="nota" data-t>La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.</p>
+    </div>
+    <div class="panel">
+      <h2>💾 <span data-t>Respaldo</span></h2>
+      <label for="aDiasRespaldo" data-t>Recordarme respaldar después de</label>
+      <select id="aDiasRespaldo">
+        <option value="1" data-t>1 día</option><option value="3" data-t>3 días</option><option value="7" data-t>7 días</option><option value="0" data-t>No recordar</option>
+      </select>
+      <p class="nota" data-t>Vírgula guarda todo solo en este aparato y no sube nada a internet. Si se borran los datos del navegador o se pierde el aparato, se pierde lo que no se exportó.</p>
+    </div>
+    <div class="panel">
+      <h2>🛟 <span data-t>Ayuda</span></h2>
+      <div class="fila"><button id="bReportar" data-t>📨 Reportar un problema</button></div>
+      <p class="nota" data-t>Arma un informe técnico (aparato, versión, últimos eventos) para enviarlo por correo o GitHub. No incluye audios ni fichas.</p>
+    </div>
+    <div class="panel">
+      <h2>ℹ️ <span data-t>Acerca de</span></h2>
+      <p class="nota"><span data-t>Vírgula · memoria sonora viva · versión</span> <span id="version"></span></p>
+      <p class="nota" data-t>Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.</p>
+      <p class="nota" data-t>En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
+      <p class="nota" id="creditosIdioma"></p>
+      <p class="nota"><span data-t>Diseñado y desarrollado por Alejandro Estrada</span> · AGPL-3.0 · <a href="https://github.com/joalesmu/virgula" target="_blank" rel="noopener" data-t>código</a></p>
     </div>
   </section>
 
-  <footer>Vírgula · Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0</footer>
+  <footer>Vírgula · <span data-t>Diseñado y desarrollado por Alejandro Estrada</span> · AGPL-3.0</footer>
 </main>
 
-<nav class="abajo" aria-label="Secciones">
-  <button data-vista="vGrabar" class="on"><b>⏺</b>Grabar</button>
-  <button data-vista="vAcervo"><b>📚</b>Acervo</button>
-  <button data-vista="vAjustes"><b>⚙️</b>Ajustes</button>
+<nav class="abajo" data-ta="Secciones">
+  <button data-vista="vGrabar" class="on"><b>⏺</b><span data-t>Grabar</span></button>
+  <button data-vista="vAcervo"><b>📚</b><span data-t>Acervo</span></button>
+  <button data-vista="vAjustes"><b>⚙️</b><span data-t>Ajustes</span></button>
 </nav>

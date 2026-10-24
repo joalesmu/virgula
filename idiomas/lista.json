@@ -1,0 +1,11 @@
+{
+ "idiomas": [
+  {
+   "codigo": "en",
+   "nombre": "English",
+   "version": 1,
+   "archivo": "en.json",
+   "avance": 100
+  }
+ ]
+}

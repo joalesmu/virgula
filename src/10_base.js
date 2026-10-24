@@ -1,6 +1,5 @@
-'use strict';
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
-const VERSION = '1.0-etapa1';
+const VERSION = '1.0';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
@@ -8,15 +7,23 @@ const reloj = s => { s = Math.max(0, Math.floor(s || 0)); return `${dos(Math.flo
 const relojFino = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60); return `${dos(m)}:${(s - m * 60).toFixed(1).padStart(4, '0')}`; };
 const mb = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
 const sello = d => `${d.getFullYear()}${dos(d.getMonth() + 1)}${dos(d.getDate())}-${dos(d.getHours())}${dos(d.getMinutes())}${dos(d.getSeconds())}`;
-const fechaBonita = t => new Date(t).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
-const fechaISO = t => { const d = new Date(t); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}T${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`; };
+const fechaBonita = x => new Date(x).toLocaleString(Idioma.locale, { dateStyle: 'medium', timeStyle: 'short' });
+const horaBonita = x => new Date(x).toLocaleTimeString(Idioma.locale);
+const fechaISO = x => { const d = new Date(x); return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}T${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`; };
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const chip = (t, tipo = '') => `<span class="chip ${tipo}">${t}</span>`;
+const chip = (html, tipo = '') => `<span class="chip ${tipo}">${html}</span>`;
 const azar = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('');
 /** Nombre de archivo seguro (conserva acentos y letras de cualquier lengua; quita lo que los sistemas no aceptan). */
 const nombreArchivo = (s, max = 60) => String(s || '').normalize('NFC').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, max).replace(/[ .]+$/, '');
+/** Solo letras básicas: para nombres de .zip (algunos navegadores descartan ñ, acentos o comillas) y textos ASCII de los WAV. */
+const ascii = s => String(s || '').normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\w.\- ]+/g, '').replace(/\s+/g, '-');
 const leerRadio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
 const marcarRadio = (n, v) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) r.checked = true; };
+
+/* Bitácora técnica breve (para «Reportar un problema»); nunca guarda contenido de fichas */
+const Bitacora = { l: [], poner(tipo, txt) { this.l.push(`${new Date().toISOString()} ${tipo}: ${String(txt).slice(0, 300)}`); if (this.l.length > 60) this.l.shift(); } };
+window.addEventListener('error', e => Bitacora.poner('error', `${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
+window.addEventListener('unhandledrejection', e => Bitacora.poner('promesa', e.reason && (e.reason.message || e.reason)));
 
 /* ─────────── Base de datos local (IndexedDB) ─────────── */
 const DB = {
@@ -39,9 +46,9 @@ const DB = {
   async tx(store, modo, fn) {
     const d = await this.abrir();
     return new Promise((ok, mal) => {
-      const t = d.transaction(store, modo), s = t.objectStore(store);
+      const x = d.transaction(store, modo), s = x.objectStore(store);
       let res; const r = fn(s); if (r) r.onsuccess = () => { res = r.result; };
-      t.oncomplete = () => ok(res); t.onerror = () => mal(t.error); t.onabort = () => mal(t.error);
+      x.oncomplete = () => ok(res); x.onerror = () => mal(x.error); x.onabort = () => mal(x.error);
     });
   },
   poner(store, v, k) { return this.tx(store, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k)); },
@@ -52,41 +59,43 @@ const DB = {
   async borrarGrabacion(id) {
     const d = await this.abrir();
     await new Promise((ok, mal) => {
-      const t = d.transaction(['grabaciones', 'trozos', 'adjuntos'], 'readwrite');
-      t.objectStore('grabaciones').delete(id);
+      const x = d.transaction(['grabaciones', 'trozos', 'adjuntos'], 'readwrite');
+      x.objectStore('grabaciones').delete(id);
       ['trozos', 'adjuntos'].forEach(st => {
-        const c = t.objectStore(st).index('grabacion').openKeyCursor(IDBKeyRange.only(id));
-        c.onsuccess = () => { const k = c.result; if (k) { t.objectStore(st).delete(k.primaryKey); k.continue(); } };
+        const c = x.objectStore(st).index('grabacion').openKeyCursor(IDBKeyRange.only(id));
+        c.onsuccess = () => { const k = c.result; if (k) { x.objectStore(st).delete(k.primaryKey); k.continue(); } };
       });
-      t.oncomplete = ok; t.onerror = () => mal(t.error);
+      x.oncomplete = ok; x.onerror = () => mal(x.error);
     });
   }
 };
 
 /* ─────────── Ajustes del aparato ─────────── */
-const AJUSTES_BASE = { calidad: 'ambas', canales: 1, volAuto: false, ruido: false, eco: false, mic: '', quien: '', derechos: '', ubic: 'aprox1' };
+const AJUSTES_BASE = { calidad: 'ambas', canales: 1, volAuto: false, ruido: false, eco: false, mic: '', quien: '', derechos: '', ubic: 'aprox1', plantilla: 'general', idioma: 'es', diasRespaldo: 3, recordarDesde: 0 };
 const Ajustes = {
   v: Object.assign({}, AJUSTES_BASE),
-  async cargar() { try { Object.assign(this.v, (await DB.leer('ajustes', 'ajustes')) || {}); } catch (e) {} this.pintar(); },
+  async cargar() { try { Object.assign(this.v, (await DB.leer('ajustes', 'ajustes')) || {}); } catch (e) {} },
   guardar() { return DB.poner('ajustes', this.v, 'ajustes').catch(() => {}); },
   pintar() {
     marcarRadio('aCalidad', this.v.calidad); marcarRadio('aCanales', String(this.v.canales)); marcarRadio('aUbic', this.v.ubic);
     $('aVolAuto').checked = this.v.volAuto; $('aRuido').checked = this.v.ruido; $('aEco').checked = this.v.eco;
-    $('aQuien').value = this.v.quien; $('aDerechos').value = this.v.derechos;
-    if (this.v.mic && ![...$('aMic').options].some(o => o.value === this.v.mic)) $('aMic').insertAdjacentHTML('beforeend', `<option value="${esc(this.v.mic)}">${esc(this.v.micNombre || 'Micrófono elegido')}</option>`);
+    $('aQuien').value = this.v.quien; $('aDerechos').value = this.v.derechos; $('aDiasRespaldo').value = String(this.v.diasRespaldo);
+    if (this.v.mic && ![...$('aMic').options].some(o => o.value === this.v.mic)) $('aMic').insertAdjacentHTML('beforeend', `<option value="${esc(this.v.mic)}">${esc(this.v.micNombre || t('Micrófono elegido'))}</option>`);
     $('aMic').value = this.v.mic;
     this.resumen();
   },
   leerFormulario() {
     Object.assign(this.v, { calidad: leerRadio('aCalidad') || 'ambas', canales: Number(leerRadio('aCanales') || 1), ubic: leerRadio('aUbic') || 'aprox1',
       volAuto: $('aVolAuto').checked, ruido: $('aRuido').checked, eco: $('aEco').checked, mic: $('aMic').value,
-      micNombre: ($('aMic').selectedOptions[0] || {}).textContent || '', quien: $('aQuien').value.trim(), derechos: $('aDerechos').value.trim() });
+      micNombre: ($('aMic').selectedOptions[0] || {}).textContent || '', quien: $('aQuien').value.trim(), derechos: $('aDerechos').value.trim(),
+      diasRespaldo: Number($('aDiasRespaldo').value) });
     this.guardar(); this.resumen(); Espacio.actualizar();
   },
   resumen() {
-    const v = this.v, cal = { ambas: 'archivo + consulta', archivo: 'solo archivo', consulta: 'solo consulta' }[v.calidad];
-    const aj = [v.volAuto && 'volumen automático', v.ruido && 'sin ruido', v.eco && 'sin eco'].filter(Boolean);
-    $('resumenAjustes').textContent = `${cal} · ${v.canales === 2 ? 'estéreo' : 'mono'} · ${aj.length ? 'aparato: ' + aj.join(', ') : 'sonido sin alterar'} · ${v.micNombre && v.mic ? v.micNombre : 'micrófono predeterminado'}`;
+    const v = this.v, cal = { ambas: t('archivo + consulta'), archivo: t('solo archivo'), consulta: t('solo consulta') }[v.calidad];
+    const aj = [v.volAuto && t('volumen automático'), v.ruido && t('sin ruido'), v.eco && t('sin eco')].filter(Boolean);
+    $('resumenAjustes').textContent = [`🧩 ${Plantillas.nombre(Plantillas.actual())}`, cal, v.canales === 2 ? t('estéreo') : t('mono'),
+      aj.length ? t('aparato: {lista}', { lista: aj.join(', ') }) : t('sonido sin alterar'), v.micNombre && v.mic ? v.micNombre : t('micrófono predeterminado')].join(' · ');
   }
 };
 
@@ -98,12 +107,13 @@ const Espacio = {
   async actualizar() {
     const e = await this.datos(); if (!e) { $('espacio').textContent = ''; return; }
     const min = Math.floor(e.libre / this.porMinuto());
-    $('espacio').textContent = `💾 Vírgula usa ${mb(e.usado)}. Con estos ajustes caben unas ${Math.floor(min / 60)} h ${min % 60} min más de grabación.`;
+    $('espacio').textContent = t('💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.', { usado: mb(e.usado), h: Math.floor(min / 60), m: min % 60 });
   }
 };
 
 /* ─────────── Interfaz: avisos, ventanas, navegación ─────────── */
 function avisar(texto, ms = 3500) {
+  document.querySelectorAll('.aviso-toast').forEach(x => x.remove());   // uno a la vez, sin encimarse
   const d = document.createElement('div'); d.className = 'aviso-toast'; d.setAttribute('role', 'status'); d.textContent = texto;
   document.body.appendChild(d); setTimeout(() => d.remove(), ms);
 }
@@ -123,12 +133,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') Ventana.cerr
 const Nav = {
   actual: 'vGrabar',
   ir(id) {
-    if (G && id !== 'vGrabar' && !confirm('Se está grabando. ¿Ver otra sección? La grabación sigue.')) return;
+    if (G && id !== 'vGrabar' && !confirm(t('Se está grabando. ¿Ver otra sección? La grabación sigue.'))) return;
     document.querySelectorAll('.vista').forEach(v => v.classList.toggle('oculto', v.id !== id));
     document.querySelectorAll('nav.abajo button').forEach(b => b.classList.toggle('on', b.dataset.vista === id || (id === 'vFicha' && b.dataset.vista === 'vAcervo')));
     this.actual = id; window.scrollTo(0, 0);
     if (id === 'vAcervo') Acervo.pintar();
-    if (id === 'vAjustes') Espacio.actualizar();
+    if (id === 'vAjustes') { Espacio.actualizar(); Plantillas.pintarAjustes(); Idioma.pintar(); pintarBaseTraduccion(); }
   }
 };
 document.querySelectorAll('nav.abajo button').forEach(b => b.addEventListener('click', () => Nav.ir(b.dataset.vista)));
