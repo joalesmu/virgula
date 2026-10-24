@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="description" content="Vírgula · memoria sonora viva. Prueba técnica de grabación.">
+<title>Vírgula · prueba técnica</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!--
+  Vírgula · memoria sonora viva — prueba técnica (etapa 0)
+  Copyright (c) 2025 Alejandro Estrada
+  SPDX-License-Identifier: AGPL-3.0-only
+  Este programa es software libre: puedes redistribuirlo y modificarlo según los términos de la
+  Licencia Pública General Affero de GNU, versión 3, con el término adicional de conservar visible
+  el crédito «Diseñado y desarrollado por Alejandro Estrada». Se distribuye SIN NINGUNA GARANTÍA.
+
+  Qué prueba esta página:
+   · grabar de corrido en dos calidades a la vez (WAV de archivo + comprimido de consulta);
+   · apagar o no el «mejoramiento» del teléfono (supresión de ruido, eco, volumen automático);
+   · mantener la pantalla encendida; guardar por partes cada 5 s y recuperar si algo se corta;
+   · elegir micrófono; registrar interrupciones (pantalla bloqueada, llamadas, pausas del sistema);
+   · espacio ocupado y espacio libre. Todo queda en el teléfono: nada se envía a ningún lado.
+-->
+<style>
+  :root{--fondo:#0f1f33;--panel:#16304d;--borde:#2a4a6e;--texto:#f1f5f9;--suave:#a9bcd3;--acento:#facc15;--rojo:#ef4444;--verde:#22c55e;--ambar:#f59e0b}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--fondo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+  body{padding:max(12px,env(safe-area-inset-top)) 16px 32px}
+  main{max-width:640px;margin:0 auto}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  header img{width:40px;height:40px;border-radius:10px}
+  header h1{font-size:20px;margin:0;flex:1}
+  header small{display:block;font-weight:400;color:var(--suave);font-size:13px}
+  button{font:inherit;border:0;border-radius:12px;padding:12px 16px;background:var(--borde);color:var(--texto);cursor:pointer;min-height:48px}
+  button:disabled{opacity:.45}
+  button.prim{background:var(--acento);color:#1a1a1a;font-weight:700}
+  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:14px;margin:12px 0}
+  .panel h2{font-size:16px;margin:0 0 8px}
+  label{display:block;margin:10px 0 4px;color:var(--suave);font-size:14px}
+  select{width:100%;font:inherit;padding:10px;border-radius:10px;background:var(--fondo);color:var(--texto);border:1px solid var(--borde);min-height:48px}
+  .op{display:flex;gap:8px;flex-wrap:wrap}
+  .op label{display:flex;align-items:center;gap:6px;margin:0;padding:10px 12px;border:1px solid var(--borde);border-radius:10px;color:var(--texto);min-height:44px;cursor:pointer}
+  .op input{width:20px;height:20px;accent-color:var(--acento)}
+  .nota{color:var(--suave);font-size:13px;margin:6px 0 0}
+  #grabar{display:block;width:180px;height:180px;border-radius:50%;margin:18px auto 8px;font-size:22px;font-weight:800;background:var(--rojo);color:#fff;box-shadow:0 0 0 8px rgba(239,68,68,.18)}
+  #grabar.on{background:#991b1b;animation:latido 1.4s infinite}
+  @keyframes latido{50%{box-shadow:0 0 0 16px rgba(239,68,68,.08)}}
+  #tiempo{text-align:center;font-size:42px;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:1px}
+  .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:10px 0 4px}
+  .medidor i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--verde) 0 70%,var(--ambar) 70% 88%,var(--rojo) 88%)}
+  .medidor b{position:absolute;top:0;bottom:0;width:2px;background:#fff;left:0}
+  .controles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controles button{min-height:64px;font-size:17px}
+  #marcar{background:var(--acento);color:#1a1a1a;font-weight:700}
+  .estado{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{display:inline-block;font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--fondo);border:1px solid var(--borde);color:var(--suave)}
+  .chip.ok{color:#bbf7d0;border-color:#166534}.chip.mal{color:#fecaca;border-color:#991b1b}.chip.aviso{color:#fde68a;border-color:#92400e}
+  .sesion{border-top:1px solid var(--borde);padding:12px 0}
+  .sesion:first-child{border-top:0}
+  .sesion h3{font-size:15px;margin:0 0 4px}
+  .sesion audio{width:100%;margin:6px 0}
+  .fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .fila button{flex:1 1 auto;min-height:44px;padding:8px 12px;font-size:14.5px}
+  .aviso-banda{background:#422006;border:1px solid #92400e;color:#fde68a;border-radius:12px;padding:12px;margin:12px 0}
+  pre{white-space:pre-wrap;word-break:break-word;background:var(--fondo);border:1px solid var(--borde);border-radius:10px;padding:10px;font-size:12.5px;max-height:320px;overflow:auto}
+  details summary{cursor:pointer;color:var(--suave);font-size:14px;min-height:32px}
+  footer{color:var(--suave);font-size:12.5px;text-align:center;margin-top:24px}
+  footer a{color:var(--suave)}
+  .oculto{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icono-192.png" alt="">
+    <h1>Vírgula<small>memoria sonora viva · prueba técnica</small></h1>
+    <button id="instalar" class="oculto">⬇️ Instalar</button>
+  </header>
+
+  <div id="recuperar" class="aviso-banda oculto" role="alert"></div>
+
+  <section class="panel" id="ajustes">
+    <h2>⚙️ Antes de grabar</h2>
+    <label for="mic">Micrófono</label>
+    <select id="mic"><option value="">El del teléfono (predeterminado)</option></select>
+    <p class="nota" id="micNota">Si conectas un micrófono de solapa o USB, toca «Buscar micrófonos».</p>
+    <div class="fila"><button id="buscarMic">🔎 Buscar micrófonos</button></div>
+    <label>Calidad</label>
+    <div class="op" role="radiogroup">
+      <label><input type="radio" name="calidad" value="ambas" checked> Archivo + consulta</label>
+      <label><input type="radio" name="calidad" value="archivo"> Solo archivo (WAV)</label>
+      <label><input type="radio" name="calidad" value="consulta"> Solo consulta</label>
+    </div>
+    <label>Canales</label>
+    <div class="op" role="radiogroup">
+      <label><input type="radio" name="canales" value="1" checked> Mono</label>
+      <label><input type="radio" name="canales" value="2"> Estéreo</label>
+    </div>
+    <label>Sonido</label>
+    <div class="op">
+      <label><input type="checkbox" id="mejora"> Usar el «mejoramiento» del teléfono</label>
+    </div>
+    <p class="nota">Apagado (recomendado para documentar): el teléfono no quita ruido ni cambia el volumen. Prueba una vez con y otra sin, y compara.</p>
+    <p class="nota" id="espacio"></p>
+  </section>
+
+  <section class="panel" aria-label="Grabación">
+    <button id="grabar" aria-pressed="false">⏺<br>Grabar</button>
+    <div id="tiempo" aria-live="off">00:00:00</div>
+    <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
+    <p class="nota" id="nivelNota" style="text-align:center">Nivel de entrada</p>
+    <div class="controles">
+      <button id="marcar" disabled>🔖 Marcar<br><small>2 toques: otra vez</small></button>
+      <button id="pausa" disabled>⏸ Pausa</button>
+      <button id="detener" disabled>⏹ Detener</button>
+    </div>
+    <div class="estado" id="estado" aria-live="polite"></div>
+  </section>
+
+  <section class="panel">
+    <h2>🎧 Grabaciones de prueba</h2>
+    <div id="sesiones"><p class="nota">Todavía no hay grabaciones.</p></div>
+  </section>
+
+  <section class="panel">
+    <h2>📋 Informe para enviar</h2>
+    <p class="nota">Resume el teléfono, los ajustes y lo que pasó en cada grabación. Cópialo o compártelo.</p>
+    <div class="fila"><button id="informeCopiar">📋 Copiar informe</button><button id="informeCompartir">📤 Compartir informe</button></div>
+    <details><summary>Ver informe</summary><pre id="informe"></pre></details>
+  </section>
+
+  <footer>Vírgula · Diseñado y desarrollado por Alejandro Estrada · AGPL-3.0<br>Todo queda en este teléfono: nada se envía a ningún lado.</footer>
+</main>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const VERSION = 'prueba-1';
+
+/* ─────────── Base de datos local (IndexedDB) ─────────── */
+const DB = {
+  db: null,
+  abrir() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((ok, mal) => {
+      const r = indexedDB.open('virgula-prueba', 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        d.createObjectStore('sesiones', { keyPath: 'id' });
+        d.createObjectStore('trozos', { autoIncrement: true }).createIndex('sesion', 'sesion');
+      };
+      r.onsuccess = () => { this.db = r.result; ok(this.db); };
+      r.onerror = () => mal(r.error);
+    });
+  },
+  async tx(store, modo, fn) {
+    const d = await this.abrir();
+    return new Promise((ok, mal) => {
+      const t = d.transaction(store, modo), s = t.objectStore(store);
+      let res; const r = fn(s); if (r) r.onsuccess = () => { res = r.result; };
+      t.oncomplete = () => ok(res); t.onerror = () => mal(t.error); t.onabort = () => mal(t.error);
+    });
+  },
+  guardar(store, v) { return this.tx(store, 'readwrite', s => s.put(v)); },
+  leer(store, k) { return this.tx(store, 'readonly', s => s.get(k)); },
+  todas(store) { return this.tx(store, 'readonly', s => s.getAll()); },
+  trozos(sesion) { return this.tx('trozos', 'readonly', s => s.index('sesion').getAll(sesion)); },
+  async borrarSesion(id) {
+    const d = await this.abrir();
+    await new Promise((ok, mal) => {
+      const t = d.transaction(['sesiones', 'trozos'], 'readwrite');
+      t.objectStore('sesiones').delete(id);
+      const c = t.objectStore('trozos').index('sesion').openKeyCursor(IDBKeyRange.only(id));
+      c.onsuccess = () => { const k = c.result; if (k) { t.objectStore('trozos').delete(k.primaryKey); k.continue(); } };
+      t.oncomplete = ok; t.onerror = () => mal(t.error);
+    });
+  }
+};
+
+/* ─────────── Utilidades ─────────── */
+const dos = n => String(n).padStart(2, '0');
+const reloj = s => { s = Math.max(0, Math.floor(s)); return `${dos(Math.floor(s / 3600))}:${dos(Math.floor(s / 60) % 60)}:${dos(s % 60)}`; };
+const mb = b => (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB';
+const sello = d => `${d.getFullYear()}${dos(d.getMonth() + 1)}${dos(d.getDate())}_${dos(d.getHours())}${dos(d.getMinutes())}${dos(d.getSeconds())}`;
+const fechaBonita = t => new Date(t).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+const leerRadio = n => document.querySelector(`input[name="${n}"]:checked`).value;
+function chip(texto, tipo = '') { return `<span class="chip ${tipo}">${texto}</span>`; }
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+/* Procesador de audio: convierte a PCM de 16 bits y lo entrega en bloques de 0.1 s. */
+const CODIGO_CAPTURA = `
+class Captura extends AudioWorkletProcessor {
+  constructor(o) { super(); this.ch = o.processorOptions.canales; this.tam = Math.round(sampleRate / 10); this.buf = new Int16Array(this.tam * this.ch); this.i = 0;
+    this.port.onmessage = e => { if (e.data === 'vaciar') { this.enviar(); this.port.postMessage({ vaciado: true }); } }; }
+  enviar() { if (!this.i) return; const out = this.buf.slice(0, this.i * this.ch); this.port.postMessage({ buf: out.buffer, frames: this.i }, [out.buffer]); this.i = 0; }
+  process(inputs) {
+    const inp = inputs[0]; if (!inp || !inp.length) return true;
+    const n = inp[0].length;
+    for (let f = 0; f < n; f++) {
+      for (let c = 0; c < this.ch; c++) { let s = inp[Math.min(c, inp.length - 1)][f]; s = s < -1 ? -1 : s > 1 ? 1 : s; this.buf[this.i * this.ch + c] = s < 0 ? s * 0x8000 : s * 0x7fff; }
+      if (++this.i === this.tam) this.enviar();
+    }
+    return true;
+  }
+}
+registerProcessor('captura', Captura);`;
+
+function cabeceraWav(bytes, sr, ch) {
+  const h = new DataView(new ArrayBuffer(44)), w = (o, s) => { for (let i = 0; i < s.length; i++) h.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); h.setUint32(4, 36 + bytes, true); w(8, 'WAVE'); w(12, 'fmt '); h.setUint32(16, 16, true); h.setUint16(20, 1, true);
+  h.setUint16(22, ch, true); h.setUint32(24, sr, true); h.setUint32(28, sr * ch * 2, true); h.setUint16(32, ch * 2, true); h.setUint16(34, 16, true);
+  w(36, 'data'); h.setUint32(40, bytes, true);
+  return h.buffer;
+}
+function formatoConsulta() {
+  const opciones = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm'];
+  return window.MediaRecorder ? (opciones.find(m => MediaRecorder.isTypeSupported(m)) || '') : '';
+}
+const extension = mime => /mp4/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : 'webm';
+
+/* ─────────── Grabación ─────────── */
+let G = null;   // la grabación en curso
+
+async function grabar() {
+  if (G) return;
+  const calidad = leerRadio('calidad'), canales = Number(leerRadio('canales')), mejora = $('mejora').checked;
+  const conArchivo = calidad !== 'consulta', conConsulta = calidad !== 'archivo';
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: {
+      deviceId: $('mic').value ? { exact: $('mic').value } : undefined,
+      channelCount: { ideal: canales }, sampleRate: { ideal: 48000 },
+      echoCancellation: mejora, noiseSuppression: mejora, autoGainControl: mejora } });
+  } catch (e) { return aviso('No se pudo usar el micrófono: ' + e.message + '. Revisa el permiso del micrófono para esta página.', 'mal'); }
+  const track = stream.getAudioTracks()[0], ajustes = track.getSettings ? track.getSettings() : {};
+  let ctx;
+  try { ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
+  const sr = ctx.sampleRate;
+  const fuente = ctx.createMediaStreamSource(stream);
+  const analizador = ctx.createAnalyser(); analizador.fftSize = 2048; fuente.connect(analizador);
+  const ahora = Date.now();
+  G = { id: 's' + ahora, inicio: ahora, sr, canales, conArchivo, conConsulta, mejora, stream, track, ctx, analizador,
+    t0: performance.now(), pausado: 0, pausaDesde: 0, frames: 0, pendientes: [], nTrozo: 0, bytesPcm: 0, bytesComp: 0,
+    marcas: [], eventos: [], huecos: 0, ultimoGuardado: 0, mime: '', recorder: null, nodo: null, wake: null, picoMax: 0, saturado: 0 };
+  G.sesion = { id: G.id, version: VERSION, inicio: ahora, estado: 'grabando', sr, canales, conArchivo, conConsulta, mejora,
+    microfono: track.label || 'predeterminado', ajustesReales: ajustes, marcas: [], eventos: [], frames: 0, bytesPcm: 0, bytesComp: 0 };
+  evento('inicio', `ajustes reales: ${JSON.stringify({ sampleRate: ajustes.sampleRate, channelCount: ajustes.channelCount, echoCancellation: ajustes.echoCancellation, noiseSuppression: ajustes.noiseSuppression, autoGainControl: ajustes.autoGainControl })} · contexto ${sr} Hz`);
+
+  if (conArchivo) {
+    try {
+      const url = URL.createObjectURL(new Blob([CODIGO_CAPTURA], { type: 'application/javascript' }));
+      await ctx.audioWorklet.addModule(url);
+      const nodo = new AudioWorkletNode(ctx, 'captura', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: canales, channelCountMode: 'explicit', processorOptions: { canales } });
+      nodo.port.onmessage = e => { if (!G || G.cerrado) return; if (e.data.buf) { G.pendientes.push(e.data.buf); G.frames += e.data.frames; } else if (e.data.vaciado && G.alVaciar) G.alVaciar(); };
+      const mudo = ctx.createGain(); mudo.gain.value = 0;
+      fuente.connect(nodo); nodo.connect(mudo); mudo.connect(ctx.destination);
+      G.nodo = nodo;
+    } catch (e) { evento('error', 'no se pudo grabar en calidad de archivo: ' + e.message); G.conArchivo = G.sesion.conArchivo = false; }
+  }
+  if (conConsulta) {
+    G.mime = formatoConsulta();
+    if (!G.mime) evento('error', 'este navegador no puede grabar en calidad de consulta');
+    else {
+      const mr = new MediaRecorder(stream, { mimeType: G.mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
+      mr.ondataavailable = e => { if (e.data && e.data.size) guardarTrozo('comp', e.data); };
+      mr.onerror = e => evento('error', 'grabación de consulta: ' + (e.error && e.error.message));
+      mr.start(2000);
+      G.recorder = mr; G.sesion.mime = G.mime;
+    }
+  }
+  vigilar(track, ctx);
+  ultimoChequeo = performance.now();
+  await pantallaEncendida(true);
+  try { if (navigator.storage && navigator.storage.persist) G.sesion.persistente = await navigator.storage.persist(); } catch (e) {}
+  await DB.guardar('sesiones', G.sesion);
+  G.intervalo = setInterval(cadaSegundo, 1000);
+  G.cuadro = requestAnimationFrame(medir);
+  $('grabar').classList.add('on'); $('grabar').innerHTML = '●<br>Grabando'; $('grabar').setAttribute('aria-pressed', 'true');
+  ['marcar', 'pausa', 'detener'].forEach(b => $(b).disabled = false);
+  $('ajustes').querySelectorAll('input,select,button').forEach(x => x.disabled = true);
+  pintarEstado();
+}
+
+function transcurrido() { if (!G) return 0; const p = G.pausaDesde ? performance.now() - G.pausaDesde : 0; return (performance.now() - G.t0 - G.pausado - p) / 1000; }
+function segundosGrabados() { return G && G.conArchivo ? G.frames / G.sr : transcurrido(); }
+function evento(tipo, detalle = '') { const e = { t: Math.round(transcurrido() * 10) / 10, hora: new Date().toLocaleTimeString('es-MX'), tipo, detalle }; if (G) { G.eventos.push(e); G.sesion.eventos = G.eventos; } pintarEstado(); return e; }
+
+function vigilar(track, ctx) {
+  track.onmute = () => evento('micrófono silenciado por el sistema', 'p. ej. una llamada u otra app usando el micrófono');
+  track.onunmute = () => evento('micrófono de vuelta');
+  track.onended = () => { evento('el micrófono se desconectó'); };
+  ctx.onstatechange = () => evento('audio del sistema: ' + ctx.state);
+}
+document.addEventListener('visibilitychange', () => { if (!G) return; evento(document.hidden ? 'pantalla oculta o bloqueada' : 'pantalla visible'); if (document.hidden) vaciar(); if (!document.hidden) { pantallaEncendida(true); if (G.ctx.state !== 'running' && !G.pausaDesde) G.ctx.resume().catch(() => {}); } });
+window.addEventListener('pagehide', () => { if (G) { evento('la página se cerró o se ocultó'); vaciar(); } });
+document.addEventListener('freeze', () => G && evento('el sistema congeló la página'));
+document.addEventListener('resume', () => G && evento('el sistema reanudó la página'));
+window.addEventListener('online', () => G && evento('con internet'));
+window.addEventListener('offline', () => G && evento('sin internet'));
+
+async function pantallaEncendida(si) {
+  try {
+    if (si && 'wakeLock' in navigator && !G.wake) {
+      G.wake = await navigator.wakeLock.request('screen');
+      G.wake.addEventListener('release', () => { if (G) { G.wake = null; if (!G.cerrando) evento('la pantalla dejó de estar fija'); } });
+    } else if (!si && G && G.wake) { await G.wake.release(); G.wake = null; }
+  } catch (e) { if (si) evento('no se pudo mantener la pantalla encendida', e.message); }
+  pintarEstado();
+}
+
+async function guardarTrozo(tipo, blob, frames = 0) {
+  const id = G ? G.id : null; if (!id) return;
+  const n = ++G.nTrozo;
+  if (tipo === 'pcm') G.bytesPcm += blob.size; else G.bytesComp += blob.size;
+  try { await DB.guardar('trozos', { sesion: id, tipo, n, datos: blob, frames }); G.ultimoGuardado = Date.now(); }
+  catch (e) { evento('error al guardar', e.message + ' (¿espacio lleno?)'); }
+}
+function vaciar() {
+  if (!G || !G.pendientes.length) return;
+  const partes = G.pendientes; G.pendientes = [];
+  const frames = partes.reduce((a, b) => a + b.byteLength, 0) / (2 * G.canales);
+  guardarTrozo('pcm', new Blob(partes), frames);
+}
+
+let ultimoChequeo = 0;
+async function cadaSegundo() {
+  if (!G) return;
+  $('tiempo').textContent = reloj(transcurrido());
+  if (performance.now() - ultimoChequeo > 2000) {
+    ultimoChequeo = performance.now();
+    vaciar();
+    G.sesion.frames = G.frames; G.sesion.bytesPcm = G.bytesPcm; G.sesion.bytesComp = G.bytesComp; G.sesion.marcas = G.marcas; G.sesion.duracion = transcurrido();
+    DB.guardar('sesiones', G.sesion).catch(() => {});
+    // ¿Se perdió audio? Lo esperado según el reloj contra lo recibido del micrófono
+    if (G.conArchivo && !G.pausaDesde) {
+      const falta = transcurrido() - G.frames / G.sr;
+      if (falta > G.huecos + 0.5) { evento('hueco en la grabación', `faltan ${falta.toFixed(1)} s respecto al reloj`); G.huecos = falta; }
+    }
+    actualizarEspacio();
+  }
+  pintarEstado();
+}
+
+function medir() {
+  if (!G) return;
+  const a = G.analizador, d = new Float32Array(a.fftSize);
+  a.getFloatTimeDomainData(d);
+  let pico = 0, suma = 0; for (const v of d) { const x = Math.abs(v); if (x > pico) pico = x; suma += v * v; }
+  const rms = Math.sqrt(suma / d.length), db = v => v > 0 ? 20 * Math.log10(v) : -100;
+  const pos = v => Math.max(0, Math.min(100, (db(v) + 60) / 60 * 100));
+  $('nivel').style.width = pos(rms) + '%';
+  G.picoMax = Math.max(G.picoMax * 0.995, pico); $('pico').style.left = pos(G.picoMax) + '%';
+  if (pico > 0.98) { if (performance.now() - (G.ultSat || 0) > 1000) { G.saturado++; G.ultSat = performance.now(); } $('nivelNota').textContent = '⚠️ Satura: aleja el micrófono o habla más bajo'; }
+  else if (rms < 0.003 && transcurrido() > 3) $('nivelNota').textContent = 'Muy bajo: acerca el micrófono';
+  else $('nivelNota').textContent = `Nivel ${db(rms).toFixed(0)} dB · pico ${db(pico).toFixed(0)} dB`;
+  G.cuadro = requestAnimationFrame(medir);
+}
+
+/* Marcas: un toque = siguiente clip; dos toques seguidos = «otra vez» (el intento anterior queda descartado) */
+let ultimoToque = 0;
+function marcar() {
+  if (!G) return;
+  const t = Math.round(segundosGrabados() * 100) / 100, ahora = performance.now();
+  if (ahora - ultimoToque < 450 && G.marcas.length) { const m = G.marcas.at(-1); m.tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); }
+  else { G.marcas.push({ t, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
+  ultimoToque = ahora; G.sesion.marcas = G.marcas; pintarEstado();
+}
+
+async function pausa() {
+  if (!G) return;
+  if (!G.pausaDesde) {
+    G.pausaDesde = performance.now();
+    if (G.recorder && G.recorder.state === 'recording') G.recorder.pause();
+    await G.ctx.suspend().catch(() => {});
+    $('pausa').textContent = '▶ Seguir'; evento('pausa');
+  } else {
+    await G.ctx.resume().catch(() => {});
+    if (G.recorder && G.recorder.state === 'paused') G.recorder.resume();
+    G.pausado += performance.now() - G.pausaDesde; G.pausaDesde = 0;
+    $('pausa').textContent = '⏸ Pausa'; evento('continúa');
+  }
+}
+
+async function detener() {
+  if (!G) return;
+  G.cerrando = true;
+  $('detener').disabled = true;
+  if (G.pausaDesde) await pausa();
+  evento('fin');
+  if (G.recorder && G.recorder.state !== 'inactive') await new Promise(ok => { G.recorder.addEventListener('stop', () => setTimeout(ok, 50), { once: true }); G.recorder.stop(); });
+  if (G.nodo) await new Promise(ok => { G.alVaciar = ok; G.nodo.port.postMessage('vaciar'); setTimeout(ok, 800); });
+  G.cerrado = true;   // lo que llegue después de aquí ya no cuenta: así el archivo y su duración coinciden
+  vaciar();
+  await new Promise(ok => setTimeout(ok, 300));
+  clearInterval(G.intervalo); cancelAnimationFrame(G.cuadro);
+  G.stream.getTracks().forEach(t => t.stop());
+  await G.ctx.close().catch(() => {});
+  await pantallaEncendida(false);
+  Object.assign(G.sesion, { estado: 'terminada', fin: Date.now(), duracion: transcurrido(), frames: G.frames, bytesPcm: G.bytesPcm, bytesComp: G.bytesComp,
+    marcas: G.marcas, eventos: G.eventos, saturaciones: G.saturado, huecos: G.huecos });
+  await DB.guardar('sesiones', G.sesion);
+  G = null;
+  $('grabar').classList.remove('on'); $('grabar').innerHTML = '⏺<br>Grabar'; $('grabar').setAttribute('aria-pressed', 'false');
+  ['marcar', 'pausa', 'detener'].forEach(b => $(b).disabled = true);
+  $('ajustes').querySelectorAll('input,select,button').forEach(x => x.disabled = false);
+  $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = 'Nivel de entrada';
+  pintarEstado(); await pintarSesiones(); actualizarEspacio();
+}
+
+function pintarEstado(msg) {
+  if (!G) { $('estado').innerHTML = msg || ''; return; }
+  const seg = G.ultimoGuardado ? Math.round((Date.now() - G.ultimoGuardado) / 1000) : null;
+  $('estado').innerHTML = [
+    G.wake ? chip('🔆 Pantalla fija', 'ok') : chip('🔅 Pantalla sin fijar', 'aviso'),
+    G.conArchivo ? chip(`🗄️ Archivo ${mb(G.bytesPcm)}`) : '',
+    G.recorder ? chip(`🔊 Consulta ${mb(G.bytesComp)}`) : '',
+    seg != null ? chip(`💾 Guardado hace ${seg} s`, seg > 12 ? 'aviso' : 'ok') : chip('💾 Guardando…'),
+    chip(`🔖 ${G.marcas.length} marca(s)`),
+    G.huecos > 0.5 ? chip(`⚠️ Huecos: ${G.huecos.toFixed(1)} s`, 'mal') : '',
+    G.eventos.length > 1 ? chip(`📝 ${G.eventos.length - 1} evento(s)`) : '',
+    G.pausaDesde ? chip('⏸ En pausa', 'aviso') : ''
+  ].join(' ');
+}
+function aviso(texto, tipo) { $('estado').innerHTML = chip(texto, tipo); }
+
+/* ─────────── Archivos de cada sesión ─────────── */
+async function archivosDe(s) {
+  const trozos = (await DB.trozos(s.id)).sort((a, b) => a.n - b.n);
+  const pcm = trozos.filter(t => t.tipo === 'pcm').map(t => t.datos), comp = trozos.filter(t => t.tipo === 'comp').map(t => t.datos);
+  const bytes = pcm.reduce((a, b) => a + b.size, 0), base = 'virgula_' + sello(new Date(s.inicio));
+  const r = { bytesPcm: bytes, framesPcm: bytes / (2 * s.canales) };
+  if (bytes) r.wav = new File([cabeceraWav(bytes, s.sr, s.canales), ...pcm], base + '.wav', { type: 'audio/wav' });
+  if (comp.length) { const mime = (s.mime || 'audio/webm').split(';')[0]; r.consulta = new File(comp, base + '.' + extension(s.mime || ''), { type: mime }); }
+  return r;
+}
+
+async function pintarSesiones() {
+  const lista = (await DB.todas('sesiones')).filter(s => s.estado === 'terminada').sort((a, b) => b.inicio - a.inicio);
+  if (!lista.length) { $('sesiones').innerHTML = '<p class="nota">Todavía no hay grabaciones.</p>'; return; }
+  $('sesiones').innerHTML = lista.map(s => `<div class="sesion" data-id="${s.id}">
+      <h3>${fechaBonita(s.inicio)} · ${reloj(s.duracion || 0)}</h3>
+      <div>${[s.canales === 2 ? chip('Estéreo') : chip('Mono'), chip(`${s.sr} Hz`), s.mejora ? chip('Con «mejoramiento»', 'aviso') : chip('Sin «mejoramiento»', 'ok'),
+        chip(`🔖 ${(s.marcas || []).length}`), (s.huecos || 0) > 0.5 ? chip(`⚠️ Huecos ${s.huecos.toFixed(1)} s`, 'mal') : chip('Sin huecos', 'ok'),
+        s.recuperada ? chip('Recuperada', 'aviso') : '', s.saturaciones ? chip(`Saturó ${s.saturaciones} vez(es)`, 'aviso') : ''].join(' ')}</div>
+      <div class="audios"><p class="nota">Cargando…</p></div>
+      <div class="fila"><button data-acc="informe">📋 Informe</button><button data-acc="borrar">🗑 Borrar</button></div></div>`).join('');
+  for (const s of lista) {
+    const cont = document.querySelector(`.sesion[data-id="${s.id}"] .audios`);
+    try {
+      const a = await archivosDe(s);
+      cont.innerHTML = [a.wav ? audioHtml('🗄️ Archivo (WAV)', a.wav) : '', a.consulta ? audioHtml('🔊 Consulta', a.consulta) : ''].join('') || '<p class="nota">Sin audio guardado.</p>';
+      cont._archivos = a;
+    } catch (e) { cont.innerHTML = '<p class="nota">No se pudo leer: ' + esc(e.message) + '</p>'; }
+  }
+}
+function audioHtml(titulo, f) {
+  const url = URL.createObjectURL(f);
+  return `<p class="nota" style="margin-top:8px"><b>${titulo}</b> · ${mb(f.size)} · ${esc(f.name)}</p><audio controls preload="none" src="${url}"></audio>
+    <div class="fila"><button data-compartir="${esc(f.name)}">📤 Compartir</button><a href="${url}" download="${esc(f.name)}" style="flex:1 1 auto"><button style="width:100%">⬇️ Descargar</button></a></div>`;
+}
+$('sesiones').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const caja = b.closest('.sesion'), id = caja && caja.dataset.id;
+  if (b.dataset.compartir) {
+    const a = caja.querySelector('.audios')._archivos, f = [a.wav, a.consulta].find(x => x && x.name === b.dataset.compartir);
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: f.name }); } catch (x) {} }
+    else alert('Este teléfono no permite compartir el archivo desde aquí: usa «Descargar».');
+  }
+  if (b.dataset.acc === 'borrar' && confirm('¿Borrar esta grabación de prueba del teléfono?')) { await DB.borrarSesion(id); pintarSesiones(); actualizarEspacio(); }
+  if (b.dataset.acc === 'informe') { const s = await DB.leer('sesiones', id); $('informe').textContent = await informe([s]); $('informe').closest('details').open = true; $('informe').scrollIntoView({ behavior: 'smooth' }); }
+});
+
+/* Grabaciones que no se cerraron (la página se cerró, el teléfono se apagó…) */
+async function revisarPendientes() {
+  const abiertas = (await DB.todas('sesiones')).filter(s => s.estado === 'grabando');
+  if (!abiertas.length) { $('recuperar').classList.add('oculto'); return; }
+  $('recuperar').classList.remove('oculto');
+  $('recuperar').innerHTML = `⚠️ Hay ${abiertas.length} grabación(es) que no se cerraron. Lo guardado hasta el último momento se puede recuperar.
+    <div class="fila"><button class="prim" id="recuperarSi">🛟 Recuperar</button></div>`;
+  $('recuperarSi').onclick = async () => {
+    for (const s of abiertas) {
+      const a = await archivosDe(s);
+      Object.assign(s, { estado: 'terminada', recuperada: true, frames: a.framesPcm || s.frames, duracion: a.framesPcm ? a.framesPcm / s.sr : (s.duracion || 0) });
+      (s.eventos = s.eventos || []).push({ t: s.duracion, hora: new Date().toLocaleTimeString('es-MX'), tipo: 'recuperada', detalle: 'la grabación se cortó; se recuperó lo guardado' });
+      await DB.guardar('sesiones', s);
+    }
+    revisarPendientes(); pintarSesiones();
+  };
+}
+
+/* ─────────── Espacio ─────────── */
+async function actualizarEspacio() {
+  if (!navigator.storage || !navigator.storage.estimate) { $('espacio').textContent = ''; return; }
+  const e = await navigator.storage.estimate(), libre = (e.quota || 0) - (e.usage || 0);
+  const canales = Number(leerRadio('canales')), cal = leerRadio('calidad');
+  const porMin = (cal !== 'consulta' ? 48000 * 2 * canales * 60 : 0) + (cal !== 'archivo' ? (canales === 2 ? 96000 : 48000) / 8 * 60 : 0);
+  $('espacio').textContent = `💾 Usado por Vírgula: ${mb(e.usage || 0)} · disponible para grabar: ${mb(libre)} (unas ${Math.floor(libre / porMin / 60)} h ${Math.floor(libre / porMin) % 60} min con estos ajustes).`;
+}
+document.querySelectorAll('input[name="calidad"],input[name="canales"]').forEach(r => r.addEventListener('change', actualizarEspacio));
+
+/* ─────────── Micrófonos ─────────── */
+async function buscarMicrofonos() {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop());
+    const lista = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    $('mic').innerHTML = '<option value="">El del teléfono (predeterminado)</option>' + lista.filter(d => d.deviceId && d.deviceId !== 'default')
+      .map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Micrófono ' + (i + 1))}</option>`).join('');
+    $('micNota').textContent = `${lista.length} micrófono(s) encontrado(s).`;
+  } catch (e) { $('micNota').textContent = 'No se pudo revisar: ' + e.message; }
+}
+navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => { if (G) evento('cambió un micrófono (se conectó o desconectó)'); });
+
+/* ─────────── Informe ─────────── */
+async function informe(sesiones) {
+  const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : {};
+  const l = [`Vírgula · prueba técnica (${VERSION}) · ${new Date().toLocaleString('es-MX')}`,
+    `Teléfono/navegador: ${navigator.userAgent}`,
+    `Instalada como app: ${matchMedia('(display-mode: standalone)').matches ? 'sí' : 'no'} · Pantalla fija disponible: ${'wakeLock' in navigator ? 'sí' : 'no'} · Formato de consulta: ${formatoConsulta() || 'ninguno'}`,
+    `Espacio: usado ${mb(e.usage || 0)} de ${mb(e.quota || 0)}`, ''];
+  for (const s of sesiones) {
+    const a = await archivosDe(s);
+    l.push(`— Grabación ${fechaBonita(s.inicio)}${s.recuperada ? ' (RECUPERADA)' : ''}`,
+      `  Duración: ${reloj(s.duracion || 0)} · audio de archivo: ${reloj((a.framesPcm || 0) / s.sr)} · huecos: ${(s.huecos || 0).toFixed(1)} s · saturaciones: ${s.saturaciones || 0}`,
+      `  Ajustes pedidos: ${s.canales === 2 ? 'estéreo' : 'mono'}, ${s.conArchivo ? 'archivo' : ''}${s.conArchivo && s.conConsulta ? ' + ' : ''}${s.conConsulta ? 'consulta' : ''}, mejoramiento ${s.mejora ? 'encendido' : 'apagado'}`,
+      `  Ajustes reales del micrófono: ${JSON.stringify(s.ajustesReales || {})}`,
+      `  Micrófono: ${s.microfono} · ${s.sr} Hz · consulta: ${s.mime || '—'}`,
+      `  Tamaños: archivo ${a.wav ? mb(a.wav.size) : '—'} · consulta ${a.consulta ? mb(a.consulta.size) : '—'} · marcas: ${(s.marcas || []).length} (${(s.marcas || []).filter(m => m.tipo === 'otra vez').length} «otra vez»)`,
+      `  Eventos:`, ...(s.eventos || []).map(ev => `    ${reloj(ev.t)} (${ev.hora}) ${ev.tipo}${ev.detalle ? ' — ' + ev.detalle : ''}`), '');
+  }
+  return l.join('\n');
+}
+async function informeCompleto() { const s = (await DB.todas('sesiones')).filter(x => x.estado === 'terminada').sort((a, b) => a.inicio - b.inicio); return informe(s); }
+$('informeCopiar').onclick = async () => { const t = await informeCompleto(); $('informe').textContent = t; try { await navigator.clipboard.writeText(t); $('informeCopiar').textContent = '✅ Copiado'; setTimeout(() => $('informeCopiar').textContent = '📋 Copiar informe', 2000); } catch (e) { $('informe').closest('details').open = true; } };
+$('informeCompartir').onclick = async () => { const t = await informeCompleto(); $('informe').textContent = t; if (navigator.share) { try { await navigator.share({ title: 'Informe Vírgula', text: t }); } catch (e) {} } else $('informe').closest('details').open = true; };
+
+/* ─────────── Instalar ─────────── */
+let pedirInstalar = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedirInstalar = e; $('instalar').classList.remove('oculto'); });
+$('instalar').onclick = async () => { if (!pedirInstalar) return; pedirInstalar.prompt(); await pedirInstalar.userChoice; pedirInstalar = null; $('instalar').classList.add('oculto'); };
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+/* ─────────── Arranque ─────────── */
+$('grabar').onclick = () => G ? null : grabar();
+$('marcar').onclick = marcar; $('pausa').onclick = pausa; $('detener').onclick = detener;
+$('buscarMic').onclick = buscarMicrofonos;
+window.addEventListener('beforeunload', e => { if (G) { e.preventDefault(); e.returnValue = ''; } });
+if (!navigator.mediaDevices || !window.AudioContext) aviso('Este navegador no puede grabar. Usa Chrome en Android.', 'mal');
+(async () => { await revisarPendientes(); await pintarSesiones(); actualizarEspacio(); })();
+</script>
+</body>
+</html>
