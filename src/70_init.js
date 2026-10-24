@@ -61,8 +61,17 @@ $('bReportar').onclick = async () => {
 
 /* ── Instalar como app ── */
 let pedidoInstalar = null;
+if (ES_IOS && !INSTALADA) $('bInstalar').classList.remove('oculto');   // en iPhone no hay aviso automático: se explica cómo
+function instruccionesIos() {
+  Ventana.abrir(`<h2>${tH('⬇️ Instalar en iPhone o iPad')}</h2>
+    <p>${tH('1. Abre esta página en **Safari**.')}</p><p>${tH('2. Toca **Compartir** (el cuadro con la flecha hacia arriba).')}</p>
+    <p>${tH('3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.')}</p>
+    <div class="banda info">${tH('Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.')}</div>
+    <div class="fila"><button id="iosCerrar">${tH('Entendido')}</button></div>`);
+  $('iosCerrar').onclick = () => Ventana.cerrar();
+}
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; $('bInstalar').classList.remove('oculto'); });
-$('bInstalar').onclick = async () => { if (!pedidoInstalar) return; pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; $('bInstalar').classList.add('oculto'); };
+$('bInstalar').onclick = async () => { if (ES_IOS && !pedidoInstalar) return instruccionesIos(); if (!pedidoInstalar) return; pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; $('bInstalar').classList.add('oculto'); };
 window.addEventListener('appinstalled', () => { $('bInstalar').classList.add('oculto'); avisar(t('✅ Vírgula quedó instalada.')); });
 
 /* ── Sin conexión; avisa cuando hay versión nueva (nunca recarga en medio de una grabación) ── */
@@ -92,6 +101,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   await Idioma.cargar();
   await Plantillas.cargar();
   Ajustes.pintar();
+  if (ES_IOS) $('avisoIos').classList.remove('oculto');
   $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
   await revisarPendientes();
   Espacio.actualizar(); Recordatorio.revisar();

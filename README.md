@@ -1,10 +1,10 @@
 # Vírgula · memoria sonora viva
 
-Grabadora de campo gratuita: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas para archivos, bases de datos e investigaciones. Funciona sin conexión en Android, Windows y Mac (Chrome o Edge) y se instala como app desde el navegador.
+Grabadora de campo gratuita: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas para archivos, bases de datos e investigaciones. Funciona sin conexión en Android, iPhone y iPad, Windows y Mac (Chrome, Edge o Safari) y se instala como app desde el navegador.
 
 > En los códices mesoamericanos, la **vírgula** es la voluta que sale de la boca de alguien para indicar que habla. Todo sonido viene de alguien.
 
-**Versión:** 1.0 · **Abrir:** https://joalesmu.github.io/virgula/
+**Versión:** 1.1 · **Abrir:** https://joalesmu.github.io/virgula/
 
 ## Qué hace
 - **Grabar en un toque.** Dos calidades a la vez del mismo micrófono: *archivo* (WAV de 16 bits, sin alterar) y *consulta* (ligera, con volumen ajustado solo en ella). Marcas mientras se graba: 1 toque = siguiente clip; 2 toques = «otra vez». Guarda cada 2 s; si la app se cierra, se recupera lo grabado. Detecta y anota los tramos sin audio (llamadas) y los huecos.
@@ -14,6 +14,8 @@ Grabadora de campo gratuita: graba en un toque, documenta cada sonido con su fic
 - **Clips** cortados por las marcas, con etiqueta, texto y traducción.
 - **Exportar** una o varias grabaciones en `.zip`, eligiendo audios, clips y adjuntos, con el tamaño estimado y por dónde conviene enviarlo. **Importar** paquetes en otro aparato (trae también sus plantillas).
 - **Recordatorio de respaldo** (a los 3 días por defecto) y **📨 Reportar un problema** (informe técnico sin audios ni fichas).
+- **Accesibilidad:** tamaño de letra y botones (hasta ×1.5), tema claro para el sol, alto contraste, reducir movimiento y vibración opcional.
+- **iPhone y iPad:** se instala desde Safari (Compartir → Agregar a pantalla de inicio); la consulta se graba en m4a. En iOS hay que mantener la pantalla encendida y la app al frente mientras se graba.
 - **Interfaz traducible** a cualquier lengua: se instala un idioma desde archivo o desde los publicados aquí; cualquier persona puede traducir con una hoja de cálculo y probar su traducción al momento.
 
 ## El paquete exportado

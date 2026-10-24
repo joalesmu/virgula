@@ -24,6 +24,7 @@
         <button id="bDetener" disabled data-t>⏹ Detener</button>
       </div>
       <div id="estadoGrab" class="fila fija" aria-live="polite"></div>
+      <p class="nota aviso-ios oculto" id="avisoIos" data-t>En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.</p>
       <p class="resumen-ajustes" id="resumenAjustes"></p>
     </div>
     <p class="nota" style="text-align:center" data-t>Graba primero; la ficha se completa después, con calma.</p>
@@ -64,6 +65,27 @@
         <div class="fila"><button id="bTPlantilla" data-t>⬇️ Descargar plantilla</button><button id="bTProbar" data-t>📥 Probar mi traducción</button><button id="bTEnviar" data-t>📨 Enviar traducción</button></div>
         <input type="file" id="archivoTraduccion" accept=".csv,.json,text/csv,application/json" class="oculto">
       </details>
+    </div>
+    <div class="panel" id="panelAcceso">
+      <h2>♿ <span data-t>Accesibilidad</span></h2>
+      <label data-t>Tamaño de letra y botones</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aEscala" value="1"> <span data-t>Normal</span></label>
+        <label><input type="radio" name="aEscala" value="1.15"> <span data-t>Grande</span></label>
+        <label><input type="radio" name="aEscala" value="1.3"> <span data-t>Muy grande</span></label>
+        <label><input type="radio" name="aEscala" value="1.5"> <span data-t>Máxima</span></label>
+      </div>
+      <label data-t>Colores</label>
+      <div class="op" role="radiogroup">
+        <label><input type="radio" name="aTema" value="oscuro"> <span data-t>Oscuro</span></label>
+        <label><input type="radio" name="aTema" value="claro"> <span data-t>Claro (para el sol)</span></label>
+        <label><input type="radio" name="aTema" value="contraste"> <span data-t>Alto contraste</span></label>
+      </div>
+      <div class="op" style="margin-top:8px">
+        <label><input type="checkbox" id="aMovimiento"> <span data-t>Reducir movimiento</span></label>
+        <label><input type="checkbox" id="aVibrar"> <span data-t>Vibrar al grabar y marcar</span></label>
+      </div>
+      <p class="nota" data-t>Los cambios se aplican al momento y se guardan en este aparato.</p>
     </div>
     <div class="panel">
       <h2>🎙️ <span data-t>Grabación</span></h2>

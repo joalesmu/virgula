@@ -9,7 +9,7 @@
  "avala": "",
  "licencia": "AGPL-3.0",
  "contacto": "",
- "version": 1,
+ "version": 2,
  "textos": {
   "memoria sonora viva": "living sound memory",
   "⬇️ Instalar": "⬇️ Install",
@@ -642,6 +642,27 @@
   "✨ Hay una versión nueva de Vírgula.": "✨ There is a new version of Vírgula.",
   "Actualizar ahora": "Update now",
   "Termina la grabación antes de actualizar.": "Finish the recording before updating.",
-  "⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.": "⚠️ This browser does not allow saving data (private window?). Vírgula needs to save on the device."
+  "⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.": "⚠️ This browser does not allow saving data (private window?). Vírgula needs to save on the device.",
+  "En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.": "On iPhone and iPad: keep the screen on and Vírgula in front while recording. If you lock the screen or switch apps, iOS stops the microphone; Vírgula notes it as a span without audio.",
+  "Accesibilidad": "Accessibility",
+  "Tamaño de letra y botones": "Text and button size",
+  "Normal": "Normal",
+  "Grande": "Large",
+  "Muy grande": "Very large",
+  "Máxima": "Maximum",
+  "Colores": "Colors",
+  "Oscuro": "Dark",
+  "Claro (para el sol)": "Light (for sunlight)",
+  "Alto contraste": "High contrast",
+  "Reducir movimiento": "Reduce motion",
+  "Vibrar al grabar y marcar": "Vibrate when recording and marking",
+  "Los cambios se aplican al momento y se guardan en este aparato.": "Changes apply immediately and are saved on this device.",
+  "En iPhone o iPad está en la app **Archivos** → **Descargas** (o donde elegiste guardarlo). Ahí, mantén presionado el paquete y toca **Compartir**.": "On iPhone or iPad it is in the **Files** app → **Downloads** (or wherever you chose to save it). There, press and hold the package and tap **Share**.",
+  "⬇️ Instalar en iPhone o iPad": "⬇️ Install on iPhone or iPad",
+  "1. Abre esta página en **Safari**.": "1. Open this page in **Safari**.",
+  "2. Toca **Compartir** (el cuadro con la flecha hacia arriba).": "2. Tap **Share** (the square with the arrow pointing up).",
+  "3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.": "3. Choose **Add to Home Screen** and then **Add**.",
+  "Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.": "Install it before recording: on iPhone, Safari deletes the data of pages not used for 7 days, but not of apps added to the Home Screen.",
+  "Entendido": "Got it"
  }
 }

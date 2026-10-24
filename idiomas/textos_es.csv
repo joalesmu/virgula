@@ -5,6 +5,7 @@ Idioma,Pantalla principal
 🔖 Marcar,Grabar
 1 toque: siguiente · 2 toques: otra vez,Grabar
 ⏹ Detener,Grabar
+"En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.",Grabar
 "Graba primero; la ficha se completa después, con calma.",Grabar
 "🔍 Buscar en títulos, descripciones, transcripciones…",Acervo
 Buscar,Acervo
@@ -23,6 +24,19 @@ Partir de,Ajustes
 ⬇️ Descargar plantilla,Ajustes
 📥 Probar mi traducción,Ajustes
 📨 Enviar traducción,Ajustes
+Accesibilidad,Ajustes
+Tamaño de letra y botones,Ajustes
+Normal,Ajustes
+Grande,Ajustes
+Muy grande,Ajustes
+Máxima,Ajustes
+Colores,Ajustes
+Oscuro,Ajustes
+Claro (para el sol),Ajustes
+Alto contraste,Ajustes
+Reducir movimiento,Ajustes
+Vibrar al grabar y marcar,Ajustes
+Los cambios se aplican al momento y se guardan en este aparato.,Ajustes
 Grabación,Ajustes
 Micrófono,Ajustes
 Predeterminado del aparato,Ajustes
@@ -560,6 +574,7 @@ En la computadora queda en Descargas.,Exportar
 ✅ Guardado en **Descargas**:,Exportar
 📂 Abrir Descargas,Exportar
 "Ahí, mantén presionado el paquete y toca **Compartir** (WhatsApp, Drive, correo…). Si el botón no abre nada, ve a la app **Archivos** → **Descargas**, o toca el aviso de descarga de Chrome.",Exportar
+"En iPhone o iPad está en la app **Archivos** → **Descargas** (o donde elegiste guardarlo). Ahí, mantén presionado el paquete y toca **Compartir**.",Exportar
 "Está en la carpeta **Descargas** de la computadora. Desde ahí puedes subirlo a Drive, adjuntarlo a un correo o copiarlo a una memoria.",Exportar
 Listo,Exportar
 ⬇️ Guardar otra vez,Exportar
@@ -630,6 +645,12 @@ Errores recientes,Ajustes
 Problema en Vírgula {v},Ajustes
 ⬇️ Guardar informe,Ajustes
 "Revisa el texto antes de enviarlo. Si es largo, el correo lleva solo el principio: adjunta el informe guardado.",Ajustes
+⬇️ Instalar en iPhone o iPad,Ajustes
+1. Abre esta página en **Safari**.,Ajustes
+2. Toca **Compartir** (el cuadro con la flecha hacia arriba).,Ajustes
+3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.,Ajustes
+"Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.",Ajustes
+Entendido,Ajustes
 ✅ Vírgula quedó instalada.,Ajustes
 ✨ Hay una versión nueva de Vírgula.,Ajustes
 Actualizar ahora,Ajustes

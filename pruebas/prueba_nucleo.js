@@ -9,7 +9,7 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   p.on('pageerror', e => errores.push(e.message)); p.on('console', m => m.type() === 'error' && errores.push(m.text()));
   p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'BORRAR' : undefined));
   await p.goto(BASE); await p.waitForTimeout(800);
-  ok(await p.textContent('#version') === '1.0', 'versión visible');
+  ok(await p.textContent('#version') === '1.1', 'versión visible');
   await p.screenshot({ path: OUT + '/1_grabar.png' });
   // Grabar
   await p.click('#bGrabar'); await p.waitForTimeout(3000);

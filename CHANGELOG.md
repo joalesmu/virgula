@@ -1,5 +1,10 @@
 # Cambios
 
+## 1.1 (octubre de 2026)
+- Accesibilidad: tamaño de letra y botones, tema claro (para el sol), alto contraste, reducir movimiento, vibración opcional.
+- iPhone y iPad: instrucciones para instalar, aviso de pantalla encendida, audio a la frecuencia del aparato, consulta en m4a, mensajes de Archivos/Descargas, metadatos para pantalla de inicio.
+- Inglés actualizado (v2).
+
 ## 1.0 (octubre de 2026)
 Primera versión completa.
 - Grabación en un toque con calidad de archivo (WAV) y de consulta; marcas, pausa, recuperación, detección de tramos sin audio y huecos.

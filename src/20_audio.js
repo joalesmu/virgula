@@ -23,7 +23,8 @@ class Captura extends AudioWorkletProcessor {
 registerProcessor('captura', Captura);`;
 
 function formatoConsulta() {
-  const op = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm'];
+  // En iPhone/iPad, m4a (AAC): es lo que mejor reproducen y comparten los aparatos de Apple
+  const op = ES_IOS ? ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus'] : ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm'];
   return window.MediaRecorder ? (op.find(m => MediaRecorder.isTypeSupported(m)) || '') : '';
 }
 const extensionDe = mime => /mp4|aac/.test(mime) ? 'm4a' : /ogg/.test(mime) ? 'ogg' : /wav/.test(mime) ? 'wav' : 'webm';
@@ -52,7 +53,9 @@ const Grabadora = {
       avisar(t('No se pudo usar el micrófono: {error}. Revisa el permiso del micrófono.', { error: e.message }), 6000); return;
     }
     const track = stream.getAudioTracks()[0], reales = track.getSettings ? track.getSettings() : {};
-    let ctx; try { ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
+    // iOS graba a la frecuencia del aparato: pedirle otra puede fallar o dejar el audio en silencio
+    let ctx; try { ctx = ES_IOS ? new AudioContext() : new AudioContext({ sampleRate: 48000, latencyHint: 'playback' }); } catch (e) { ctx = new AudioContext(); }
+    if (ctx.state !== 'running') await ctx.resume().catch(() => {});
     const sr = ctx.sampleRate, fuente = ctx.createMediaStreamSource(stream);
     const analizador = ctx.createAnalyser(); analizador.fftSize = 2048; fuente.connect(analizador);
     const ahora = Date.now(), id = nuevoCodigo(ahora);
@@ -101,7 +104,7 @@ const Grabadora = {
     G.cuadro = requestAnimationFrame(() => this.medir());
     $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>' + tH('Grabando'); $('bGrabar').setAttribute('aria-pressed', 'true');
     ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
-    navigator.vibrate && navigator.vibrate(40);
+    vibrar(40);
     this.pintarEstado();
   },
 
@@ -128,7 +131,7 @@ const Grabadora = {
     G.track.onmute = () => this.evento(t('micrófono ocupado por el sistema'), t('p. ej. una llamada'));
     G.track.onunmute = () => this.evento(t('micrófono de vuelta'));
     G.track.onended = () => this.evento(t('el micrófono se desconectó'));
-    G.ctx.onstatechange = () => this.evento(t('audio del sistema: {estado}', { estado: G.ctx.state }));
+    G.ctx.onstatechange = () => { this.evento(t('audio del sistema: {estado}', { estado: G.ctx.state })); if (G && G.ctx.state === 'interrupted' && !document.hidden) setTimeout(() => G && G.ctx.resume().catch(() => {}), 800); };
   },
   async pantalla(si) {
     try {
@@ -189,8 +192,8 @@ const Grabadora = {
   marcar() {
     if (!G) return;
     const tm = Math.round(this.segundos() * 100) / 100, ahora = performance.now();
-    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; navigator.vibrate && navigator.vibrate([30, 60, 30]); avisar(t('↩ Otra vez: ese intento queda descartado'), 1500); }
-    else { G.marcas.push({ t: tm, tipo: 'siguiente' }); navigator.vibrate && navigator.vibrate(30); }
+    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; vibrar([30, 60, 30]); avisar(t('↩ Otra vez: ese intento queda descartado'), 1500); }
+    else { G.marcas.push({ t: tm, tipo: 'siguiente' }); vibrar(30); }
     this.ultimoToque = ahora; G.reg.marcas = G.marcas; this.pintarEstado();
   },
   async pausa() {
@@ -229,7 +232,7 @@ const Grabadora = {
     $('bGrabar').classList.remove('on'); $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bGrabar').setAttribute('aria-pressed', 'false');
     ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = true);
     $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = t('Nivel de entrada');
-    this.pintarEstado(); navigator.vibrate && navigator.vibrate([40, 40, 40]);
+    this.pintarEstado(); vibrar([40, 40, 40]);
     Ficha.abrir(id);
   },
   pintarEstado() {

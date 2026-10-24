@@ -1,5 +1,5 @@
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
-const VERSION = '1.0';
+const VERSION = '1.1';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
@@ -19,6 +19,12 @@ const nombreArchivo = (s, max = 60) => String(s || '').normalize('NFC').replace(
 const ascii = s => String(s || '').normalize('NFD').replace(/\p{M}/gu, '').replace(/[^\w.\- ]+/g, '').replace(/\s+/g, '-');
 const leerRadio = n => (document.querySelector(`input[name="${n}"]:checked`) || {}).value;
 const marcarRadio = (n, v) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) r.checked = true; };
+
+/** Vibración (si el aparato puede y la persona no la apagó). */
+const vibrar = x => { try { if (Ajustes.v.vibrar !== false && navigator.vibrate) navigator.vibrate(x); } catch (e) {} };
+/** iPhone o iPad (los iPad nuevos se presentan como Mac con pantalla táctil). */
+const ES_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const INSTALADA = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
 /* Bitácora técnica breve (para «Reportar un problema»); nunca guarda contenido de fichas */
 const Bitacora = { l: [], poner(tipo, txt) { this.l.push(`${new Date().toISOString()} ${tipo}: ${String(txt).slice(0, 300)}`); if (this.l.length > 60) this.l.shift(); } };
@@ -71,15 +77,24 @@ const DB = {
 };
 
 /* ─────────── Ajustes del aparato ─────────── */
-const AJUSTES_BASE = { calidad: 'ambas', canales: 1, volAuto: false, ruido: false, eco: false, mic: '', quien: '', derechos: '', ubic: 'aprox1', plantilla: 'general', idioma: 'es', diasRespaldo: 3, recordarDesde: 0 };
+const AJUSTES_BASE = { calidad: 'ambas', canales: 1, volAuto: false, ruido: false, eco: false, mic: '', quien: '', derechos: '', ubic: 'aprox1', plantilla: 'general', idioma: 'es', diasRespaldo: 3, recordarDesde: 0, escala: 1, tema: 'oscuro', movimiento: false, vibrar: true };
 const Ajustes = {
   v: Object.assign({}, AJUSTES_BASE),
-  async cargar() { try { Object.assign(this.v, (await DB.leer('ajustes', 'ajustes')) || {}); } catch (e) {} },
+  async cargar() { try { Object.assign(this.v, (await DB.leer('ajustes', 'ajustes')) || {}); } catch (e) {} this.aplicarAcceso(); },
+  /** Tamaño de letra, colores y movimiento: se aplican a toda la app al momento. */
+  aplicarAcceso() {
+    const r = document.documentElement, v = this.v;
+    r.style.setProperty('--escala', String(v.escala || 1));
+    r.dataset.tema = v.tema || 'oscuro'; r.dataset.movimiento = v.movimiento ? 'reducido' : '';
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = v.tema === 'claro' ? '#f6f4ee' : v.tema === 'contraste' ? '#000000' : '#1e3a5f';
+    try { localStorage.setItem('virgula-acceso', JSON.stringify({ escala: v.escala, tema: v.tema, movimiento: v.movimiento })); } catch (e) {}
+  },
   guardar() { return DB.poner('ajustes', this.v, 'ajustes').catch(() => {}); },
   pintar() {
     marcarRadio('aCalidad', this.v.calidad); marcarRadio('aCanales', String(this.v.canales)); marcarRadio('aUbic', this.v.ubic);
     $('aVolAuto').checked = this.v.volAuto; $('aRuido').checked = this.v.ruido; $('aEco').checked = this.v.eco;
     $('aQuien').value = this.v.quien; $('aDerechos').value = this.v.derechos; $('aDiasRespaldo').value = String(this.v.diasRespaldo);
+    marcarRadio('aEscala', String(this.v.escala || 1)); marcarRadio('aTema', this.v.tema || 'oscuro'); $('aMovimiento').checked = !!this.v.movimiento; $('aVibrar').checked = this.v.vibrar !== false;
     if (this.v.mic && ![...$('aMic').options].some(o => o.value === this.v.mic)) $('aMic').insertAdjacentHTML('beforeend', `<option value="${esc(this.v.mic)}">${esc(this.v.micNombre || t('Micrófono elegido'))}</option>`);
     $('aMic').value = this.v.mic;
     this.resumen();
@@ -88,8 +103,8 @@ const Ajustes = {
     Object.assign(this.v, { calidad: leerRadio('aCalidad') || 'ambas', canales: Number(leerRadio('aCanales') || 1), ubic: leerRadio('aUbic') || 'aprox1',
       volAuto: $('aVolAuto').checked, ruido: $('aRuido').checked, eco: $('aEco').checked, mic: $('aMic').value,
       micNombre: ($('aMic').selectedOptions[0] || {}).textContent || '', quien: $('aQuien').value.trim(), derechos: $('aDerechos').value.trim(),
-      diasRespaldo: Number($('aDiasRespaldo').value) });
-    this.guardar(); this.resumen(); Espacio.actualizar();
+      diasRespaldo: Number($('aDiasRespaldo').value), escala: Number(leerRadio('aEscala') || 1), tema: leerRadio('aTema') || 'oscuro', movimiento: $('aMovimiento').checked, vibrar: $('aVibrar').checked });
+    this.guardar(); this.aplicarAcceso(); this.resumen(); Espacio.actualizar();
   },
   resumen() {
     const v = this.v, cal = { ambas: t('archivo + consulta'), archivo: t('solo archivo'), consulta: t('solo consulta') }[v.calidad];
@@ -98,6 +113,9 @@ const Ajustes = {
       aj.length ? t('aparato: {lista}', { lista: aj.join(', ') }) : t('sonido sin alterar'), v.micNombre && v.mic ? v.micNombre : t('micrófono predeterminado')].join(' · ');
   }
 };
+
+/* Colores y tamaño desde el primer instante (sin parpadeo) */
+try { const a = JSON.parse(localStorage.getItem('virgula-acceso') || 'null'); if (a) { Object.assign(Ajustes.v, a); Ajustes.aplicarAcceso(); } } catch (e) {}
 
 /* ─────────── Espacio disponible (cifras medidas en la prueba técnica) ─────────── */
 const MB_MIN = { archivo: 5.5 * 1048576, consulta: 0.35 * 1048576 };

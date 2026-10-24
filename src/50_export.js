@@ -128,6 +128,7 @@ const Exportar = {
         prog.innerHTML = `<div class="banda ok">${tH('✅ Guardado en **Descargas**:')}<br>${archivos.map(f => '📦 ' + esc(f.name)).join('<br>')}</div>
           ${android ? `<div class="fila"><a class="boton prim" id="eAbrirDesc" href="intent:#Intent;action=android.intent.action.VIEW_DOWNLOADS;end">${tH('📂 Abrir Descargas')}</a></div>
           <p class="nota">${tH('Ahí, mantén presionado el paquete y toca **Compartir** (WhatsApp, Drive, correo…). Si el botón no abre nada, ve a la app **Archivos** → **Descargas**, o toca el aviso de descarga de Chrome.')}</p>`
+          : ES_IOS ? `<p class="nota">${tH('En iPhone o iPad está en la app **Archivos** → **Descargas** (o donde elegiste guardarlo). Ahí, mantén presionado el paquete y toca **Compartir**.')}</p>`
           : `<p class="nota">${tH('Está en la carpeta **Descargas** de la computadora. Desde ahí puedes subirlo a Drive, adjuntarlo a un correo o copiarlo a una memoria.')}</p>`}
           <div class="fila"><button id="eFin">${tH('Listo')}</button><button id="eOtraVez">${tH('⬇️ Guardar otra vez')}</button></div>`;
         prog.scrollIntoView({ behavior: 'smooth', block: 'center' });
