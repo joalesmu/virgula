@@ -33,7 +33,8 @@ En **Ajustes → Plantillas**, selecciona una plantilla en el desplegable y util
 ## Código
 
 - Edita los módulos de `src/`; sus prefijos numéricos determinan el orden de construcción.
-- Todo texto visible debe marcarse con `t('…')`, `tH('…')`, `N_('…')` o atributos `data-t`, `data-tp` y `data-ta` para que pueda traducirse.
+- Todo texto visible debe marcarse con `t('…')`, `tH('…')`, `N_('…')` o atributos `data-t`, `data-tp` y `data-ta` para que pueda traducirse. Los mensajes de error que pueden llegar a la pantalla también deben pasar por `t()`.
+- En etiquetas condicionales, traduce cada alternativa por separado: `condicion ? t('A') : t('B')`. No pases toda la expresión como argumento de `t()`, porque el constructor no puede extraer sus dos textos.
 - Ejecuta `python3 construir.py` desde la raíz. El constructor genera `index.html` y `idiomas/textos_es.csv`.
 - Ejecuta las pruebas automatizadas descritas en `pruebas/LEEME.md`.
 - No edites manualmente el `TEXTOS_FUENTE` generado dentro de `index.html`; corrige las fuentes y vuelve a construir.

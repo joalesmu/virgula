@@ -11,6 +11,7 @@ Primera publicación abierta al público. Reúne las funciones desarrolladas y r
 - Exportación e importación ZIP con fichas JSON/CSV/HTML, audio, clips, adjuntos, listas TXT y formatos Broadcast WAV, Dublin Core, Darwin Core y ELAN.
 - Almacenamiento local en IndexedDB y OPFS, recuperación ante interrupciones, avisos de respaldo y reporte técnico sin incluir audios ni fichas.
 - Interfaz traducible, paquetes de idioma instalables, prueba de traducciones y catálogo de idiomas publicados.
+- Inventario de 822 textos de interfaz; paquete inglés v7 con cobertura de claves del 100 %, todavía pendiente de revisión lingüística. Los textos de listas, recuperación, errores técnicos y actualizaciones también están incluidos.
 - Accesibilidad con ajustes de tamaño, tema claro y oscuro, alto contraste y movimiento reducido; diseño adaptable a diferentes tamaños de pantalla.
 - Instalación como PWA, uso sin conexión y comprobación automática y manual de actualizaciones.
 
