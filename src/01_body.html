@@ -54,45 +54,44 @@
   <!-- ───── Listas ───── -->
   <section id="vListas" class="vista oculto">
     <div class="panel">
-      <h2>Listas de trabajo</h2>
-      <p class="nota">Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.</p>
+      <h2 data-t>Listas de trabajo</h2>
+      <p class="nota" data-t>Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.</p>
       <div class="fila">
-        <div style="flex:2 1 240px"><label for="listaSeleccion">Mis listas</label><select id="listaSeleccion"><option value="">Selecciona una lista</option></select></div>
-        <button id="bListaNueva" class="prim">＋ Nueva lista</button>
+        <div style="flex:2 1 240px"><label for="listaSeleccion" data-t>Mis listas</label><select id="listaSeleccion"><option value="" data-t>Selecciona una lista</option></select></div>
+        <button id="bListaNueva" class="prim" data-t>＋ Nueva lista</button>
       </div>
       <div class="fila">
-        <button id="bListaPegar" class="chico">📋 Pegar texto</button>
-        <button id="bListaArchivo" class="chico">📥 Importar TXT</button>
+        <button id="bListaPegar" class="chico" data-t>📋 Pegar texto</button>
+        <button id="bListaArchivo" class="chico" data-t>📥 Importar TXT</button>
         <input type="file" id="archivoLista" accept=".txt,text/plain" class="oculto">
       </div>
       <div id="listaEditor" class="oculto">
         <div class="lista-editor-grid">
           <div>
-            <label for="listaNombre">Nombre de la lista</label>
-            <input type="text" id="listaNombre" maxlength="120" placeholder="Ej. Vocabulario de alimentos">
-            <label for="listaTipo">Tipo de lista</label>
-            <select id="listaTipo"><option value="elementos">Elementos (una entrada por renglón)</option><option value="guion">Guion (texto completo)</option></select>
-            <p class="nota" id="listaAyuda">En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.</p>
+            <label for="listaNombre" data-t>Nombre de la lista</label>
+            <input type="text" id="listaNombre" maxlength="120" data-tp="Ej. Vocabulario de alimentos">
+            <label for="listaTipo" data-t>Tipo de lista</label>
+            <select id="listaTipo"><option value="elementos" data-t>Elementos (una entrada por renglón)</option><option value="guion" data-t>Guion (texto completo)</option></select>
+            <p class="nota" id="listaAyuda" data-t>En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.</p>
           </div>
           <div>
-            <label for="listaContenido">Contenido</label>
-            <textarea id="listaContenido" rows="14" maxlength="100000" placeholder="Pega o escribe aquí.
-Un elemento por renglón."></textarea>
+            <label for="listaContenido" data-t>Contenido</label>
+            <textarea id="listaContenido" rows="14" maxlength="100000" data-tp="Pega o escribe aquí.&#10;Un elemento por renglón."></textarea>
             <p class="nota" id="listaVistaPrevia"></p>
           </div>
         </div>
         <div class="fila">
-          <button id="bListaGuardar" class="prim">💾 Guardar lista</button>
-          <button id="bListaCopiar">Copiar texto</button>
-          <button id="bListaExportar">⬇️ Exportar TXT</button>
-          <button id="bListaBorrar" class="peligro">Borrar</button>
+          <button id="bListaGuardar" class="prim" data-t>💾 Guardar lista</button>
+          <button id="bListaCopiar" data-t>Copiar texto</button>
+          <button id="bListaExportar" data-t>⬇️ Exportar TXT</button>
+          <button id="bListaBorrar" class="peligro" data-t>Borrar</button>
         </div>
       </div>
-      <p id="listaVacia" class="nota">Todavía no tienes listas. Crea una o pega texto para comenzar.</p>
+      <p id="listaVacia" class="nota" data-t>Todavía no tienes listas. Crea una o pega texto para comenzar.</p>
     </div>
   </section>
 
-  <!-- ───── Acervo ───── -->
+    <!-- ───── Acervo ───── -->
   <section id="vAcervo" class="vista oculto">
     <div id="avisoRespaldo"></div>
     <div class="fila">
