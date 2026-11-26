@@ -1,15 +1,18 @@
 ﻿texto_original,donde_aparece
 memoria sonora viva,Pantalla principal
 ⬇️ Instalar,Pantalla principal
-Idioma,Pantalla principal
 🔗 Compartir,Pantalla principal
-🔗 Enlace copiado. Ya puedes compartirlo.,Pantalla principal
-No se pudo compartir el enlace.,Pantalla principal
-Copia el enlace de Vírgula:,Pantalla principal
+Idioma,Pantalla principal
 Siguiente,Grabar
 Repetir,Grabar
 ⏹ Detener,Grabar
 "En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.",Grabar
+Lista de trabajo,Grabar
+Seleccionar lista para esta grabación,Grabar
+Sin lista,Grabar
+📋 Importar o pegar lista,Grabar
+＋ Crear lista,Grabar
+La grabación conserva una copia de la lista.,Grabar
 "🔍 Buscar en títulos, descripciones, transcripciones…",Acervo
 Buscar,Acervo
 📦 Exportar,Acervo
@@ -89,6 +92,7 @@ Diseñado y desarrollado por Alejandro Estrada,Ajustes
 código,Ajustes
 Secciones,Ajustes
 Grabar,Ajustes
+Listas,Ajustes
 Acervo,Ajustes
 Ajustes,Ajustes
 El archivo no es un idioma de Vírgula.,Idioma
@@ -139,6 +143,7 @@ Se guardó **{archivo}** en Descargas. Envíalo por una de estas vías; el equip
 🐙 En GitHub,Idioma
 Por correo: adjunta el archivo antes de enviar. En GitHub: necesitas una cuenta; arrastra el archivo al recuadro del mensaje.,Idioma
 Cerrar,Idioma
+Cierra las otras pestañas de Vírgula para completar la actualización del almacenamiento.,General
 Micrófono elegido,General
 archivo + consulta,General
 solo archivo,General
@@ -152,16 +157,27 @@ aparato: {lista},General
 sonido sin alterar,General
 micrófono predeterminado,General
 💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.,General
+Este navegador no informa del espacio disponible.,General
+Protección del almacenamiento: concedida. El navegador reducirá el riesgo de eliminar los datos de Vírgula automáticamente.,General
+Protección del almacenamiento: no concedida. El navegador podría eliminar datos locales si necesita espacio.,General
+Este navegador no permite consultar la protección del almacenamiento. Exporta respaldos periódicamente.,General
+No se pudo consultar el espacio disponible.,General
 "🎙️ Se está grabando. Para terminar, toca ⏹ Detener.",General
+Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?,General
 Se está grabando. ¿Ver otra sección? La grabación sigue.,General
 Grabación {fecha},Grabar
+No se pudo preparar la lista seleccionada. No se inició la grabación.,Grabar
 El micrófono elegido no está conectado: usa el predeterminado.,Grabar
 No se pudo usar el micrófono: {error}. Revisa el permiso del micrófono.,Grabar
 predeterminado,Grabar
+No se pudo crear la ficha inicial en el almacenamiento del aparato. No se inició la grabación.,Grabar
 inicio,Grabar
 no se pudo grabar en calidad de archivo: {error},Grabar
 este navegador no graba en calidad de consulta,Grabar
 consulta: {error},Grabar
+no se pudo iniciar el audio de consulta: {error},Grabar
+Este navegador no pudo iniciar ninguna de las dos formas de captura. No se inició la grabación.,Grabar
+"⚠️ La grabación inició, pero no se pudieron actualizar algunos datos técnicos. Se volverán a guardar automáticamente.",Grabar
 Grabando,Grabar
 sin audio,Grabar
 de {desde} a {hasta} (posible llamada u otra app usando el micrófono),Grabar
@@ -171,35 +187,47 @@ micrófono de vuelta,Grabar
 el micrófono se desconectó,Grabar
 audio del sistema: {estado},Grabar
 error al guardar,Grabar
-(¿espacio lleno?),Grabar
-⚠️ No se pudo guardar: revisa el espacio del aparato.,Grabar
+⚠️ No se pudo conservar una parte del audio. Mantén Vírgula abierta.,Grabar
+Nivel de entrada,Grabar
+"La grabación quedó guardada, pero no se pudo abrir su ficha. Está disponible en el Acervo.",Grabar
+error al finalizar,Grabar
+⚠️ No se pudo finalizar la grabación. Los datos guardados se conservan; vuelve a intentarlo.,Grabar
 hueco,Grabar
 faltan {s} s respecto al reloj,Grabar
 ⚠️ Satura: aleja el micrófono,Grabar
 Muy bajo: acerca el micrófono (20–30 cm),Grabar
 Nivel {db} dB,Grabar
-↩ Otra vez: ese intento queda descartado,Grabar
+↩ Se repetirá el mismo elemento.,Grabar
 ▶ Seguir,Grabar
 pausa,Grabar
 ⏸ Pausa,Grabar
 continúa,Grabar
 fin,Grabar
-Nivel de entrada,Grabar
+No se pudo confirmar el último bloque de audio. La captura sigue abierta; vuelve a tocar Detener.,Grabar
+No se pudo cerrar el audio de consulta. La captura sigue abierta; vuelve a tocar Detener.,Grabar
 🔆 Pantalla fija,Grabar
 🔅 Pantalla sin fijar,Grabar
 💾 hace {s} s,Grabar
 ⚠️ huecos {s} s,Grabar
 🔇 {n} tramo(s) sin audio,Grabar
 ⏸ En pausa,Grabar
+{n} fragmento(s) sin guardar,Grabar
+No se pudo guardar el cierre de la grabación.,Grabar
+Reintentando…,Grabar
 pantalla oculta o bloqueada,Grabar
 pantalla visible,Grabar
 la app se cerró u ocultó,Grabar
 se conectó o desconectó un micrófono,Grabar
+No se pudo comprobar el estado de los respaldos temporales. No borres los datos de Vírgula.,Grabar
+⚠️ Hay audio que todavía no se pudo integrar. Vírgula conserva un respaldo temporal en este dispositivo. No borres sus datos.,Grabar
 ⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.,Grabar
 🛟 Recuperar,Grabar
 recuperada,Grabar
 la grabación se cortó; se recuperó lo guardado,Grabar
-🛟 Recuperada(s). Están en 📚 Acervo.,Grabar
+⚠️ No se pudieron recuperar {n} grabación(es). Los datos originales se conservan; no borres los datos de Vírgula.,Grabar
+Grabaciones recuperadas: {n}.,Grabar
+Reintentar recuperación,Grabar
+🛟 {n} grabación(es) recuperada(s). Están en 📚 Acervo.,Grabar
 Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.,Audio
 "💾 {n} grabación(es) sin respaldo o con cambios desde el último. Selecciónalas y usa 📦 Exportar para guardarlas en Drive, en otra computadora o donde prefieras.",Acervo
 ☑ Elegir las que faltan,Acervo
@@ -312,21 +340,31 @@ Proyecto o estudio,Plantillas
 Número de sesión,Plantillas
 Guía o protocolo usado,Plantillas
 Aprobación ética o folio,Plantillas
+Seleccionar plantilla,Plantillas
 ✓ para grabaciones nuevas,Plantillas
 🔒 fija,Plantillas
 📥 importada,Plantillas
+Archivada,Plantillas
 {n} campo(s) propios,Plantillas
-Usar,Plantillas
-👁 Ver,Plantillas
+Usar en grabaciones nuevas,Plantillas
+👁 Ver plantilla,Plantillas
 ✏️ Editar,Plantillas
 ⧉ Duplicar,Plantillas
 ⬇️ Exportar,Plantillas
-Borrar,Plantillas
+Restaurar,Plantillas
+Archivar o eliminar,Plantillas
+Visible,Plantillas
+Oculto,Plantillas
+Obligatorio,Plantillas
+Opcional,Plantillas
+Vista de plantilla,Plantillas
+Editar,Plantillas
+Primero restaura la plantilla archivada.,Plantillas
 🧩 Las grabaciones nuevas usarán «{nombre}».,Plantillas
 {nombre} (copia),Plantillas
 Plantilla nueva,Plantillas
-¿Borrar la plantilla «{nombre}»?,Plantillas
-{n} ficha(s) la usan: conservarán sus datos y se verán con la plantilla General.,Plantillas
+La plantilla «{nombre}» está vinculada a {n} ficha(s). Se archivará y esas grabaciones conservarán su definición original. ¿Continuar?,Plantillas
+¿Eliminar definitivamente la plantilla «{nombre}»?,Plantillas
 ⬇️ Plantilla guardada en Descargas. Compártela con tu equipo; la importan en ⚙️ Ajustes → 🧩 Plantillas.,Plantillas
 No es una plantilla de Vírgula.,Plantillas
 "Ya tienes «{nombre}» v{v}, hecha en este aparato. ¿Reemplazarla con la v{v2} que llega?",Plantillas
@@ -350,7 +388,7 @@ Una sección oculta vuelve a aparecer en la ficha si ya tiene datos.,Plantillas
 👥 Compartir con un equipo,Plantillas
 Equipo o proyecto,Plantillas
 "🔒 Fija: quien la importe la usa tal cual (puede duplicarla, no cambiarla)",Plantillas
-"Para compartirla: ⬇️ Exportar en la lista de plantillas. Cada vez que guardas cambios sube la versión; al importar una versión más nueva, se actualiza.",Plantillas
+"Para compartirla: en Ajustes → Plantillas, selecciona la plantilla y usa «Exportar». Cada vez que guardas cambios aumenta su versión; al importar una versión más nueva, se actualiza.",Plantillas
 Versión {v},Plantillas
 plantilla de fábrica,Plantillas
 💾 Guardar,Plantillas
@@ -363,8 +401,6 @@ Nombre del campo,Plantillas
 Subir,Plantillas
 Bajar,Plantillas
 Núcleo: siempre visible y obligatorio.,Plantillas
-Visible,Plantillas
-Obligatorio,Plantillas
 de Vírgula: {nombre},Plantillas
 campo de Vírgula,Plantillas
 Tipo,Plantillas
@@ -377,6 +413,35 @@ Hay un campo propio sin nombre.,Plantillas
 «{nombre}» necesita al menos dos opciones.,Plantillas
 Ya hay una plantilla con ese nombre.,Plantillas
 🧩 «{nombre}» guardada (v{v}).,Plantillas
+La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.,Listas
+Guion,Listas
+{n} elementos,Listas
+"El guion se conserva como un solo texto, con sus párrafos y saltos de línea. No se asigna automáticamente a los clips.",Listas
+Cada salto de línea crea un elemento independiente. Se reconocen viñetas y numeraciones; las comas se conservan.,Listas
+Un guion de {n} carácter(es).,Listas
+El guion está vacío.,Listas
+{n} elemento(s) detectado(s).,Listas
+{n} de {total},Listas
+Lista vacía,Listas
+Lista completada,Listas
+Termina la grabación antes de crear o cambiar la lista de trabajo.,Listas
+La lista necesita un nombre.,Listas
+La lista no puede estar vacía.,Listas
+Ya existe una lista con ese nombre.,Listas
+Lista «{nombre}» guardada.,Listas
+¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.,Listas
+Texto de la lista copiado.,Listas
+Copia el texto de la lista:,Listas
+Nombre de la lista,Listas
+Ej. Vocabulario de alimentos,Listas
+Elementos · un renglón por entrada,Listas
+Guion · texto completo,Listas
+Pega aquí el texto,Listas
+Crear lista,Listas
+Escribe un nombre y pega el contenido de la lista.,Listas
+Lista «{nombre}» importada.,Listas
+Hay cambios sin guardar. ¿Descartarlos y abrir otra lista?,Listas
+No se pudo leer el archivo: {error},Listas
 📷 Foto,Ficha
 ✍️ Transcripción o traducción,Ficha
 "🎵 Letra, acordes o partitura",Ficha
@@ -523,6 +588,7 @@ Firma con el dedo. Queda como adjunto «Consentimiento».,Ficha
 Espacio para firmar,Ficha
 Nombre o código de quien firma,Ficha
 Guardar firma,Ficha
+Borrar,Ficha
 Primero firma en el recuadro.,Ficha
 Consentimiento oral,Ficha
 "Pide a la persona que diga su nombre (o código), la fecha y para qué usos da su permiso.",Ficha
@@ -531,10 +597,16 @@ Consentimiento oral,Ficha
 ⚠️ Esta grabación NO tiene respaldo.,Ficha
 "Para confirmar, escribe BORRAR",Ficha
 BORRAR,Ficha
+No se pudo completar el borrado. La grabación se conserva en Vírgula.,Ficha
 🗑 Borrada.,Ficha
 ¿Quitar este clip? El audio de la grabación no cambia.,Ficha
+El paquete tiene demasiados archivos para ZIP clásico.,Exportar
+"El paquete contiene un archivo demasiado grande, un nombre inválido o una ruta duplicada.",Exportar
 El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.,Exportar
+El directorio del paquete supera el límite de ZIP clásico. Divide la exportación en varios paquetes.,Exportar
 Elige al menos una grabación.,Exportar
+Terminando de guardar el audio. La ventana de exportación aparecerá al concluir.,Exportar
+No se pudo comprobar la integridad del audio. La exportación se detuvo para evitar generar un paquete incompleto.,Exportar
 Exportar «{titulo}»,Exportar
 Exportar {n} grabaciones,Exportar
 🔒 {n} grabación(es) son confidenciales. Comparte el paquete solo con quien deba tenerlo.,Exportar
@@ -595,6 +667,7 @@ Una fila por clip.,Exportar
 "Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).",Exportar
 Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».,Exportar
 "Fotos, documentos y consentimientos, en una carpeta por grabación.",Exportar
+Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.,Exportar
 "Dublin Core (dublin_core.xml) y, si aplica, Darwin Core (carpeta darwin_core, lista para GBIF/SNIB).",Exportar
 Un archivo .eaf por grabación: ábrelo con ELAN junto con la carpeta audios/.,Exportar
 "Los WAV llevan dentro el título, la fecha, el código y los derechos (Broadcast WAV).",Exportar
@@ -610,13 +683,35 @@ exportado el {fecha},Exportar
 versión,Exportar
 Respeta las condiciones de consentimiento y derechos de cada ficha.,Exportar
 No parece un archivo .zip.,Importar
-Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.,Importar
-El .zip está dañado.,Importar
+Vírgula no puede importar archivos .zip divididos en varios discos.,Importar
+Este .zip usa ZIP64; Vírgula aún no lo lee.,Importar
+El directorio del .zip está fuera de sus límites.,Importar
+El directorio central del .zip está dañado.,Importar
+El .zip contiene una entrada con tamaños o posiciones no compatibles.,Importar
+El .zip está cifrado; Vírgula no puede importarlo.,Importar
+El .zip usa un método de compresión no compatible.,Importar
+El .zip contiene una ruta de archivo no válida.,Importar
+El .zip contiene nombres de archivo duplicados.,Importar
+El directorio central del .zip está incompleto.,Importar
+El encabezado de «{ruta}» está incompleto.,Importar
+El encabezado local de «{ruta}» está dañado.,Importar
+El encabezado local de «{ruta}» no coincide con el directorio central.,Importar
+Los tamaños declarados de «{ruta}» no coinciden.,Importar
+El nombre de «{ruta}» no coincide en sus encabezados.,Importar
+El contenido de «{ruta}» está truncado.,Importar
 Este navegador no descomprime .zip.,Importar
-Compresión no reconocida en {ruta},Importar
+La longitud de «{ruta}» no coincide después de descomprimir.,Importar
+La comprobación de integridad de «{ruta}» no coincide.,Importar
 📥 Leyendo el paquete…,Importar
 El paquete no tiene fichas.json: no es un paquete de Vírgula.,Importar
 fichas.json no tiene el formato de Vírgula.,Importar
+El paquete contiene demasiadas grabaciones para importarlo de forma segura.,Importar
+El paquete contiene una colección de listas no válida.,Importar
+El paquete contiene una ficha o un código de grabación inválido.,Importar
+El paquete repite el código de una grabación.,Importar
+El paquete contiene una lista de adjuntos no válida.,Importar
+El paquete contiene un adjunto con código no válido.,Importar
+El paquete repite el código de un adjunto.,Importar
 ya está,Importar
 Dejar como están las {n} que ya tengo,Importar
 Reemplazarlas con las del paquete,Importar
@@ -624,11 +719,11 @@ Trae {n} plantilla(s); las que no tengas se agregan.,Importar
 📥 Importar,Importar
 Importando «{titulo}»…,Importar
 📥 {n} grabación(es) importada(s).,Importar
-falta el WAV de «{titulo}»,Importar
+falta o no es compatible el WAV de «{titulo}»,Importar
 falta la consulta de «{titulo}»,Importar
 falta el adjunto «{nombre}»,Importar
 importada,Importar
-{n} adjunto(s) no venían en el paquete,Importar
+{n} adjunto(s) no venían completos en el paquete,Importar
 Micrófono {n},Ajustes
 🎙️ {n} micrófono(s) encontrado(s).,Ajustes
 No se pudo ver los micrófonos: {error},Ajustes
@@ -650,6 +745,8 @@ Errores recientes,Ajustes
 Problema en Vírgula {v},Ajustes
 ⬇️ Guardar informe,Ajustes
 "Revisa el texto antes de enviarlo. Si es largo, el correo lleva solo el principio: adjunta el informe guardado.",Ajustes
+🔗 Enlace copiado. Ya puedes compartirlo.,Ajustes
+Copia el enlace de Vírgula:,Ajustes
 ⬇️ Instalar en iPhone o iPad,Ajustes
 1. Abre esta página en **Safari**.,Ajustes
 2. Toca **Compartir** (el cuadro con la flecha hacia arriba).,Ajustes
@@ -658,87 +755,14 @@ Problema en Vírgula {v},Ajustes
 "En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).",Ajustes
 Entendido,Ajustes
 ✅ Vírgula quedó instalada.,Ajustes
-✨ Hay una versión nueva de Vírgula.,Ajustes
+✨ Hay una versión nueva de Vírgula disponible.,Ajustes
 Actualizar ahora,Ajustes
-Termina la grabación antes de actualizar.,Ajustes
-⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.,Ajustes
-Listas,Ajustes
-Listas de trabajo,Listas
-"Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.",Listas
-Mis listas,Listas
-＋ Nueva lista,Listas
-📋 Pegar texto,Listas
-📥 Importar TXT,Listas
-Nombre de la lista,Listas
-Ej. Vocabulario de alimentos,Listas
-Tipo de lista,Listas
-Elementos (una entrada por renglón),Listas
-Guion (texto completo),Listas
-"En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.",Listas
-"Pega o escribe aquí.
-Un elemento por renglón.",Listas
-💾 Guardar lista,Listas
-Copiar texto,Listas
-⬇️ Exportar TXT,Listas
-Todavía no tienes listas. Crea una o pega texto para comenzar.,Listas
-Lista de trabajo,Grabar
-Seleccionar lista para esta grabación,Grabar
-La grabación conserva una copia de la lista.,Grabar
-Sin lista,Listas
-Guion,Listas
-{n} elementos,Listas
-"El guion se conserva como un solo texto, con sus párrafos y saltos de línea. No se asigna automáticamente a los clips.",Listas
-Cada salto de línea crea un elemento independiente. Se reconocen viñetas y numeraciones; las comas se conservan.,Listas
-Un guion de {n} carácter(es).,Listas
-El guion está vacío.,Listas
-{n} elemento(s) detectado(s).,Listas
-{n} de {total},Listas
-Lista completada,Listas
-Lista vacía,Listas
-Termina la grabación antes de crear o cambiar la lista de trabajo.,Listas
-La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.,Listas
-La lista seleccionada ya no existe.,Listas
-No se pudo preparar la lista seleccionada. No se inició la grabación.,Listas
-La lista necesita un nombre.,Listas
-La lista no puede estar vacía.,Listas
-Ya existe una lista con ese nombre.,Listas
-Lista «{nombre}» guardada.,Listas
-¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.,Listas
-📋 Importar o pegar lista,Listas
-Pega aquí el texto,Listas
-Elementos · un renglón por entrada,Listas
-Guion · texto completo,Listas
-Crear lista,Listas
-Escribe un nombre y pega el contenido de la lista.,Listas
-Texto de la lista copiado.,Listas
-Copia el texto de la lista:,Listas
-No se pudo leer el archivo: {error},Listas
-Hay cambios sin guardar. ¿Descartarlos y abrir otra lista?,Listas
-Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?,Listas
-Elemento actual,Grabar
-Elemento,Grabar
-↩ Se repetirá el mismo elemento.,Grabar
-Vista de plantilla,Ajustes
-Oculto,Ajustes
-Opcional,Ajustes
-Ver plantilla,Ajustes
-Editar,Ajustes
-Protección del almacenamiento: concedida. El navegador reducirá el riesgo de eliminar los datos de Vírgula automáticamente.,Ajustes
-Protección del almacenamiento: no concedida. El navegador podría eliminar datos locales si necesita espacio.,Ajustes
-Este navegador no permite consultar la protección del almacenamiento. Exporta respaldos periódicamente.,Ajustes
-Este navegador no informa del espacio disponible.,Ajustes
-No se pudo consultar el espacio disponible.,Ajustes
-Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.,Exportar
-Este navegador no permite actualizar Vírgula como aplicación instalada.,Ajustes
-No hay conexión. No se pudo comprobar si existe una versión nueva.,Ajustes
-Buscando actualizaciones…,Ajustes
-Se encontró una versión nueva. Se está descargando…,Ajustes
-Vírgula está actualizada.,Ajustes
-No se pudo comprobar la actualización. Revisa la conexión e inténtalo de nuevo.,Ajustes
-No se pudo registrar el sistema de actualizaciones.,Ajustes
-Preparando la actualización…,Ajustes
-La versión nueva está activa. Recarga Vírgula cuando termines de trabajar.,Ajustes
+Termina la grabación antes de actualizar. La nueva versión permanecerá pendiente.,Ajustes
+La actualización ya no está pendiente. Comprueba de nuevo.,Ajustes
+Conéctate a internet para comprobar actualizaciones.,Ajustes
+✅ Vírgula está actualizada.,Ajustes
+No se pudo comprobar la actualización. Revisa la conexión.,Ajustes
 La actualización está lista.,Ajustes
 Recargar ahora,Ajustes
 Termina la grabación antes de recargar.,Ajustes
-Hay una actualización lista para instalar.,Ajustes
+⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.,Ajustes

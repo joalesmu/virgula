@@ -74,4 +74,4 @@ No cambies el valor de `formato`. El campo `version` identifica la revisión del
 
 ## Estado del paquete inglés
 
-`en.json` corresponde al idioma inglés (`en`, `en-US`). Su versión de traducción es la 4 y cubre el inventario de textos de esta versión de la interfaz. La traducción sigue identificada como borrador para revisión; el 100 % indica cobertura de claves, no una certificación comunitaria o lingüística.
+`en.json` corresponde al idioma inglés (`en`, `en-US`). Su versión de traducción es la 6 y contiene 692 claves vigentes de un inventario de 763 textos (91 % de cobertura). Las claves antiguas que ya no aparecen en la interfaz se retiraron. La traducción sigue identificada como borrador para revisión; la cobertura de claves no equivale a una certificación lingüística o comunitaria.
