@@ -1,36 +1,42 @@
 # Código fuente modular de Vírgula 1.0.0
 
-Esta carpeta corresponde al `index.html` público 1.0.0 y a la compilación interna 1.3.2 entregada junto con ella. Los módulos se extrajeron de esa compilación para mantener el código fuente modular sincronizado con la aplicación publicada.
+Esta carpeta contiene las fuentes que generan el `index.html` público. El identificador de esta compilación interna es `1.3.3`; no representa una versión pública independiente.
 
-## Archivos y orden
+## Archivos y orden de carga
 
 1. `00_head.html` — metadatos y estilos.
-2. `01_body.html` — estructura HTML de la interfaz.
-3. `05_idioma.js` — traducción, lectura de CSV y textos de interfaz.
-4. `10_base.js` — utilidades, IndexedDB, OPFS, ajustes, almacenamiento y navegación.
-5. `20_audio.js` — captura, grabación, marcas, listas vinculadas a clips y recuperación de sesiones.
-6. `25_medios.js` — fragmentos, continuidad temporal, PCM, WAV y audio de consulta.
-7. `30_acervo.js` — acervo y recordatorios de respaldo.
-8. `35_plantillas.js` — plantillas y su administración.
-9. `38_listas.js` — listas de trabajo, edición, importación y asociación con grabaciones.
+2. `01_body.html` — estructura HTML y navegación.
+3. `05_idioma.js` — traducción y textos de interfaz.
+4. `10_base.js` — utilidades, IndexedDB (versión 2), OPFS, ajustes y navegación.
+5. `20_audio.js` — captura, grabación, marcas y recuperación.
+6. `25_medios.js` — fragmentos, continuidad temporal, PCM y WAV.
+7. `30_acervo.js` — acervo y recordatorios.
+8. `35_plantillas.js` — plantillas de ficha.
+9. `38_listas.js` — listas de trabajo y asociación con grabaciones.
 10. `40_ficha.js` — fichas, adjuntos, consentimiento y clips.
-11. `50_export.js` — ZIP, CSV, índice autónomo y exportación de listas.
+11. `50_export.js` — paquetes ZIP y formatos tabulares.
 12. `55_estandares.js` — Broadcast WAV, Dublin Core, Darwin Core y ELAN.
 13. `60_import.js` — lectura e importación de paquetes.
-14. `70_init.js` — eventos, inicialización y actualizaciones del Service Worker.
+14. `70_init.js` — eventos, inicialización y actualización del Service Worker.
+
+Los prefijos numéricos determinan el orden. No renombres los archivos ni cambies ese orden sin revisar las dependencias.
 
 ## Construcción
 
-El HTML final se compone en este orden: `00_head.html`, `01_body.html`, apertura de `<script>`, módulos JavaScript en el orden anterior y cierre de `</script></body></html>`.
+Desde la raíz del repositorio ejecuta:
 
-`TEXTOS_FUENTE` no se incluye manualmente en `05_idioma.js`: es una tabla generada por `construir.py` a partir de los textos marcados en HTML y JavaScript. No la edites a mano.
+```bash
+python3 construir.py
+```
 
-**Importante sobre `construir.py`:** el archivo del constructor no se incluyó en los adjuntos de esta revisión, por lo que no pude comprobar su lista interna de módulos. Se añadió `38_listas.js` para mantener separado el módulo de listas. Si el constructor enumera los archivos JavaScript explícitamente, agrega `38_listas.js` después de `35_plantillas.js` y antes de `40_ficha.js`. Si descubre automáticamente los `.js` ordenados por nombre, no requiere ese ajuste.
+El constructor procesa únicamente archivos `.html` y `.js` de esta carpeta, en orden alfabético por nombre. Genera `index.html` y `idiomas/textos_es.csv`, con una fila por texto traducible. La tabla `TEXTOS_FUENTE` se genera automáticamente; no debe editarse a mano.
 
-Después de construir, compara la versión generada con el `index.html` de esta misma entrega y ejecuta las pruebas de `pruebas/`. No publiques una compilación si se omitió `38_listas.js`.
+El constructor exige, entre otros, `00_head.html`, `01_body.html`, `05_idioma.js`, `10_base.js`, `38_listas.js` y `70_init.js`. Si se omite `38_listas.js`, la construcción se detiene.
 
 ## Versiones
 
 - Versión pública: `1.0.0`.
-- Compilación interna correspondiente: `1.3.2`.
-- Service Worker coordinado: `virgula-1.0.0-build-1.3.2`.
+- Compilación interna: `1.3.3`.
+- Service Worker correspondiente: `virgula-1.0.0-build-1.3.3`.
+
+Al preparar otro lanzamiento, actualiza `BUILD_INTERNO` en `10_base.js` y la constante `VERSION` en `sw.js`; luego construye de nuevo y ejecuta las pruebas.

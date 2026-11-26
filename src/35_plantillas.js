@@ -233,7 +233,7 @@ const Plantillas = {
       <details class="sec"><summary>${tH('👥 Compartir con un equipo')}</summary>
         <label for="plEquipo">${tH('Equipo o proyecto')}</label><input type="text" id="plEquipo" value="${esc(p.equipo || '')}" maxlength="120" ${dis}>
         <div class="op"><label><input type="checkbox" id="plFija" ${p.fija ? 'checked' : ''} ${dis}> ${tH('🔒 Fija: quien la importe la usa tal cual (puede duplicarla, no cambiarla)')}</label></div>
-        <p class="nota">${tH('Para compartirla: ⬇️ Exportar en la lista de plantillas. Cada vez que guardas cambios sube la versión; al importar una versión más nueva, se actualiza.')}</p></details>
+        <p class="nota">${tH('Para compartirla: en Ajustes → Plantillas, selecciona la plantilla y usa «Exportar». Cada vez que guardas cambios aumenta su versión; al importar una versión más nueva, se actualiza.')}</p></details>
       <p class="nota">${tH('Versión {v}', { v: p.version })}${p.fabrica ? ' · ' + tH('plantilla de fábrica') : ''}</p>
       <div class="fila">${solo ? '' : `<button class="prim" id="plGuardar">${tH('💾 Guardar')}</button>`}<button id="plCerrar">${solo ? tH('Cerrar') : tH('Cancelar')}</button>${p.fabrica && !solo ? `<button id="plFabrica">${tH('↺ Volver a la de fábrica')}</button>` : ''}</div>`);
     this.pintarCampos(solo);
