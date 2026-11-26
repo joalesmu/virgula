@@ -1,5 +1,12 @@
 # Cambios
 
+## Gestión del acervo · compilación interna 1.3.5 · 26 de noviembre de 2026
+
+- Se agrega **Borrar** junto a **Exportar** para eliminar varias grabaciones seleccionadas desde el acervo.
+- Antes de borrar, se muestra la cantidad y se advierte que también se eliminarán el audio, los clips y los adjuntos.
+- Si alguna grabación no tiene un respaldo actualizado, se solicita escribir **BORRAR** para confirmar.
+- El borrado reutiliza la rutina existente de limpieza de OPFS e IndexedDB. Si una grabación falla, permanece en el acervo y sigue seleccionada para poder reintentar; los borrados completados se informan por separado.
+
 ## Ajuste de controles · compilación interna 1.3.4 · 26 de noviembre de 2026
 
 - El botón circular principal ahora inicia la grabación y cambia a **Detener** cuando la captura está activa. Mantiene la misma rutina de cierre y guardado que el botón independiente.

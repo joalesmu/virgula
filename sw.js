@@ -1,6 +1,6 @@
-/* 
+/*
  * Vírgula · memoria sonora viva
- * Service Worker de la versión pública 1.0.0 (compilación interna 1.3.4)
+ * Service Worker de la versión pública 1.0.0 (compilación interna 1.3.5)
  * Copyright (c) 2026 Alejandro Estrada
  * SPDX-License-Identifier: AGPL-3.0-only
  *
@@ -10,7 +10,7 @@
  * 3. Ejecuta python3 construir.py y publica juntos index.html y sw.js.
  */
 
-const VERSION = 'virgula-1.0.0-build-1.3.4';
+const VERSION = 'virgula-1.0.0-build-1.3.5';
 const PREFIJO_CACHE = 'virgula-';
 
 const ARCHIVOS = [
