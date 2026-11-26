@@ -3,7 +3,7 @@
     {
       "codigo": "en",
       "nombre": "English",
-      "version": 7,
+      "version": 1,
       "archivo": "en.json",
       "avance": 100
     },
@@ -61,6 +61,76 @@
       "nombre": "हिन्दी",
       "version": 1,
       "archivo": "hi.json",
+      "avance": 100
+    },
+    {
+      "codigo": "ar",
+      "nombre": "العربية",
+      "version": 1,
+      "archivo": "ar.json",
+      "avance": 100
+    },
+    {
+      "codigo": "ru",
+      "nombre": "Русский",
+      "version": 1,
+      "archivo": "ru.json",
+      "avance": 100
+    },
+    {
+      "codigo": "id",
+      "nombre": "Bahasa Indonesia",
+      "version": 1,
+      "archivo": "id.json",
+      "avance": 100
+    },
+    {
+      "codigo": "nl",
+      "nombre": "Nederlands",
+      "version": 1,
+      "archivo": "nl.json",
+      "avance": 100
+    },
+    {
+      "codigo": "pl",
+      "nombre": "Polski",
+      "version": 1,
+      "archivo": "pl.json",
+      "avance": 100
+    },
+    {
+      "codigo": "ca",
+      "nombre": "Català",
+      "version": 1,
+      "archivo": "ca.json",
+      "avance": 100
+    },
+    {
+      "codigo": "ro",
+      "nombre": "Română",
+      "version": 1,
+      "archivo": "ro.json",
+      "avance": 100
+    },
+    {
+      "codigo": "tr",
+      "nombre": "Türkçe",
+      "version": 1,
+      "archivo": "tr.json",
+      "avance": 100
+    },
+    {
+      "codigo": "uk",
+      "nombre": "Українська",
+      "version": 1,
+      "archivo": "uk.json",
+      "avance": 100
+    },
+    {
+      "codigo": "el",
+      "nombre": "Ελληνικά",
+      "version": 1,
+      "archivo": "el.json",
       "avance": 100
     }
   ]
