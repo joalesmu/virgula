@@ -13,30 +13,10 @@ Sin lista,Grabar
 📋 Importar o pegar lista,Grabar
 ＋ Crear lista,Grabar
 La grabación conserva una copia de la lista.,Grabar
-Listas de trabajo,Listas
-"Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.",Listas
-Mis listas,Listas
-Selecciona una lista,Listas
-＋ Nueva lista,Listas
-📋 Pegar texto,Listas
-📥 Importar TXT,Listas
-Nombre de la lista,Listas
-Ej. Vocabulario de alimentos,Listas
-Tipo de lista,Listas
-Elementos (una entrada por renglón),Listas
-Guion (texto completo),Listas
-"En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.",Listas
-Contenido,Listas
-"Pega o escribe aquí.
-Un elemento por renglón.",Listas
-💾 Guardar lista,Listas
-Copiar texto,Listas
-⬇️ Exportar TXT,Listas
-Borrar,Listas
-Todavía no tienes listas. Crea una o pega texto para comenzar.,Listas
 "🔍 Buscar en títulos, descripciones, transcripciones…",Acervo
 Buscar,Acervo
 📦 Exportar,Acervo
+🗑️ Borrar,Acervo
 ☑ Todas,Acervo
 📥 Importar paquete,Acervo
 Idioma de la interfaz,Ajustes
@@ -107,8 +87,6 @@ Ayuda,Ajustes
 "Arma un informe técnico (aparato, versión, últimos eventos) para enviarlo por correo o GitHub. No incluye audios ni fichas.",Ajustes
 Acerca de,Ajustes
 Vírgula · memoria sonora viva · versión,Ajustes
-↻ Comprobar actualizaciones,Ajustes
-La comprobación se realiza al abrir la aplicación.,Ajustes
 Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.,Ajustes
 "En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.",Ajustes
 Diseñado y desarrollado por Alejandro Estrada,Ajustes
@@ -167,21 +145,6 @@ Se guardó **{archivo}** en Descargas. Envíalo por una de estas vías; el equip
 Por correo: adjunta el archivo antes de enviar. En GitHub: necesitas una cuenta; arrastra el archivo al recuadro del mensaje.,Idioma
 Cerrar,Idioma
 Cierra las otras pestañas de Vírgula para completar la actualización del almacenamiento.,General
-Ya existe un fragmento con la misma identidad y datos diferentes.,General
-El fragmento duplicado tiene una posición temporal diferente.,General
-No se pudo actualizar la posición del fragmento.,General
-No se pudieron integrar todos los respaldos temporales de esta grabación.,General
-No se pudo borrar la grabación.,General
-Ya existe una grabación con ese código.,General
-La importación contiene un adjunto sin código válido.,General
-La importación contiene códigos de adjunto repetidos.,General
-El código de un adjunto ya pertenece a otra grabación.,General
-No se pudo completar la importación.,General
-El navegador no admite respaldo temporal OPFS.,General
-No se pudo determinar el número de canales.,General
-El tamaño del audio PCM no es válido.,General
-Un fragmento PCM tiene un tamaño inválido.,General
-Los fragmentos recuperados se superponen en el tiempo.,General
 Micrófono elegido,General
 archivo + consulta,General
 solo archivo,General
@@ -216,7 +179,6 @@ consulta: {error},Grabar
 no se pudo iniciar el audio de consulta: {error},Grabar
 Este navegador no pudo iniciar ninguna de las dos formas de captura. No se inició la grabación.,Grabar
 "⚠️ La grabación inició, pero no se pudieron actualizar algunos datos técnicos. Se volverán a guardar automáticamente.",Grabar
-Grabando,Grabar
 sin audio,Grabar
 de {desde} a {hasta} (posible llamada u otra app usando el micrófono),Grabar
 micrófono ocupado por el sistema,Grabar
@@ -226,7 +188,6 @@ el micrófono se desconectó,Grabar
 audio del sistema: {estado},Grabar
 error al guardar,Grabar
 ⚠️ No se pudo conservar una parte del audio. Mantén Vírgula abierta.,Grabar
-No se pudo guardar el fragmento en ningún almacén.,Grabar
 Nivel de entrada,Grabar
 "La grabación quedó guardada, pero no se pudo abrir su ficha. Está disponible en el Acervo.",Grabar
 error al finalizar,Grabar
@@ -242,7 +203,6 @@ pausa,Grabar
 ⏸ Pausa,Grabar
 continúa,Grabar
 fin,Grabar
-El procesador no confirmó el vaciado.,Grabar
 No se pudo confirmar el último bloque de audio. La captura sigue abierta; vuelve a tocar Detener.,Grabar
 No se pudo cerrar el audio de consulta. La captura sigue abierta; vuelve a tocar Detener.,Grabar
 🔆 Pantalla fija,Grabar
@@ -252,11 +212,8 @@ No se pudo cerrar el audio de consulta. La captura sigue abierta; vuelve a tocar
 🔇 {n} tramo(s) sin audio,Grabar
 ⏸ En pausa,Grabar
 {n} fragmento(s) sin guardar,Grabar
-Reintentando…,Grabar
-↻ Reintentar guardado,Grabar
 No se pudo guardar el cierre de la grabación.,Grabar
-Guardando…,Grabar
-↻ Reintentar finalización,Grabar
+Reintentando…,Grabar
 pantalla oculta o bloqueada,Grabar
 pantalla visible,Grabar
 la app se cerró u ocultó,Grabar
@@ -265,26 +222,12 @@ No se pudo comprobar el estado de los respaldos temporales. No borres los datos 
 ⚠️ Hay audio que todavía no se pudo integrar. Vírgula conserva un respaldo temporal en este dispositivo. No borres sus datos.,Grabar
 ⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.,Grabar
 🛟 Recuperar,Grabar
-No se encontró la ficha de esta grabación.,Grabar
 recuperada,Grabar
 la grabación se cortó; se recuperó lo guardado,Grabar
 ⚠️ No se pudieron recuperar {n} grabación(es). Los datos originales se conservan; no borres los datos de Vírgula.,Grabar
 Grabaciones recuperadas: {n}.,Grabar
 Reintentar recuperación,Grabar
 🛟 {n} grabación(es) recuperada(s). Están en 📚 Acervo.,Grabar
-No se pudo comprobar la integridad de uno de los audios. Se conservan ambas copias.,Audio
-Hay copias del mismo fragmento con posiciones temporales diferentes.,Audio
-El respaldo y el fragmento principal tienen posiciones temporales diferentes.,Audio
-No se pudo determinar el número de canales del audio.,Audio
-El tamaño del audio temporal no es válido.,Audio
-La ficha no contiene una frecuencia o cantidad de canales válida.,Audio
-El fragmento {n} contiene PCM incompleto o inválido.,Audio
-La duración declarada del fragmento {n} no coincide con sus datos.,Audio
-La posición temporal del fragmento {n} no es válida.,Audio
-Los fragmentos PCM se superponen o exceden el límite temporal en el fragmento {n}.,Audio
-La grabación supera el tamaño que puede reconstruirse de forma segura.,Audio
-Se detectó una superposición al reconstruir el audio.,Audio
-El WAV supera el límite del formato RIFF. Exporta una grabación más corta o solo la consulta.,Audio
 Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.,Audio
 "💾 {n} grabación(es) sin respaldo o con cambios desde el último. Selecciónalas y usa 📦 Exportar para guardarlas en Drive, en otra computadora o donde prefieras.",Acervo
 ☑ Elegir las que faltan,Acervo
@@ -303,6 +246,15 @@ consentimiento no aplica,Acervo
 💾 sin respaldo,Acervo
 Nada coincide con la búsqueda.,Acervo
 Todavía no hay grabaciones. Ve a ⏺ Grabar.,Acervo
+No se encontraron las grabaciones seleccionadas.,Acervo
+"¿Borrar {n} grabación(es) seleccionada(s), junto con su audio, clips y adjuntos? Esta acción no se puede deshacer.",Acervo
+{n} grabación(es) no tienen respaldo actualizado.,Acervo
+"Para confirmar, escribe BORRAR",Acervo
+BORRAR,Acervo
+🗑️ Borrando…,Acervo
+🗑️ Se borraron {n} grabación(es).,Acervo
+Se borraron {n} grabación(es); {m} no se pudieron borrar y siguen seleccionadas.,Acervo
+No se pudo borrar ninguna grabación. No se eliminó ningún contenido.,Acervo
 💾 {n} grabación(es) llevan más de {d} día(s) sin respaldo. Solo existen en este aparato.,Acervo
 📦 Respaldar ahora,Acervo
 Mañana,Acervo
@@ -470,7 +422,6 @@ Hay un campo propio sin nombre.,Plantillas
 «{nombre}» necesita al menos dos opciones.,Plantillas
 Ya hay una plantilla con ese nombre.,Plantillas
 🧩 «{nombre}» guardada (v{v}).,Plantillas
-La lista seleccionada ya no existe.,Listas
 La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.,Listas
 Guion,Listas
 {n} elementos,Listas
@@ -490,6 +441,8 @@ Lista «{nombre}» guardada.,Listas
 ¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.,Listas
 Texto de la lista copiado.,Listas
 Copia el texto de la lista:,Listas
+Nombre de la lista,Listas
+Ej. Vocabulario de alimentos,Listas
 Elementos · un renglón por entrada,Listas
 Guion · texto completo,Listas
 Pega aquí el texto,Listas
@@ -644,14 +597,13 @@ Firma con el dedo. Queda como adjunto «Consentimiento».,Ficha
 Espacio para firmar,Ficha
 Nombre o código de quien firma,Ficha
 Guardar firma,Ficha
+Borrar,Ficha
 Primero firma en el recuadro.,Ficha
 Consentimiento oral,Ficha
 "Pide a la persona que diga su nombre (o código), la fecha y para qué usos da su permiso.",Ficha
 ⏹ Terminar y guardar,Ficha
 "¿Borrar «{titulo}» de este aparato, con su audio y sus adjuntos?",Ficha
 ⚠️ Esta grabación NO tiene respaldo.,Ficha
-"Para confirmar, escribe BORRAR",Ficha
-BORRAR,Ficha
 No se pudo completar el borrado. La grabación se conserva en Vírgula.,Ficha
 🗑 Borrada.,Ficha
 ¿Quitar este clip? El audio de la grabación no cambia.,Ficha
@@ -714,6 +666,7 @@ Preparando «{titulo}»…,Exportar
 Cortando clip {n} de «{titulo}»…,Exportar
 VÍRGULA · memoria sonora viva — paquete de grabaciones,Exportar
 "Abre indice.html con cualquier navegador para ver las fichas, escuchar los audios y abrir los adjuntos (primero extrae o descomprime el .zip).",Exportar
+Contenido,Exportar
 "Las fichas para leer y escuchar, sin conexión.",Exportar
 "Todos los datos, completos. Es lo que lee Vírgula al importar este paquete.",Exportar
 "Una fila por grabación (se abre en Excel, LibreOffice o Google Sheets).",Exportar
@@ -773,14 +726,8 @@ Trae {n} plantilla(s); las que no tengas se agregan.,Importar
 📥 Importar,Importar
 Importando «{titulo}»…,Importar
 📥 {n} grabación(es) importada(s).,Importar
-El paquete contiene una ruta de archivo no válida.,Importar
-No se puede reemplazar una grabación que está abierta.,Importar
-El WAV importado tiene una duración inválida.,Importar
-No se pudo leer el WAV del paquete; la grabación anterior se conserva.,Importar
 falta o no es compatible el WAV de «{titulo}»,Importar
-No se pudo leer el audio de consulta; la grabación anterior se conserva.,Importar
 falta la consulta de «{titulo}»,Importar
-No se pudo leer el adjunto «{nombre}»; la grabación anterior se conserva.,Importar
 falta el adjunto «{nombre}»,Importar
 importada,Importar
 {n} adjunto(s) no venían completos en el paquete,Importar
