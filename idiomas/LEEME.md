@@ -17,10 +17,14 @@ El texto original en español es la clave de traducción. La aplicación reúne 
 
 Cuando se agrega, elimina o modifica un texto visible:
 
-1. Actualiza `TEXTOS_FUENTE` con la frase exacta en español y la sección donde aparece.
-2. Regenera `textos_es.csv` con `construir.py`.
-3. Revisa las traducciones existentes. Una clave que cambió, aunque sea por puntuación, mayúsculas o espacios, se considera un texto distinto.
-4. Actualiza los paquetes de idioma y su versión cuando corresponda.
+1. En JavaScript, marca los textos de interfaz con `t('…')`, `tH('…')` o `N_('…')`. Los mensajes de error que puedan mostrarse también deben usar `t()`.
+2. En HTML estático, usa `data-t` para el texto, `data-tp` para los `placeholder` y `data-ta` para los nombres accesibles (`aria-label`). No dejes etiquetas o ayudas visibles escritas directamente sin una marca de traducción.
+3. En una etiqueta condicional, traduce cada alternativa por separado: `condicion ? t('A') : t('B')`. No envuelvas la condición completa en una sola llamada `t()`, porque el constructor no puede extraer automáticamente las dos frases.
+4. Ejecuta `python3 construir.py` para regenerar `index.html` y `textos_es.csv`.
+5. Revisa las traducciones existentes. Una clave que cambió, aunque sea por puntuación, mayúsculas o espacios, se considera un texto distinto.
+6. Actualiza los paquetes de idioma y su versión cuando corresponda.
+
+Los nombres, notas y otros contenidos escritos por cada persona —por ejemplo, los nombres de sus listas— no son textos de interfaz y no se traducen automáticamente. Los valores fijos de la aplicación, las instrucciones, etiquetas, estados y errores sí deben estar en el inventario.
 
 El CSV debe contener una fila por texto original. Si una misma frase aparece en más de una sección, conserva una sola fila y señala la primera sección donde se utiliza. Para traducir, usa la plantilla descargada desde la propia aplicación: incluye las columnas y los datos de versión que Vírgula necesita.
 
@@ -74,4 +78,6 @@ No cambies el valor de `formato`. El campo `version` identifica la revisión del
 
 ## Estado del paquete inglés
 
-`en.json` corresponde al idioma inglés (`en`, `en-US`). Su versión de traducción es la 6 y contiene 692 claves vigentes de un inventario de 763 textos (91 % de cobertura). Las claves antiguas que ya no aparecen en la interfaz se retiraron. La traducción sigue identificada como borrador para revisión; la cobertura de claves no equivale a una certificación lingüística o comunitaria.
+`en.json` corresponde al idioma inglés (`en`, `en-US`). Su versión de traducción es la 7 y contiene las 822 claves del inventario actual (100 % de cobertura de claves). Incluye los textos de las listas de trabajo, las plantillas, la grabación, los mensajes de recuperación, los errores de importación y las comprobaciones de actualización.
+
+La traducción sigue identificada como borrador para revisión lingüística. El 100 % indica que cada texto fuente tiene una entrada en inglés; no equivale a una certificación de calidad, revisión por hablantes ni aval comunitario. Antes de publicar el inglés como traducción aprobada, conviene revisar especialmente los mensajes técnicos y las instrucciones en pantalla.

@@ -3,9 +3,9 @@
     {
       "codigo": "en",
       "nombre": "English",
-      "version": 6,
+      "version": 7,
       "archivo": "en.json",
-      "avance": 91
+      "avance": 100
     }
   ]
 }
