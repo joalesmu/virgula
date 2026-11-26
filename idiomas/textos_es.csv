@@ -2,11 +2,14 @@
 memoria sonora viva,Pantalla principal
 ⬇️ Instalar,Pantalla principal
 Idioma,Pantalla principal
-🔖 Marcar,Grabar
-1 toque: siguiente · 2 toques: otra vez,Grabar
+🔗 Compartir,Pantalla principal
+🔗 Enlace copiado. Ya puedes compartirlo.,Pantalla principal
+No se pudo compartir el enlace.,Pantalla principal
+Copia el enlace de Vírgula:,Pantalla principal
+Siguiente,Grabar
+Repetir,Grabar
 ⏹ Detener,Grabar
 "En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.",Grabar
-"Graba primero; la ficha se completa después, con calma.",Grabar
 "🔍 Buscar en títulos, descripciones, transcripciones…",Acervo
 Buscar,Acervo
 📦 Exportar,Acervo
@@ -659,3 +662,83 @@ Entendido,Ajustes
 Actualizar ahora,Ajustes
 Termina la grabación antes de actualizar.,Ajustes
 ⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.,Ajustes
+Listas,Ajustes
+Listas de trabajo,Listas
+"Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.",Listas
+Mis listas,Listas
+＋ Nueva lista,Listas
+📋 Pegar texto,Listas
+📥 Importar TXT,Listas
+Nombre de la lista,Listas
+Ej. Vocabulario de alimentos,Listas
+Tipo de lista,Listas
+Elementos (una entrada por renglón),Listas
+Guion (texto completo),Listas
+"En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.",Listas
+"Pega o escribe aquí.
+Un elemento por renglón.",Listas
+💾 Guardar lista,Listas
+Copiar texto,Listas
+⬇️ Exportar TXT,Listas
+Todavía no tienes listas. Crea una o pega texto para comenzar.,Listas
+Lista de trabajo,Grabar
+Seleccionar lista para esta grabación,Grabar
+La grabación conserva una copia de la lista.,Grabar
+Sin lista,Listas
+Guion,Listas
+{n} elementos,Listas
+"El guion se conserva como un solo texto, con sus párrafos y saltos de línea. No se asigna automáticamente a los clips.",Listas
+Cada salto de línea crea un elemento independiente. Se reconocen viñetas y numeraciones; las comas se conservan.,Listas
+Un guion de {n} carácter(es).,Listas
+El guion está vacío.,Listas
+{n} elemento(s) detectado(s).,Listas
+{n} de {total},Listas
+Lista completada,Listas
+Lista vacía,Listas
+Termina la grabación antes de crear o cambiar la lista de trabajo.,Listas
+La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.,Listas
+La lista seleccionada ya no existe.,Listas
+No se pudo preparar la lista seleccionada. No se inició la grabación.,Listas
+La lista necesita un nombre.,Listas
+La lista no puede estar vacía.,Listas
+Ya existe una lista con ese nombre.,Listas
+Lista «{nombre}» guardada.,Listas
+¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.,Listas
+📋 Importar o pegar lista,Listas
+Pega aquí el texto,Listas
+Elementos · un renglón por entrada,Listas
+Guion · texto completo,Listas
+Crear lista,Listas
+Escribe un nombre y pega el contenido de la lista.,Listas
+Texto de la lista copiado.,Listas
+Copia el texto de la lista:,Listas
+No se pudo leer el archivo: {error},Listas
+Hay cambios sin guardar. ¿Descartarlos y abrir otra lista?,Listas
+Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?,Listas
+Elemento actual,Grabar
+Elemento,Grabar
+↩ Se repetirá el mismo elemento.,Grabar
+Vista de plantilla,Ajustes
+Oculto,Ajustes
+Opcional,Ajustes
+Ver plantilla,Ajustes
+Editar,Ajustes
+Protección del almacenamiento: concedida. El navegador reducirá el riesgo de eliminar los datos de Vírgula automáticamente.,Ajustes
+Protección del almacenamiento: no concedida. El navegador podría eliminar datos locales si necesita espacio.,Ajustes
+Este navegador no permite consultar la protección del almacenamiento. Exporta respaldos periódicamente.,Ajustes
+Este navegador no informa del espacio disponible.,Ajustes
+No se pudo consultar el espacio disponible.,Ajustes
+Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.,Exportar
+Este navegador no permite actualizar Vírgula como aplicación instalada.,Ajustes
+No hay conexión. No se pudo comprobar si existe una versión nueva.,Ajustes
+Buscando actualizaciones…,Ajustes
+Se encontró una versión nueva. Se está descargando…,Ajustes
+Vírgula está actualizada.,Ajustes
+No se pudo comprobar la actualización. Revisa la conexión e inténtalo de nuevo.,Ajustes
+No se pudo registrar el sistema de actualizaciones.,Ajustes
+Preparando la actualización…,Ajustes
+La versión nueva está activa. Recarga Vírgula cuando termines de trabajar.,Ajustes
+La actualización está lista.,Ajustes
+Recargar ahora,Ajustes
+Termina la grabación antes de recargar.,Ajustes
+Hay una actualización lista para instalar.,Ajustes
