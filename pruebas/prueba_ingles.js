@@ -7,7 +7,8 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   const p = await ctx.newPage(), err = []; p.on('pageerror', e => err.push(e.message));
   await p.goto(BASE); await p.click('nav.abajo [data-vista="vAjustes"]');
   await p.click('#bIdiomaRed'); await p.waitForSelector('[data-ibajar="en.json"]'); await p.click('[data-ibajar="en.json"]'); await p.waitForTimeout(500);
-  ok((await p.textContent('#idiomas')).includes('English') && (await p.textContent('#idiomas')).includes('100 %'), 'inglés publicado instalado al 100 %');
+  const avancePublicado = await p.evaluate(async () => { const r = await fetch('idiomas/lista.json', { cache: 'no-store' }); const j = await r.json(); const en = j.idiomas.find(x => x.codigo === 'en'); return en ? en.avance : null; });
+  ok((await p.textContent('#idiomas')).includes('English') && avancePublicado != null && (await p.textContent('#idiomas')).includes(`${avancePublicado} %`), `inglés publicado con avance declarado (${avancePublicado} %)`);
   await p.check('input[name="aIdioma"][value="en"]'); await p.waitForTimeout(1500);
   await p.screenshot({ path: OUT + '/10_en_grabar.png' });
   ok((await p.textContent('#bGrabar')).includes('Record') && (await p.textContent('#vGrabar')).includes('Input level'), 'pantalla de grabar en inglés');
