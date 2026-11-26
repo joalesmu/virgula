@@ -142,6 +142,7 @@
   </header>
 
   <div id="avisoRecuperar" class="banda aviso oculto" role="alert"></div>
+  <div id="avisoActualizacion" class="banda ok oculto" role="status"></div>
   <div id="avisoGlobal"></div>
 
   <!-- ───── Grabar ───── -->
@@ -509,6 +510,15 @@ const INSTALADA = matchMedia('(display-mode: standalone)').matches || navigator.
 
 /* Bitácora técnica breve (para «Reportar un problema»); nunca guarda contenido de fichas */
 const Bitacora = { l: [], poner(tipo, txt) { this.l.push(`${new Date().toISOString()} ${tipo}: ${String(txt).slice(0, 300)}`); if (this.l.length > 60) this.l.shift(); } };
+
+async function mismosDatos(a, b) {
+  if (!a || !b || a.size !== b.size) return false;
+  const [ab, bb] = await Promise.all([a.arrayBuffer(), b.arrayBuffer()]);
+  const x = new Uint8Array(ab), y = new Uint8Array(bb);
+  for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+  return true;
+}
+
 window.addEventListener('error', e => Bitacora.poner('error', `${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
 window.addEventListener('unhandledrejection', e => Bitacora.poner('promesa', e.reason && (e.reason.message || e.reason)));
 
@@ -543,7 +553,66 @@ const DB = {
   todas(store) { return this.tx(store, 'readonly', s => s.getAll()); },
   quitar(store, k) { return this.tx(store, 'readwrite', s => s.delete(k)); },
   porGrabacion(store, id) { return this.tx(store, 'readonly', s => s.index('grabacion').getAll(id)); },
+  async guardarTrozo(registro) {
+    const actuales = await this.porGrabacion('trozos', registro.grabacion);
+    const iguales = actuales.filter(x => x.tipo === registro.tipo && x.n === registro.n);
+
+    if (iguales.length) {
+      for (const anterior of iguales) {
+        if (!await mismosDatos(anterior.datos, registro.datos)) {
+          throw new Error('Ya existe un fragmento con la misma identidad y datos diferentes.');
+        }
+        const a = anterior.inicioFrame, b = registro.inicioFrame;
+        if (Number.isSafeInteger(a) && Number.isSafeInteger(b) && a !== b) {
+          throw new Error('El fragmento duplicado tiene una posición temporal diferente.');
+        }
+      }
+
+      if (Number.isSafeInteger(registro.inicioFrame)) {
+        await this.fijarInicioFrame(
+          registro.grabacion, registro.tipo, registro.n, registro.inicioFrame
+        );
+      }
+      return false;
+    }
+
+    await this.poner('trozos', registro);
+    return true;
+  },
+  async fijarInicioFrame(grabacion, tipo, n, inicioFrame) {
+    if (!Number.isSafeInteger(inicioFrame) || inicioFrame < 0) return 0;
+    const d = await this.abrir();
+    return new Promise((ok, mal) => {
+      const x = d.transaction('trozos', 'readwrite');
+      const s = x.objectStore('trozos');
+      const c = s.index('grabacion').openCursor(IDBKeyRange.only(grabacion));
+      let cambios = 0;
+      c.onsuccess = () => {
+        const cursor = c.result;
+        if (!cursor) return;
+        const v = cursor.value;
+        if (v.tipo === tipo && v.n === n && !Number.isSafeInteger(v.inicioFrame)) {
+          cursor.update(Object.assign({}, v, { inicioFrame }));
+          cambios++;
+        }
+        cursor.continue();
+      };
+      x.oncomplete = () => ok(cambios);
+      x.onerror = () => mal(x.error);
+      x.onabort = () => mal(x.error || new Error('No se pudo actualizar la posición del fragmento.'));
+    });
+  },
+  async prepararBorradoOPFS(id) {
+    // Primero integrar los respaldos temporales; así un fallo al limpiar OPFS
+    // nunca elimina la única copia que contenía un fragmento.
+    const resultado = await RespaldoTemporal.recuperar();
+    if ((resultado.grabacionesPendientes || []).includes(id)) {
+      throw new Error('No se pudieron integrar todos los respaldos temporales de esta grabación.');
+    }
+    await RespaldoTemporal.borrarGrabacion(id);
+  },
   async borrarGrabacion(id) {
+    await this.prepararBorradoOPFS(id);
     const d = await this.abrir();
     await new Promise((ok, mal) => {
       const x = d.transaction(['grabaciones', 'trozos', 'adjuntos'], 'readwrite');
@@ -552,8 +621,294 @@ const DB = {
         const c = x.objectStore(st).index('grabacion').openKeyCursor(IDBKeyRange.only(id));
         c.onsuccess = () => { const k = c.result; if (k) { x.objectStore(st).delete(k.primaryKey); k.continue(); } };
       });
-      x.oncomplete = ok; x.onerror = () => mal(x.error);
+      x.oncomplete = ok;
+      x.onerror = () => mal(x.error);
+      x.onabort = () => mal(x.error || new Error('No se pudo borrar la grabación.'));
     });
+  },
+  async guardarImportacion(registro, trozosNuevos, adjuntosNuevos, reemplazar = false) {
+    const id = registro.id;
+    if (reemplazar) {
+      await this.prepararBorradoOPFS(id);
+    } else if (await this.leer('grabaciones', id)) {
+      throw new Error('Ya existe una grabación con ese código.');
+    }
+
+    const idsAdjuntos = new Set();
+    for (const adjunto of adjuntosNuevos) {
+      if (!adjunto || typeof adjunto.id !== 'string' || !adjunto.id) {
+        throw new Error('La importación contiene un adjunto sin código válido.');
+      }
+      if (idsAdjuntos.has(adjunto.id)) {
+        throw new Error('La importación contiene códigos de adjunto repetidos.');
+      }
+      idsAdjuntos.add(adjunto.id);
+      const existente = await this.leer('adjuntos', adjunto.id);
+      if (existente && (!reemplazar || existente.grabacion !== id)) {
+        throw new Error('El código de un adjunto ya pertenece a otra grabación.');
+      }
+    }
+
+    const d = await this.abrir();
+    let clavesTrozo = [], clavesAdjunto = [];
+    if (reemplazar) {
+      [clavesTrozo, clavesAdjunto] = await Promise.all([
+        this.tx('trozos', 'readonly', store => store.index('grabacion').getAllKeys(id)),
+        this.tx('adjuntos', 'readonly', store => store.index('grabacion').getAllKeys(id))
+      ]);
+    }
+
+    return new Promise((ok, mal) => {
+      const x = d.transaction(['grabaciones', 'trozos', 'adjuntos'], 'readwrite');
+      const grabaciones = x.objectStore('grabaciones');
+      const trozos = x.objectStore('trozos');
+      const adjuntos = x.objectStore('adjuntos');
+
+      if (reemplazar) {
+        grabaciones.delete(id);
+        clavesTrozo.forEach(k => trozos.delete(k));
+        clavesAdjunto.forEach(k => adjuntos.delete(k));
+      }
+
+      grabaciones.put(registro);
+      trozosNuevos.forEach(v => trozos.add(v));
+      adjuntosNuevos.forEach(v => adjuntos.add(v));
+
+      x.oncomplete = () => ok(true);
+      x.onerror = () => mal(x.error);
+      x.onabort = () => mal(x.error || new Error('No se pudo completar la importación.'));
+    });
+  }
+};
+
+  
+/* ─────────── Respaldo temporal de audio (OPFS) ─────────── */
+const RespaldoTemporal = {
+  directorio: null,
+
+  disponible() {
+    return !!(
+      navigator.storage &&
+      typeof navigator.storage.getDirectory === 'function' &&
+      typeof FileSystemFileHandle !== 'undefined' &&
+      typeof FileSystemFileHandle.prototype.createWritable === 'function'
+    );
+  },
+
+  async abrir() {
+    if (!this.disponible()) {
+      throw new Error('El navegador no admite respaldo temporal OPFS.');
+    }
+
+    if (!this.directorio) {
+      this.directorio = await navigator.storage.getDirectory();
+    }
+
+    return this.directorio;
+  },
+
+  nombre(grabacion, tipo, n, inicioFrame = null) {
+    const posicion = tipo === 'archivo' && Number.isSafeInteger(inicioFrame) && inicioFrame >= 0
+      ? `--${inicioFrame}`
+      : '';
+    return `virgula-audio--${encodeURIComponent(grabacion)}--${tipo}--${n}${posicion}.pending`;
+  },
+
+  async guardar(registro) {
+    const dir = await this.abrir();
+
+    const nombre = this.nombre(
+      registro.grabacion,
+      registro.tipo,
+      registro.n,
+      registro.inicioFrame
+    );
+
+    const archivo = await dir.getFileHandle(nombre, { create: true });
+    const salida = await archivo.createWritable();
+
+    try {
+      await salida.write(registro.datos);
+      await salida.close();
+    } catch (e) {
+      try {
+        await salida.abort();
+      } catch (_) {}
+
+      throw e;
+    }
+
+    return nombre;
+  },
+
+  async quitar(nombre) {
+    const dir = await this.abrir();
+
+    try {
+      await dir.removeEntry(nombre);
+    } catch (e) {
+      if (e.name !== 'NotFoundError') throw e;
+    }
+  },
+
+  async listar(grabacion = null) {
+    if (!this.disponible()) return [];
+
+    const dir = await this.abrir();
+    const encontrados = [];
+
+    for await (const [nombre, entrada] of dir.entries()) {
+      const m = nombre.match(
+        /^virgula-audio--(.+)--(archivo|consulta)--([1-9]\d*)(?:--(0|[1-9]\d*))?\.pending$/
+      );
+
+      if (!m) continue;
+
+      let id;
+
+      try {
+        id = decodeURIComponent(m[1]);
+      } catch (_) {
+        continue;
+      }
+
+      if (grabacion && id !== grabacion) continue;
+
+      const n = Number(m[3]);
+      const inicioFrame = m[4] == null ? null : Number(m[4]);
+      if (!Number.isSafeInteger(n) || (inicioFrame != null && !Number.isSafeInteger(inicioFrame))) continue;
+      if (m[2] === 'consulta' && inicioFrame != null) continue;
+
+      const archivo = await entrada.getFile();
+
+      encontrados.push({
+        nombre,
+        grabacion: id,
+        tipo: m[2],
+        n,
+        inicioFrame,
+        archivo
+      });
+    }
+
+    return encontrados.sort((a, b) => a.n - b.n);
+  },
+
+  
+  async recuperar() {
+    if (!this.disponible()) {
+      return { recuperados: 0, pendientes: 0, grabacionesPendientes: [] };
+    }
+
+    const archivos = await this.listar();
+    const afectados = new Set();
+    const grabacionesPendientes = new Set();
+    let recuperados = 0;
+    let pendientes = 0;
+
+    for (const respaldo of archivos) {
+      const id = respaldo.grabacion;
+
+      try {
+        const reg = await DB.leer('grabaciones', id);
+        if (!reg) {
+          pendientes++;
+          grabacionesPendientes.add(id);
+          Bitacora.poner('respaldo sin ficha', `${id} · ${respaldo.nombre}`);
+          continue;
+        }
+
+        let frames = 0;
+        if (respaldo.tipo === 'archivo') {
+          const canales = reg.tecnica && reg.tecnica.canales;
+          if (canales !== 1 && canales !== 2) {
+            throw new Error('No se pudo determinar el número de canales.');
+          }
+          frames = respaldo.archivo.size / (2 * canales);
+          if (!Number.isSafeInteger(frames)) {
+            throw new Error('El tamaño del audio PCM no es válido.');
+          }
+        }
+
+        const mime = respaldo.tipo === 'consulta'
+          ? ((reg.tecnica && reg.tecnica.mime) || 'application/octet-stream').split(';')[0]
+          : 'application/octet-stream';
+
+        const nuevo = {
+          grabacion: id,
+          tipo: respaldo.tipo,
+          n: respaldo.n,
+          datos: new Blob([respaldo.archivo], { type: mime }),
+          frames,
+          ...(Number.isSafeInteger(respaldo.inicioFrame) ? { inicioFrame: respaldo.inicioFrame } : {})
+        };
+
+        const insertado = await DB.guardarTrozo(nuevo);
+        afectados.add(id);
+        if (insertado) recuperados++;
+
+        // La copia temporal solo se retira después de comprobar la copia principal.
+        try {
+          await this.quitar(respaldo.nombre);
+        } catch (e) {
+          Bitacora.poner('limpieza respaldo', e && e.message ? e.message : String(e));
+        }
+
+      } catch (e) {
+        pendientes++;
+        grabacionesPendientes.add(id);
+        Bitacora.poner(
+          'recuperación temporal',
+          e && e.message ? e.message : String(e)
+        );
+      }
+    }
+
+    // Recalcular los tamaños y el último frame conservado de cada grabación afectada.
+    for (const id of afectados) {
+      try {
+        const reg = await DB.leer('grabaciones', id);
+        if (!reg) continue;
+        const trozos = await DB.porGrabacion('trozos', id);
+        const archivo = trozos.filter(x => x.tipo === 'archivo').sort((a, b) => a.n - b.n);
+        const canales = reg.tecnica && reg.tecnica.canales;
+        let cursor = 0;
+
+        if (canales === 1 || canales === 2) {
+          for (const x of archivo) {
+            const fr = x.datos.size / (2 * canales);
+            if (!Number.isSafeInteger(fr)) throw new Error('Un fragmento PCM tiene un tamaño inválido.');
+            const inicio = Number.isSafeInteger(x.inicioFrame) ? x.inicioFrame : cursor;
+            if (inicio < cursor) throw new Error('Los fragmentos recuperados se superponen en el tiempo.');
+            cursor = inicio + fr;
+          }
+          reg.frames = Math.max(Number.isSafeInteger(reg.frames) ? reg.frames : 0, cursor);
+        }
+
+        reg.bytes = {
+          archivo: archivo.reduce((a, x) => a + x.datos.size, 0),
+          consulta: trozos.filter(x => x.tipo === 'consulta').reduce((a, x) => a + x.datos.size, 0)
+        };
+        await DB.poner('grabaciones', reg);
+      } catch (e) {
+        Bitacora.poner('actualización de tamaños', e && e.message ? e.message : String(e));
+        grabacionesPendientes.add(id);
+      }
+    }
+
+    return {
+      recuperados,
+      pendientes,
+      grabacionesPendientes: [...grabacionesPendientes]
+    };
+  },
+
+  async borrarGrabacion(id) {
+    const archivos = await this.listar(id);
+
+    for (const archivo of archivos) {
+      await this.quitar(archivo.nombre);
+    }
   }
 };
 
@@ -690,14 +1045,45 @@ let G = null;   // la grabación en curso
 
 const CODIGO_CAPTURA = `
 class Captura extends AudioWorkletProcessor {
-  constructor(o) { super(); this.ch = o.processorOptions.canales; this.tam = Math.round(sampleRate / 10); this.buf = new Int16Array(this.tam * this.ch); this.i = 0;
-    this.port.onmessage = e => { if (e.data === 'vaciar') { this.enviar(); this.port.postMessage({ vaciado: true }); } }; }
-  enviar() { if (!this.i) return; const out = this.buf.slice(0, this.i * this.ch); this.port.postMessage({ buf: out.buffer, frames: this.i }, [out.buffer]); this.i = 0; }
+  constructor(o) {
+    super();
+    this.ch = o.processorOptions.canales;
+    this.tam = Math.round(sampleRate / 10);
+    this.buf = new Int16Array(this.tam * this.ch);
+    this.i = 0;
+    this.baseFrame = null;
+    this.inicioFrame = null;
+    this.port.onmessage = e => {
+      if (e.data && e.data.tipo === 'vaciar') {
+        const id = e.data.id;
+        this.enviar();
+        this.port.postMessage({ vaciado: true, id });
+      }
+    };
+  }
+  enviar() {
+    if (!this.i) return;
+    const out = this.buf.slice(0, this.i * this.ch);
+    this.port.postMessage({
+      buf: out.buffer,
+      frames: this.i,
+      inicioFrame: this.inicioFrame
+    }, [out.buffer]);
+    this.i = 0;
+    this.inicioFrame = null;
+  }
   process(inputs) {
-    const inp = inputs[0]; if (!inp || !inp.length) return true;
+    const inp = inputs[0];
+    if (!inp || !inp.length) return true;
     const n = inp[0].length;
+    if (this.baseFrame == null) this.baseFrame = currentFrame;
     for (let f = 0; f < n; f++) {
-      for (let c = 0; c < this.ch; c++) { let s = inp[Math.min(c, inp.length - 1)][f]; s = s < -1 ? -1 : s > 1 ? 1 : s; this.buf[this.i * this.ch + c] = s < 0 ? s * 0x8000 : s * 0x7fff; }
+      if (!this.i) this.inicioFrame = currentFrame + f - this.baseFrame;
+      for (let c = 0; c < this.ch; c++) {
+        let s = inp[Math.min(c, inp.length - 1)][f];
+        s = s < -1 ? -1 : s > 1 ? 1 : s;
+        this.buf[this.i * this.ch + c] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
       if (++this.i === this.tam) this.enviar();
     }
     return true;
@@ -723,6 +1109,25 @@ function fichaVacia(ms) {
 }
 
 const Grabadora = {
+  escrituras: new Set(),
+
+    registrarEscritura(promesa) {
+    const escritura = Promise.resolve(promesa);
+
+    this.escrituras.add(escritura);
+
+    const retirar = () => this.escrituras.delete(escritura);
+    escritura.then(retirar, retirar);
+
+    return escritura;
+  },
+
+  async esperarEscrituras() {
+    while (this.escrituras.size > 0) {
+      await Promise.allSettled([...this.escrituras]);
+    }
+  },
+  
   async iniciar() {
     if (G) return;
     const v = Ajustes.v, conArchivo = v.calidad !== 'consulta', conConsulta = v.calidad !== 'archivo', canales = v.canales === 2 ? 2 : 1;
@@ -743,21 +1148,50 @@ const Grabadora = {
     const analizador = ctx.createAnalyser(); analizador.fftSize = 2048; fuente.connect(analizador);
     const ahora = Date.now(), id = nuevoCodigo(ahora);
     G = { id, inicio: ahora, sr, canales, conArchivo, conConsulta, stream, track, ctx, analizador, t0: performance.now(), pausado: 0, pausaDesde: 0,
-      frames: 0, pendientes: [], nTrozo: 0, bytesArchivo: 0, bytesConsulta: 0, marcas: [], eventos: [], silencios: [], silencioDesde: null,
+      frames: 0, pendientes: [], fallidos: [], nTrozo: 0, bytesArchivo: 0, bytesConsulta: 0, marcas: [], eventos: [], silencios: [], silencioDesde: null,
       huecos: 0, ultimoGuardado: 0, picoMax: 0, saturado: 0, ultSat: 0, ganancia: 1, ultimoChequeo: performance.now() };
     G.reg = { id, creada: ahora, estado: 'grabando', version: VERSION,
       tecnica: { sr, canales, conArchivo, conConsulta, mime: '', ajustesPedidos: { volAuto: v.volAuto, ruido: v.ruido, eco: v.eco },
         ajustesReales: { sampleRate: reales.sampleRate, channelCount: reales.channelCount, autoGainControl: reales.autoGainControl, noiseSuppression: reales.noiseSuppression, echoCancellation: reales.echoCancellation },
         microfono: track.label || t('predeterminado'), aparato: navigator.userAgent },
       marcas: [], eventos: [], silencios: [], huecos: 0, frames: 0, bytes: { archivo: 0, consulta: 0 }, duracion: 0, clips: [], ficha: fichaVacia(ahora), respaldo: null, modificada: ahora };
+    // Crear primero la ficha base. Si el almacenamiento no está disponible,
+    // no se inicia una captura que después no pueda asociarse a una grabación.
+    try {
+      await DB.poner('grabaciones', G.reg);
+    } catch (e) {
+      Bitacora.poner('inicio de grabación', e && e.message ? e.message : String(e));
+      stream.getTracks().forEach(x => x.stop());
+      await ctx.close().catch(() => {});
+      G = null;
+      avisar(t('No se pudo crear la ficha inicial en el almacenamiento del aparato. No se inició la grabación.'), 7000);
+      return;
+    }
+
     this.evento(t('inicio'), `${sr} Hz · ${canales === 2 ? t('estéreo') : t('mono')}`);
 
     if (conArchivo) {
       try {
         const url = URL.createObjectURL(new Blob([CODIGO_CAPTURA], { type: 'application/javascript' }));
-        await ctx.audioWorklet.addModule(url);
+        try {
+          await ctx.audioWorklet.addModule(url);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
         const nodo = new AudioWorkletNode(ctx, 'captura', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: canales, channelCountMode: 'explicit', processorOptions: { canales } });
-        nodo.port.onmessage = e => { if (!G || G.cerrado) return; if (e.data.buf) this.recibir(e.data); else if (e.data.vaciado && G.alVaciar) G.alVaciar(); };
+        nodo.port.onmessage = e => {
+          if (!G || G.cerrado) return;
+        
+          if (e.data.buf) {
+            this.recibir(e.data);
+          } else if (
+            e.data.vaciado &&
+            e.data.id === G.idVaciado &&
+            G.alVaciar
+          ) {
+            G.alVaciar();
+          }
+        };
         const mudo = ctx.createGain(); mudo.gain.value = 0;
         fuente.connect(nodo); nodo.connect(mudo); mudo.connect(ctx.destination);
         G.nodo = nodo;
@@ -765,24 +1199,65 @@ const Grabadora = {
     }
     if (conConsulta) {
       const mime = formatoConsulta();
-      if (!mime) this.evento('error', t('este navegador no graba en calidad de consulta'));
-      else {
-        // Volumen automático y limitador SOLO para la consulta
-        const g = ctx.createGain(); g.gain.value = 1;
-        const lim = ctx.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
-        const dest = ctx.createMediaStreamDestination(); dest.channelCount = canales;
-        fuente.connect(g); g.connect(lim); lim.connect(dest);
-        const mr = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
-        mr.ondataavailable = e => { if (e.data && e.data.size) this.guardarTrozo('consulta', e.data); };
-        mr.onerror = e => this.evento('error', t('consulta: {error}', { error: e.error && e.error.message }));
-        mr.start(2000);
-        Object.assign(G, { recorder: mr, gananciaNodo: g }); G.reg.tecnica.mime = mime;
+      if (!mime) {
+        this.evento('error', t('este navegador no graba en calidad de consulta'));
+        G.conConsulta = G.reg.tecnica.conConsulta = false;
+      } else {
+        try {
+          // Volumen automático y limitador SOLO para la consulta
+          const g = ctx.createGain(); g.gain.value = 1;
+          const lim = ctx.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
+          const dest = ctx.createMediaStreamDestination(); dest.channelCount = canales;
+          fuente.connect(g); g.connect(lim); lim.connect(dest);
+          const mr = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: canales === 2 ? 96000 : 48000 });
+          mr.ondataavailable = e => { if (e.data && e.data.size) this.guardarTrozo('consulta', e.data); };
+          mr.onerror = e => this.evento('error', t('consulta: {error}', { error: e.error && e.error.message }));
+          Object.assign(G, { recorder: mr, gananciaNodo: g, destinoConsulta: dest.stream });
+          G.reg.tecnica.mime = mime;
+          mr.start(2000);
+        } catch (e) {
+          G.conConsulta = G.reg.tecnica.conConsulta = false;
+          G.reg.tecnica.mime = '';
+          G.recorder = null;
+          if (G.destinoConsulta) G.destinoConsulta.getTracks().forEach(x => x.stop());
+          Bitacora.poner('inicio de consulta', e && e.message ? e.message : String(e));
+          this.evento('error', t('no se pudo iniciar el audio de consulta: {error}', { error: e.message || String(e) }));
+        }
       }
     }
+
+    if (!G.conArchivo && !G.conConsulta) {
+      stream.getTracks().forEach(x => x.stop());
+      await ctx.close().catch(() => {});
+      await DB.quitar('grabaciones', id).catch(() => {});
+      G = null;
+      avisar(t('Este navegador no pudo iniciar ninguna de las dos formas de captura. No se inició la grabación.'), 7000);
+      return;
+    }
+
     this.vigilar();
     await this.pantalla(true);
-    try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {}
-    await DB.poner('grabaciones', G.reg);
+    G.reg.tecnica.almacenamientoPersistente = false;
+    
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        G.reg.tecnica.almacenamientoPersistente =
+          await navigator.storage.persist();
+      }
+    } catch (e) {
+      Bitacora.poner(
+        'almacenamiento persistente',
+        e && e.message ? e.message : String(e)
+      );
+    }
+    
+    try {
+      await DB.poner('grabaciones', G.reg);
+    } catch (e) {
+      // La ficha inicial ya existe; los siguientes guardados volverán a intentarlo.
+      Bitacora.poner('actualización de inicio', e && e.message ? e.message : String(e));
+      avisar(t('⚠️ La grabación inició, pero no se pudieron actualizar algunos datos técnicos. Se volverán a guardar automáticamente.'), 6000);
+    }
     G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
     Atras.abrir();   // «atrás» no saca de la app mientras se graba
     G.cuadro = requestAnimationFrame(() => this.medir());
@@ -793,12 +1268,38 @@ const Grabadora = {
   },
 
   recibir(d) {
-    G.pendientes.push(d.buf); G.frames += d.frames;
-    // Silencio absoluto (ceros exactos): ningún micrófono real lo produce; suele ser una llamada u otra app usando el micrófono
-    const a = new Int16Array(d.buf); let cero = true;
-    for (let i = 0; i < a.length; i += 7) if (a[i] !== 0) { cero = false; break; }
-    if (cero && a.every(x => x === 0)) { if (G.silencioDesde == null) G.silencioDesde = (G.frames - d.frames) / G.sr; }
-    else if (G.silencioDesde != null) this.cerrarSilencio((G.frames - d.frames) / G.sr);
+    if (!G || G.cerrado || !(d.buf instanceof ArrayBuffer)) return;
+    const frames = Number(d.frames);
+    if (!Number.isSafeInteger(frames) || frames <= 0 || d.buf.byteLength !== frames * 2 * G.canales) {
+      Bitacora.poner('bloque PCM inválido', `${d.buf.byteLength} bytes · ${d.frames} frames`);
+      return;
+    }
+
+    const inicioFrame = Number.isSafeInteger(d.inicioFrame) && d.inicioFrame >= 0
+      ? d.inicioFrame
+      : G.frames;
+
+    // No juntar en un mismo fragmento bloques que estén separados en el tiempo.
+    if (G.pendientes.length) {
+      const ultimo = G.pendientes[G.pendientes.length - 1];
+      if (inicioFrame !== ultimo.inicioFrame + ultimo.frames) this.vaciar();
+    }
+
+    G.pendientes.push({ buf: d.buf, frames, inicioFrame });
+    const finFrame = inicioFrame + frames;
+    G.frames = Math.max(G.frames, finFrame);
+
+    // Silencio absoluto (ceros exactos): ningún micrófono real lo produce; suele ser una llamada u otra app usando el micrófono.
+    const a = new Int16Array(d.buf);
+    let cero = true;
+    for (let i = 0; i < a.length; i += 7) {
+      if (a[i] !== 0) { cero = false; break; }
+    }
+    if (cero && a.every(x => x === 0)) {
+      if (G.silencioDesde == null) G.silencioDesde = inicioFrame / G.sr;
+    } else if (G.silencioDesde != null) {
+      this.cerrarSilencio(inicioFrame / G.sr);
+    }
   },
   cerrarSilencio(hasta) {
     const desde = G.silencioDesde; G.silencioDesde = null;
@@ -826,17 +1327,302 @@ const Grabadora = {
     } catch (e) { /* sin pantalla fija: la grabación sigue */ }
     this.pintarEstado();
   },
-  async guardarTrozo(tipo, blob, frames = 0) {
-    if (!G) return; const id = G.id, n = ++G.nTrozo;
-    if (tipo === 'archivo') G.bytesArchivo += blob.size; else G.bytesConsulta += blob.size;
-    try { await DB.poner('trozos', { grabacion: id, tipo, n, datos: blob, frames }); G && (G.ultimoGuardado = Date.now()); }
-    catch (e) { this.evento(t('error al guardar'), e.message + ' ' + t('(¿espacio lleno?)')); Bitacora.poner('guardar', e.message); avisar(t('⚠️ No se pudo guardar: revisa el espacio del aparato.'), 6000); }
+async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
+  if (!G || !blob || !blob.size) return;
+
+  const sesion = G;
+  const registro = {
+    grabacion: sesion.id,
+    tipo,
+    n: ++sesion.nTrozo,
+    datos: blob,
+    frames,
+    ...(tipo === 'archivo' && Number.isSafeInteger(inicioFrame) && inicioFrame >= 0
+      ? { inicioFrame }
+      : {})
+  };
+
+  const operacion = (async () => {
+    let nombreTemporal = null;
+    let respaldadoTemporal = false;
+    let guardadoPrincipal = false;
+
+    // 1. Intentar conservar primero una copia temporal en OPFS
+    if (RespaldoTemporal.disponible()) {
+      try {
+        nombreTemporal = await RespaldoTemporal.guardar(registro);
+        respaldadoTemporal = true;
+      } catch (e) {
+        Bitacora.poner(
+          'respaldo temporal',
+          e && e.message ? e.message : String(e)
+        );
+      }
+    }
+
+    // 2. Guardar el fragmento en IndexedDB
+    try {
+      await DB.guardarTrozo(registro);
+      guardadoPrincipal = true;
+    } catch (e) {
+      const mensaje = e && e.message ? e.message : String(e);
+
+      Bitacora.poner('guardar IndexedDB', mensaje);
+
+      // Si OPFS ya conservó el audio, no hace falta interrumpir al usuario
+      if (!respaldadoTemporal) {
+        sesion.fallidos.push({
+          ...registro,
+          error: mensaje
+        });
+
+        if (G === sesion) {
+          this.evento(t('error al guardar'), mensaje);
+
+          avisar(
+            t('⚠️ No se pudo conservar una parte del audio. Mantén Vírgula abierta.'),
+            7000
+          );
+
+          this.pintarEstado();
+        }
+      }
+    }
+
+    // 3. Contabilizar una sola vez si existe al menos una copia segura
+    if (respaldadoTemporal || guardadoPrincipal) {
+      if (tipo === 'archivo') {
+        sesion.bytesArchivo += blob.size;
+      } else {
+        sesion.bytesConsulta += blob.size;
+      }
+
+      sesion.ultimoGuardado = Date.now();
+    }
+
+    // 4. Eliminar la copia temporal solo después de confirmar IndexedDB
+    if (guardadoPrincipal && nombreTemporal) {
+      try {
+        await RespaldoTemporal.quitar(nombreTemporal);
+      } catch (e) {
+        // Si no se pudo limpiar, la copia permanece.
+        // La recuperación posterior comprobará si ya existe en IndexedDB.
+        Bitacora.poner(
+          'limpieza respaldo',
+          e && e.message ? e.message : String(e)
+        );
+      }
+    }
+  })();
+
+  await this.registrarEscritura(operacion);
+},
+
+    async reintentarFallidos() {
+    if (!G || !G.fallidos.length || G.reintentando) return;
+
+    const sesion = G;
+    sesion.reintentando = true;
+
+    try {
+      const pendientes = [...sesion.fallidos];
+
+      for (const fallido of pendientes) {
+        let nombreTemporal = null;
+        let guardadoPrincipal = false;
+        let respaldadoTemporal = false;
+
+        try {
+          if (RespaldoTemporal.disponible()) {
+            try {
+              nombreTemporal = await RespaldoTemporal.guardar(fallido);
+              respaldadoTemporal = true;
+            } catch (e) {
+              Bitacora.poner('reintento OPFS', e && e.message ? e.message : String(e));
+            }
+          }
+
+          try {
+            await this.registrarEscritura(DB.guardarTrozo({
+              grabacion: fallido.grabacion,
+              tipo: fallido.tipo,
+              n: fallido.n,
+              datos: fallido.datos,
+              frames: fallido.frames,
+              ...(Number.isSafeInteger(fallido.inicioFrame) ? { inicioFrame: fallido.inicioFrame } : {})
+            }));
+            guardadoPrincipal = true;
+          } catch (e) {
+            if (!respaldadoTemporal) throw e;
+            Bitacora.poner('reintento IndexedDB', e && e.message ? e.message : String(e));
+          }
+
+          if (!guardadoPrincipal && !respaldadoTemporal) {
+            throw new Error('No se pudo guardar el fragmento en ningún almacén.');
+          }
+
+          if (guardadoPrincipal && nombreTemporal) {
+            try {
+              await RespaldoTemporal.quitar(nombreTemporal);
+            } catch (e) {
+              Bitacora.poner('limpieza respaldo', e && e.message ? e.message : String(e));
+            }
+          }
+
+          const indice = sesion.fallidos.indexOf(fallido);
+          if (indice !== -1) sesion.fallidos.splice(indice, 1);
+
+          if (fallido.tipo === 'archivo') sesion.bytesArchivo += fallido.datos.size;
+          else sesion.bytesConsulta += fallido.datos.size;
+          sesion.ultimoGuardado = Date.now();
+
+        } catch (e) {
+          fallido.error = e && e.message ? e.message : String(e);
+          Bitacora.poner('reintento', fallido.error);
+          break;
+        }
+      }
+
+    } finally {
+      sesion.reintentando = false;
+
+      if (G === sesion) {
+        this.pintarEstado();
+        if (sesion.capturaDetenida && !sesion.fallidos.length) {
+          await this.finalizarDetenida(sesion);
+        }
+      }
+    }
   },
+
+    async finalizarDetenida(sesion) {
+    if (
+      !sesion ||
+      G !== sesion ||
+      !sesion.capturaDetenida ||
+      sesion.fallidos.length ||
+      sesion.finalizando
+    ) return;
+
+    sesion.finalizando = true;
+    sesion.errorFinalizacion = null;
+    this.pintarEstado();
+
+    try {
+      // Comprobar que no queden escrituras pendientes
+      await this.esperarEscrituras();
+
+      if (G !== sesion || sesion.fallidos.length) return;
+
+      const dur = sesion.duracionFinal;
+
+      Object.assign(sesion.reg, {
+        estado: 'lista',
+        fin: Date.now(),
+        duracion: dur,
+        frames: sesion.frames,
+        bytes: {
+          archivo: sesion.bytesArchivo,
+          consulta: sesion.bytesConsulta
+        },
+        marcas: sesion.marcas,
+        eventos: sesion.eventos,
+        silencios: sesion.silencios,
+        huecos: sesion.huecos,
+        saturaciones: sesion.saturado,
+        clips: clipsDesdeMarcas(sesion.marcas, dur),
+        modificada: Date.now()
+      });
+
+      if (sesion.reg.tecnica.mime) {
+        sesion.reg.tecnica.ganancia =
+          Math.round(sesion.ganancia * 10) / 10;
+      }
+
+      // La grabación solo se considera terminada tras guardar sus metadatos
+      await this.registrarEscritura(
+        DB.poner('grabaciones', sesion.reg)
+      );
+
+      if (G !== sesion) return;
+
+      const id = sesion.id;
+      G = null;
+
+      $('bGrabar').classList.remove('on');
+      $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar');
+      $('bGrabar').setAttribute('aria-pressed', 'false');
+
+      ['bMarcar', 'bPausa', 'bDetener'].forEach(
+        b => $(b).disabled = true
+      );
+
+      $('tiempo').textContent = '00:00:00';
+      $('nivel').style.width = '0';
+      $('pico').style.left = '0';
+      $('nivelNota').textContent = t('Nivel de entrada');
+
+      this.pintarEstado();
+      vibrar([40, 40, 40]);
+
+      try {
+        await Ficha.abrir(id);
+      } catch (e) {
+        Bitacora.poner('abrir ficha', e && e.message ? e.message : String(e));
+        avisar(t('La grabación quedó guardada, pero no se pudo abrir su ficha. Está disponible en el Acervo.'), 7000);
+        Nav.ir('vAcervo');
+      }
+
+    } catch (e) {
+      sesion.reg.estado = 'grabando';
+      sesion.errorFinalizacion = e && e.message
+        ? e.message
+        : String(e);
+
+      Bitacora.poner('finalizar', sesion.errorFinalizacion);
+
+      if (G === sesion) {
+        this.evento(
+          t('error al finalizar'),
+          sesion.errorFinalizacion
+        );
+
+        avisar(
+          t('⚠️ No se pudo finalizar la grabación. Los datos guardados se conservan; vuelve a intentarlo.'),
+          7000
+        );
+      }
+
+    } finally {
+      sesion.finalizando = false;
+
+      if (G === sesion) {
+        this.pintarEstado();
+      }
+    }
+  },
+  
   vaciar() {
     if (!G || !G.pendientes.length) return;
-    const partes = G.pendientes; G.pendientes = [];
-    const frames = partes.reduce((a, b) => a + b.byteLength, 0) / (2 * G.canales);
-    this.guardarTrozo('archivo', new Blob(partes), frames);
+    const partes = G.pendientes;
+    G.pendientes = [];
+
+    let grupo = [];
+    const guardarGrupo = () => {
+      if (!grupo.length) return;
+      const frames = grupo.reduce((a, b) => a + b.frames, 0);
+      const inicioFrame = grupo[0].inicioFrame;
+      const blob = new Blob(grupo.map(b => b.buf), { type: 'application/octet-stream' });
+      this.guardarTrozo('archivo', blob, frames, inicioFrame);
+      grupo = [];
+    };
+
+    for (const bloque of partes) {
+      const ultimo = grupo[grupo.length - 1];
+      if (ultimo && bloque.inicioFrame !== ultimo.inicioFrame + ultimo.frames) guardarGrupo();
+      grupo.push(bloque);
+    }
+    guardarGrupo();
   },
   cadaSegundo() {
     if (!G) return;
@@ -845,7 +1631,14 @@ const Grabadora = {
       G.ultimoChequeo = performance.now();
       this.vaciar();
       Object.assign(G.reg, { frames: G.frames, duracion: this.segundos(), bytes: { archivo: G.bytesArchivo, consulta: G.bytesConsulta }, marcas: G.marcas, modificada: Date.now() });
-      DB.poner('grabaciones', G.reg).catch(() => {});
+      this.registrarEscritura(
+      DB.poner('grabaciones', G.reg).catch(e => {
+        Bitacora.poner(
+          'actualización periódica',
+          e && e.message ? e.message : String(e)
+        );
+      })
+    );
       if (G.conArchivo && !G.pausaDesde && G.ctx.state === 'running') {
         const falta = this.transcurrido() - G.frames / G.sr;
         if (falta > G.huecos + 0.6) { this.evento(t('hueco'), t('faltan {s} s respecto al reloj', { s: falta.toFixed(1) })); G.huecos = falta; G.reg.huecos = falta; }
@@ -896,39 +1689,166 @@ const Grabadora = {
   },
   async detener() {
     if (!G) return;
+    if (G.capturaDetenida) return this.finalizarDetenida(G);
     $('bDetener').disabled = true;
     if (G.pausaDesde) await this.pausa();
+    if (!G.finSolicitado) {
     this.evento(t('fin'));
-    if (G.recorder && G.recorder.state !== 'inactive') await new Promise(ok => { G.recorder.addEventListener('stop', () => setTimeout(ok, 60), { once: true }); G.recorder.stop(); });
-    if (G.nodo) await new Promise(ok => { G.alVaciar = ok; G.nodo.port.postMessage('vaciar'); setTimeout(ok, 800); });
+    G.finSolicitado = true;
+  }
+    clearInterval(G.intervalo);
+    cancelAnimationFrame(G.cuadro);
+    if (G.nodo) {
+      const sesion = G;
+      const id = sesion.idVaciado = (sesion.idVaciado || 0) + 1;
+    
+      try {
+        await new Promise((ok, mal) => {
+          let timer;
+    
+          const confirmar = () => {
+            clearTimeout(timer);
+    
+            if (sesion.alVaciar === confirmar) {
+              sesion.alVaciar = null;
+            }
+    
+            ok();
+          };
+    
+          sesion.alVaciar = confirmar;
+    
+          timer = setTimeout(() => {
+            if (sesion.alVaciar === confirmar) {
+              sesion.alVaciar = null;
+            }
+    
+            mal(new Error('El procesador no confirmó el vaciado.'));
+          }, 5000);
+    
+          try {
+            sesion.nodo.port.postMessage({
+              tipo: 'vaciar',
+              id
+            });
+          } catch (e) {
+            clearTimeout(timer);
+            sesion.alVaciar = null;
+            mal(e);
+          }
+        });
+    
+      } catch (e) {
+        Bitacora.poner(
+          'cierre de audio',
+          e && e.message ? e.message : String(e)
+        );
+    
+        $('bMarcar').disabled = true;
+        $('bPausa').disabled = true;
+        $('bDetener').disabled = false;
+        // Si el cierre falla, la captura sigue activa: reanudar el guardado periódico
+        // para no acumular indefinidamente los siguientes bloques en memoria.
+        sesion.intervalo = setInterval(() => this.cadaSegundo(), 1000);
+        sesion.cuadro = requestAnimationFrame(() => this.medir());
+    
+        avisar(
+          t('No se pudo confirmar el último bloque de audio. La captura sigue abierta; vuelve a tocar Detener.'),
+          7000
+        );
+    
+        return;
+      }
+    }
+    // Cerrar la ruta comprimida solo después de confirmar el último bloque PCM.
+    if (G.recorder && G.recorder.state !== 'inactive') {
+      try {
+        await new Promise((ok, mal) => {
+          G.recorder.addEventListener('stop', () => setTimeout(ok, 60), { once: true });
+          try {
+            G.recorder.stop();
+          } catch (e) {
+            if (G.recorder.state === 'inactive') ok();
+            else mal(e);
+          }
+        });
+      } catch (e) {
+        Bitacora.poner('cierre de consulta', e && e.message ? e.message : String(e));
+        $('bMarcar').disabled = true;
+        $('bPausa').disabled = true;
+        $('bDetener').disabled = false;
+        G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
+        G.cuadro = requestAnimationFrame(() => this.medir());
+        avisar(t('No se pudo cerrar el audio de consulta. La captura sigue abierta; vuelve a tocar Detener.'), 7000);
+        return;
+      }
+    }
     if (G.silencioDesde != null) this.cerrarSilencio(G.frames / G.sr);
-    G.cerrado = true; this.vaciar();
-    await new Promise(ok => setTimeout(ok, 300));
-    clearInterval(G.intervalo); cancelAnimationFrame(G.cuadro);
+    G.cerrado = true;
+    this.vaciar();
+    await this.esperarEscrituras();
     G.stream.getTracks().forEach(t => t.stop()); await G.ctx.close().catch(() => {});
     await this.pantalla(false);
-    const dur = this.segundos();
-    Object.assign(G.reg, { estado: 'lista', fin: Date.now(), duracion: dur, frames: G.frames, bytes: { archivo: G.bytesArchivo, consulta: G.bytesConsulta },
-      marcas: G.marcas, eventos: G.eventos, silencios: G.silencios, huecos: G.huecos, saturaciones: G.saturado, clips: clipsDesdeMarcas(G.marcas, dur), modificada: Date.now() });
-    if (G.reg.tecnica.mime) G.reg.tecnica.ganancia = Math.round(G.ganancia * 10) / 10;
-    await DB.poner('grabaciones', G.reg);
-    const id = G.id; G = null;
-    $('bGrabar').classList.remove('on'); $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bGrabar').setAttribute('aria-pressed', 'false');
-    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = true);
-    $('tiempo').textContent = '00:00:00'; $('nivel').style.width = '0'; $('pico').style.left = '0'; $('nivelNota').textContent = t('Nivel de entrada');
-    this.pintarEstado(); vibrar([40, 40, 40]);
-    Ficha.abrir(id);
+    const sesion = G;
+
+    sesion.capturaDetenida = true;
+    sesion.duracionFinal = this.segundos();
+    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => { $(b).disabled = true; });
+
+    await this.finalizarDetenida(sesion);
   },
+  
   pintarEstado() {
-    if (!G) { $('estadoGrab').innerHTML = ''; return; }
-    const seg = G.ultimoGuardado ? Math.round((Date.now() - G.ultimoGuardado) / 1000) : null;
-    $('estadoGrab').innerHTML = [
-      G.wake ? chip(tH('🔆 Pantalla fija'), 'ok') : chip(tH('🔅 Pantalla sin fijar')),
-      G.conArchivo ? chip('🗄️ ' + mb(G.bytesArchivo)) : '', G.recorder ? chip('🔊 ' + mb(G.bytesConsulta)) : '',
-      seg != null ? chip(tH('💾 hace {s} s', { s: seg }), seg > 8 ? 'aviso' : 'ok') : chip('💾 …'),
-      chip(`🔖 ${G.marcas.length}`), G.huecos > 0.6 ? chip(tH('⚠️ huecos {s} s', { s: G.huecos.toFixed(1) }), 'mal') : '',
-      G.silencios.length ? chip(tH('🔇 {n} tramo(s) sin audio', { n: G.silencios.length }), 'aviso') : '', G.pausaDesde ? chip(tH('⏸ En pausa'), 'aviso') : ''
-    ].join('');
+  if (!G) { $('estadoGrab').innerHTML = ''; return; }
+
+  const seg = G.ultimoGuardado
+    ? Math.round((Date.now() - G.ultimoGuardado) / 1000)
+    : null;
+
+  const fallidos = G.fallidos.length;
+
+  $('estadoGrab').innerHTML = [
+    G.wake ? chip(tH('🔆 Pantalla fija'), 'ok') : chip(tH('🔅 Pantalla sin fijar')),
+    G.conArchivo ? chip('🗄️ ' + mb(G.bytesArchivo)) : '',
+    G.recorder ? chip('🔊 ' + mb(G.bytesConsulta)) : '',
+    seg != null ? chip(tH('💾 hace {s} s', { s: seg }), seg > 8 ? 'aviso' : 'ok') : chip('💾 …'),
+    chip(`🔖 ${G.marcas.length}`),
+    G.huecos > 0.6 ? chip(tH('⚠️ huecos {s} s', { s: G.huecos.toFixed(1) }), 'mal') : '',
+    G.silencios.length ? chip(tH('🔇 {n} tramo(s) sin audio', { n: G.silencios.length }), 'aviso') : '',
+    G.pausaDesde ? chip(tH('⏸ En pausa'), 'aviso') : '',
+
+    fallidos
+      ? `<span class="chip mal">⚠️ ${tH('{n} fragmento(s) sin guardar', { n: fallidos })}</span>
+         <button type="button" class="chico" id="bReintentarFallidos"
+           ${G.reintentando ? 'disabled' : ''}>
+           ${tH(G.reintentando ? 'Reintentando…' : '↻ Reintentar guardado')}
+         </button>`
+      : '',
+
+    G.capturaDetenida && G.errorFinalizacion && !fallidos
+      ? `<span class="chip mal">⚠️ ${tH('No se pudo guardar el cierre de la grabación.')}</span>
+         <button type="button" class="chico" id="bReintentarFinalizacion"
+           ${G.finalizando ? 'disabled' : ''}>
+           ${tH(G.finalizando ? 'Guardando…' : '↻ Reintentar finalización')}
+         </button>`
+      : ''
+
+  ].join('');
+
+  const boton = $('bReintentarFallidos');
+
+  if (boton) {
+    boton.onclick = () => {
+      boton.disabled = true;
+      boton.textContent = t('Reintentando…');
+      this.reintentarFallidos();
+    };
+  }
+
+  const reintentarCierre = $('bReintentarFinalizacion');
+  if (reintentarCierre) {
+    reintentarCierre.onclick = () => this.finalizarDetenida(G);
+  }
   }
 };
 
@@ -955,24 +1875,115 @@ window.addEventListener('beforeunload', e => { if (G) { e.preventDefault(); e.re
 navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', () => G && Grabadora.evento(t('se conectó o desconectó un micrófono')));
 
 /* Grabaciones que no se cerraron (la app se cerró, el aparato se apagó…): se recupera lo guardado */
-async function revisarPendientes() {
-  const abiertas = (await DB.todas('grabaciones')).filter(r => r.estado === 'grabando' && (!G || r.id !== G.id));
+
+async function revisarPendientes(
+  idsConRespaldoPendiente = [],
+  recuperacionComprobada = true
+) {
+  const abiertas = (await DB.todas('grabaciones'))
+    .filter(r => r.estado === 'grabando' && (!G || r.id !== G.id));
+
+  const bloqueadas = new Set(idsConRespaldoPendiente);
+  const recuperables = abiertas.filter(r => !bloqueadas.has(r.id));
   const b = $('avisoRecuperar');
-  if (!abiertas.length) { b.classList.add('oculto'); return; }
+
+  // Si no pudimos comprobar OPFS, no arriesgar una recuperación parcial
+  if (!recuperacionComprobada) {
+    b.classList.remove('oculto');
+    b.textContent = t(
+      'No se pudo comprobar el estado de los respaldos temporales. No borres los datos de Vírgula.'
+    );
+    return;
+  }
+
+  if (!abiertas.length && !bloqueadas.size) {
+    b.classList.add('oculto');
+    return;
+  }
+
   b.classList.remove('oculto');
-  b.innerHTML = `${tH('⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.', { n: abiertas.length })}<div class="fila fija"><button class="prim chico" id="bRecuperar">${tH('🛟 Recuperar')}</button></div>`;
+
+  const avisoTemporal = bloqueadas.size
+    ? `<p>${tH('⚠️ Hay audio que todavía no se pudo integrar. Vírgula conserva un respaldo temporal en este dispositivo. No borres sus datos.')}</p>`
+    : '';
+
+  const avisoAbiertas = recuperables.length
+    ? `<p>${tH('⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.', { n: recuperables.length })}</p>
+       <div class="fila fija">
+         <button class="prim chico" id="bRecuperar">${tH('🛟 Recuperar')}</button>
+       </div>`
+    : '';
+
+  b.innerHTML = avisoTemporal + avisoAbiertas;
+
+  if (!recuperables.length) return;
+
   $('bRecuperar').onclick = async () => {
-    for (const r of abiertas) {
-      const tr = await DB.porGrabacion('trozos', r.id);
-      const bytes = tr.filter(x => x.tipo === 'archivo').reduce((a, x) => a + x.datos.size, 0);
-      const dur = r.tecnica.conArchivo && bytes ? bytes / (2 * r.tecnica.canales) / r.tecnica.sr : (r.duracion || 0);
-      r.eventos = (r.eventos || []).concat([{ t: dur, hora: horaBonita(Date.now()), tipo: t('recuperada'), detalle: t('la grabación se cortó; se recuperó lo guardado') }]);
-      Object.assign(r, { estado: 'lista', recuperada: true, duracion: dur, frames: bytes / (2 * r.tecnica.canales), clips: clipsDesdeMarcas((r.marcas || []).filter(m => m.t < dur), dur), modificada: Date.now() });
-      await DB.poner('grabaciones', r);
+    const errores = [];
+    let completadas = 0;
+
+    for (const original of recuperables) {
+      try {
+        const r = await DB.leer('grabaciones', original.id);
+        if (!r) throw new Error('No se encontró la ficha de esta grabación.');
+        const tr = await Medios.trozos(r);
+        let plan = null;
+        if (tr.archivo.length) plan = Medios.planArchivo(tr.archivo, r);
+
+        const bytesArchivo = plan ? tr.archivo.reduce((a, x) => a + x.datos.size, 0) : 0;
+        const bytesConsulta = tr.consulta.reduce((a, x) => a + x.datos.size, 0);
+        const dur = plan
+          ? plan.frames / plan.sr
+          : Math.max(0, Number(r.duracion) || 0);
+        const frames = plan
+          ? plan.frames
+          : (Number.isSafeInteger(r.frames) && r.frames >= 0 ? r.frames : 0);
+
+        r.eventos = (r.eventos || []).concat([{
+          t: dur,
+          hora: horaBonita(Date.now()),
+          tipo: t('recuperada'),
+          detalle: t('la grabación se cortó; se recuperó lo guardado')
+        }]);
+
+        Object.assign(r, {
+          estado: 'lista',
+          recuperada: true,
+          duracion: dur,
+          frames,
+          bytes: { archivo: bytesArchivo, consulta: bytesConsulta },
+          clips: clipsDesdeMarcas(
+            (r.marcas || []).filter(m => Number(m.t) < dur),
+            dur
+          ),
+          modificada: Date.now()
+        });
+
+        await DB.poner('grabaciones', r);
+        completadas++;
+      } catch (e) {
+        errores.push(original.id);
+        Bitacora.poner('recuperar grabación', e && e.message ? e.message : String(e));
+      }
     }
-    b.classList.add('oculto'); avisar(t('🛟 Recuperada(s). Están en 📚 Acervo.')); Nav.ir('vAcervo');
+
+    if (errores.length) {
+      b.innerHTML = `<p>${tH('⚠️ No se pudieron recuperar {n} grabación(es). Los datos originales se conservan; no borres los datos de Vírgula.', { n: errores.length })}</p>
+        <p class="nota">${tH('Grabaciones recuperadas: {n}.', { n: completadas })}</p>
+        <div class="fila fija"><button class="prim chico" id="bRecuperarRestantes">${tH('Reintentar recuperación')}</button></div>`;
+      $('bRecuperarRestantes').onclick = () => revisarPendientes(
+        [...bloqueadas, ...errores],
+        recuperacionComprobada
+      );
+      return;
+    }
+
+    b.classList.add('oculto');
+    avisar(t('🛟 {n} grabación(es) recuperada(s). Están en 📚 Acervo.', { n: completadas }));
+    Nav.ir('vAcervo');
   };
 }
+
 
 $('bGrabar').onclick = () => G ? null : Grabadora.iniciar();
 $('bMarcar').onclick = () => Grabadora.marcar();
@@ -982,42 +1993,245 @@ $('bDetener').onclick = () => Grabadora.detener();
 /* ═════════════════ MEDIOS: audios de cada grabación, tramos, WAV, Ogg Opus ═════════════════ */
 const Medios = {
   cacheDecod: new Map(),
-  async trozos(reg) {
-    const t = (await DB.porGrabacion('trozos', reg.id)).sort((a, b) => a.n - b.n);
-    return { archivo: t.filter(x => x.tipo === 'archivo'), consulta: t.filter(x => x.tipo === 'consulta') };
+  
+async trozos(reg) {
+  const trozos = await DB.porGrabacion('trozos', reg.id);
+  const temporales = await RespaldoTemporal.listar(reg.id);
+
+  for (const respaldo of temporales) {
+    const mime = respaldo.tipo === 'consulta'
+      ? ((reg.tecnica && reg.tecnica.mime) || 'application/octet-stream').split(';')[0]
+      : 'application/octet-stream';
+    const datos = new Blob([respaldo.archivo], { type: mime });
+    const coincidencias = trozos.filter(
+      x => x.tipo === respaldo.tipo && x.n === respaldo.n
+    );
+
+    if (coincidencias.length) {
+      for (const existente of coincidencias) {
+        if (!await mismosDatos(existente.datos, datos)) {
+          Bitacora.poner(
+            'conflicto de audio',
+            `${reg.id} · ${respaldo.tipo} · ${respaldo.n}`
+          );
+          throw new Error(
+            'No se pudo comprobar la integridad de uno de los audios. Se conservan ambas copias.'
+          );
+        }
+      }
+
+      const posiciones = coincidencias
+        .map(x => x.inicioFrame)
+        .filter(Number.isSafeInteger);
+      if (new Set(posiciones).size > 1) {
+        throw new Error('Hay copias del mismo fragmento con posiciones temporales diferentes.');
+      }
+
+      if (Number.isSafeInteger(respaldo.inicioFrame)) {
+        if (posiciones.length && posiciones[0] !== respaldo.inicioFrame) {
+          throw new Error('El respaldo y el fragmento principal tienen posiciones temporales diferentes.');
+        }
+        if (!posiciones.length) {
+          await DB.fijarInicioFrame(
+            reg.id, respaldo.tipo, respaldo.n, respaldo.inicioFrame
+          );
+          coincidencias.forEach(x => { x.inicioFrame = respaldo.inicioFrame; });
+        }
+      }
+
+      // Los duplicados idénticos solo se eliminan de esta lectura en memoria.
+      const primera = coincidencias[0];
+      for (let i = trozos.length - 1; i >= 0; i--) {
+        if (
+          trozos[i].tipo === respaldo.tipo &&
+          trozos[i].n === respaldo.n &&
+          trozos[i] !== primera
+        ) trozos.splice(i, 1);
+      }
+      continue;
+    }
+
+    let frames = 0;
+    if (respaldo.tipo === 'archivo') {
+      const canales = reg.tecnica && reg.tecnica.canales;
+      if (canales !== 1 && canales !== 2) {
+        throw new Error('No se pudo determinar el número de canales del audio.');
+      }
+      frames = datos.size / (2 * canales);
+      if (!Number.isSafeInteger(frames)) {
+        throw new Error('El tamaño del audio temporal no es válido.');
+      }
+    }
+
+    trozos.push({
+      grabacion: reg.id,
+      tipo: respaldo.tipo,
+      n: respaldo.n,
+      datos,
+      frames,
+      ...(Number.isSafeInteger(respaldo.inicioFrame)
+        ? { inicioFrame: respaldo.inicioFrame }
+        : {}),
+      origenTemporal: true
+    });
+  }
+
+  trozos.sort((a, b) => a.n - b.n);
+  return {
+    archivo: trozos.filter(x => x.tipo === 'archivo'),
+    consulta: trozos.filter(x => x.tipo === 'consulta')
+  };
+},
+
+  nombreBase(reg) {
+    return reg.id + '__' + (nombreArchivo(reg.ficha.titulo, 50) || 'grabacion');
   },
-  nombreBase(reg) { return reg.id + '__' + (nombreArchivo(reg.ficha.titulo, 50) || 'grabacion'); },
-  /** Los dos audios completos de la grabación, como archivos. */
+
+  /** Valida y ordena los fragmentos PCM manteniendo sus posiciones absolutas. */
+  planArchivo(fragmentos, reg) {
+    const tecnica = reg.tecnica || {};
+    const canales = tecnica.canales;
+    const sr = tecnica.sr;
+    if ((canales !== 1 && canales !== 2) || !Number.isSafeInteger(sr) || sr < 8000) {
+      throw new Error('La ficha no contiene una frecuencia o cantidad de canales válida.');
+    }
+
+    const unidad = canales * 2;
+    const ordenados = [...fragmentos].sort((a, b) => a.n - b.n);
+    const partes = [];
+    let cursor = 0;
+
+    for (const x of ordenados) {
+      if (!x.datos || !Number.isSafeInteger(x.datos.size) || x.datos.size <= 0 || x.datos.size % unidad) {
+        throw new Error(`El fragmento ${x.n} contiene PCM incompleto o inválido.`);
+      }
+
+      const frames = x.datos.size / unidad;
+      if (x.frames != null && x.frames !== 0 && x.frames !== frames) {
+        throw new Error(`La duración declarada del fragmento ${x.n} no coincide con sus datos.`);
+      }
+
+      if (x.inicioFrame != null && (!Number.isSafeInteger(x.inicioFrame) || x.inicioFrame < 0)) {
+        throw new Error(`La posición temporal del fragmento ${x.n} no es válida.`);
+      }
+
+      // Los registros antiguos no tenían inicioFrame: se interpretan en secuencia.
+      const inicioFrame = x.inicioFrame == null ? cursor : x.inicioFrame;
+      const finFrame = inicioFrame + frames;
+      if (!Number.isSafeInteger(finFrame) || inicioFrame < cursor) {
+        throw new Error(`Los fragmentos PCM se superponen o exceden el límite temporal en el fragmento ${x.n}.`);
+      }
+
+      partes.push({ ...x, inicioFrame, frames, finFrame });
+      cursor = finFrame;
+    }
+
+    const declarado = Number.isSafeInteger(reg.frames) && reg.frames >= 0
+      ? reg.frames
+      : 0;
+    const frames = Math.max(cursor, declarado);
+    const bytes = frames * unidad;
+    if (!Number.isSafeInteger(bytes)) {
+      throw new Error('La grabación supera el tamaño que puede reconstruirse de forma segura.');
+    }
+
+    return { partes, frames, bytes, canales, sr, unidad };
+  },
+
+  /** Construye PCM de un intervalo; las discontinuidades se conservan como silencio digital. */
+  pcmDesdePlan(plan, desdeFrame = 0, hastaFrame = plan.frames) {
+    const inicio = Math.max(0, Math.min(plan.frames, Math.floor(desdeFrame)));
+    const fin = Math.max(inicio, Math.min(plan.frames, Math.floor(hastaFrame)));
+    const partes = [];
+    const silencio = new Uint8Array(1024 * 1024);
+    let cursor = inicio;
+
+    const agregarSilencio = bytes => {
+      while (bytes > 0) {
+        const n = Math.min(bytes, silencio.byteLength);
+        partes.push(silencio.subarray(0, n));
+        bytes -= n;
+      }
+    };
+
+    for (const x of plan.partes) {
+      const a = Math.max(inicio, x.inicioFrame);
+      const b = Math.min(fin, x.finFrame);
+      if (b <= a) continue;
+      if (a > cursor) agregarSilencio((a - cursor) * plan.unidad);
+      if (a < cursor) {
+        throw new Error('Se detectó una superposición al reconstruir el audio.');
+      }
+      const desplazamiento = (a - x.inicioFrame) * plan.unidad;
+      const longitud = (b - a) * plan.unidad;
+      partes.push(x.datos.slice(desplazamiento, desplazamiento + longitud));
+      cursor = b;
+    }
+
+    if (cursor < fin) agregarSilencio((fin - cursor) * plan.unidad);
+    return new Blob(partes, { type: 'application/octet-stream' });
+  },
+
+  /** Los audios completos de la grabación, como archivos. */
   async archivos(reg, { bwf } = {}) {
-    const tr = await this.trozos(reg), r = {}, base = this.nombreBase(reg), t = reg.tecnica;
-    const pcm = tr.archivo.map(x => x.datos), bytes = pcm.reduce((a, b) => a + b.size, 0);
-    if (bytes) r.wav = new File([cabeceraWav(bytes, t.sr, t.canales, bwf ? metaWav(reg) : []), ...pcm], base + '.wav', { type: 'audio/wav' });
+    const tr = await this.trozos(reg);
+    const r = {};
+    const base = this.nombreBase(reg);
+    const tecnica = reg.tecnica || {};
+
+    if (tr.archivo.length) {
+      const plan = this.planArchivo(tr.archivo, reg);
+      const extras = bwf ? metaWav(reg) : [];
+      const bytesExtras = extras.reduce((a, x) => a + x.byteLength, 0);
+      if (36 + bytesExtras + plan.bytes > 0xffffffff) {
+        throw new Error('El WAV supera el límite del formato RIFF. Exporta una grabación más corta o solo la consulta.');
+      }
+      const pcm = this.pcmDesdePlan(plan);
+      r.wav = new File([
+        cabeceraWav(plan.bytes, plan.sr, plan.canales, extras),
+        pcm
+      ], base + '.wav', { type: 'audio/wav' });
+    }
+
     if (tr.consulta.length) {
-      const mime = (t.mime || 'audio/webm').split(';')[0]; let b = new Blob(tr.consulta.map(x => x.datos));
+      const mime = (tecnica.mime || 'audio/webm').split(';')[0];
+      let b = new Blob(tr.consulta.map(x => x.datos));
       if (/webm/.test(mime) && reg.duracion) b = await duracionWebm(b, reg.duracion);
-      r.consulta = new File([b], base + '.' + extensionDe(t.mime || ''), { type: mime });
+      r.consulta = new File([b], base + '.' + extensionDe(tecnica.mime || ''), { type: mime });
     }
     return r;
   },
-  /** PCM (Int16 intercalado) de un tramo, en segundos. Del audio de archivo; si no hay, decodifica la consulta. */
+
+  /** PCM de un tramo en segundos; conserva silencios y posiciones del audio original. */
   async pcmTramo(reg, desde, hasta) {
-    const t = reg.tecnica, ch = t.canales;
+    const tecnica = reg.tecnica || {};
     const tr = await this.trozos(reg);
     if (tr.archivo.length) {
-      const f0 = Math.max(0, Math.floor(desde * t.sr)), f1 = Math.max(f0, Math.floor(hasta * t.sr));
-      const partes = []; let pos = 0;
-      for (const x of tr.archivo) {
-        const fr = x.frames || x.datos.size / (2 * ch), ini = pos, fin = pos + fr; pos = fin;
-        if (fin <= f0 || ini >= f1) continue;
-        const a = Math.max(f0, ini) - ini, b = Math.min(f1, fin) - ini;
-        partes.push(x.datos.slice(a * 2 * ch, b * 2 * ch));
-      }
-      return { pcm: new Int16Array(await new Blob(partes).arrayBuffer()), sr: t.sr, ch };
+      const plan = this.planArchivo(tr.archivo, reg);
+      const f0 = Math.max(0, Math.floor(desde * plan.sr));
+      const f1 = Math.max(f0, Math.floor(hasta * plan.sr));
+      const pcm = this.pcmDesdePlan(plan, f0, f1);
+      return {
+        pcm: new Int16Array(await pcm.arrayBuffer()),
+        sr: plan.sr,
+        ch: plan.canales
+      };
     }
+
     const ab = await this.decodificado(reg);
     if (!ab) return null;
-    const i0 = Math.floor(desde * ab.sampleRate), i1 = Math.min(ab.length, Math.floor(hasta * ab.sampleRate)), n = Math.max(0, i1 - i0), out = new Int16Array(n * ab.numberOfChannels);
-    for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) { let s = d[i0 + i]; s = s < -1 ? -1 : s > 1 ? 1 : s; out[i * ab.numberOfChannels + c] = s < 0 ? s * 0x8000 : s * 0x7fff; } }
+    const i0 = Math.max(0, Math.floor(desde * ab.sampleRate));
+    const i1 = Math.min(ab.length, Math.max(i0, Math.floor(hasta * ab.sampleRate)));
+    const n = Math.max(0, i1 - i0);
+    const out = new Int16Array(n * ab.numberOfChannels);
+    for (let c = 0; c < ab.numberOfChannels; c++) {
+      const d = ab.getChannelData(c);
+      for (let i = 0; i < n; i++) {
+        let s = d[i0 + i];
+        s = s < -1 ? -1 : s > 1 ? 1 : s;
+        out[i * ab.numberOfChannels + c] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+    }
     return { pcm: out, sr: ab.sampleRate, ch: ab.numberOfChannels };
   },
   async decodificado(reg) {
@@ -1829,7 +3043,25 @@ const Ficha = {
     const f = this.reg.ficha;
     if (!confirm(t('¿Borrar «{titulo}» de este aparato, con su audio y sus adjuntos?', { titulo: f.titulo }) + (!this.reg.respaldo ? '\n\n' + t('⚠️ Esta grabación NO tiene respaldo.') : ''))) return;
     if (!this.reg.respaldo && prompt(t('Para confirmar, escribe BORRAR')) !== t('BORRAR')) return;
-    await DB.borrarGrabacion(this.reg.id); Acervo.sel.delete(this.reg.id); avisar(t('🗑 Borrada.')); Nav.ir('vAcervo');
+    try {
+      await DB.borrarGrabacion(this.reg.id);
+    } catch (e) {
+      Bitacora.poner(
+        'borrar grabación',
+        e && e.message ? e.message : String(e)
+      );
+    
+      avisar(
+        t('No se pudo completar el borrado. La grabación se conserva en Vírgula.'),
+        7000
+      );
+    
+      return;
+    }
+    
+    Acervo.sel.delete(this.reg.id);
+    avisar(t('🗑 Borrada.'));
+    Nav.ir('vAcervo');
   }
 };
 
@@ -1883,9 +3115,17 @@ async function crc32Blob(b, alAvanzar) {
 }
 const ZIP_MAX = 4 * 1024 * 1048576 - 65536;
 async function hacerZip(entradas, alAvanzar) {   // entradas: [{ruta, datos: Blob|string, fecha}]
+  if (entradas.length > 0xffff) throw new Error(t('El paquete tiene demasiados archivos para ZIP clásico.'));
   const partes = [], central = [], enc = new TextEncoder(); let pos = 0;
+  const rutas = new Set();
   for (const e of entradas) {
-    const datos = typeof e.datos === 'string' ? new Blob([e.datos]) : e.datos, nombre = enc.encode(e.ruta), crc = await crc32Blob(datos, alAvanzar);
+    const datos = typeof e.datos === 'string' ? new Blob([e.datos]) : e.datos;
+    const nombre = enc.encode(e.ruta);
+    if (!datos || !Number.isSafeInteger(datos.size) || datos.size > ZIP_MAX || nombre.length > 0xffff || rutas.has(e.ruta)) {
+      throw new Error(t('El paquete contiene un archivo demasiado grande, un nombre inválido o una ruta duplicada.'));
+    }
+    rutas.add(e.ruta);
+    const crc = await crc32Blob(datos, alAvanzar);
     const d = new Date(e.fecha || Date.now()), hora = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dia = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
     const loc = new DataView(new ArrayBuffer(30));
     loc.setUint32(0, 0x04034b50, true); loc.setUint16(4, 20, true); loc.setUint16(6, 0x0800, true); loc.setUint16(8, 0, true);
@@ -1899,7 +3139,11 @@ async function hacerZip(entradas, alAvanzar) {   // entradas: [{ruta, datos: Blo
     pos += 30 + nombre.length + datos.size;
     if (pos > ZIP_MAX) throw new Error(t('El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.'));
   }
-  const tamCentral = central.reduce((a, b) => a + b.byteLength, 0), fin = new DataView(new ArrayBuffer(22));
+  const tamCentral = central.reduce((a, b) => a + b.byteLength, 0);
+  if (pos + tamCentral + 22 > ZIP_MAX || tamCentral > 0xffffffff) {
+    throw new Error(t('El directorio del paquete supera el límite de ZIP clásico. Divide la exportación en varios paquetes.'));
+  }
+  const fin = new DataView(new ArrayBuffer(22));
   fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, entradas.length, true); fin.setUint16(10, entradas.length, true);
   fin.setUint32(12, tamCentral, true); fin.setUint32(16, pos, true);
   return new Blob([...partes, ...central, fin.buffer], { type: 'application/zip' });
@@ -1913,9 +3157,34 @@ const rutaAdjunto = a => `adjuntos/${a.grabacion}/${a.id}__${nombreArchivo(a.nom
 const Exportar = {
   async abrir(ids) {
     if (!ids.length) return avisar(t('Elige al menos una grabación.'));
-    const regs = (await Promise.all(ids.map(id => DB.leer('grabaciones', id)))).filter(Boolean);
+  
+    if (!G && Grabadora.escrituras.size) {
+      avisar(t('Terminando de guardar el audio. La ventana de exportación aparecerá al concluir.'), 7000);
+      await Grabadora.esperarEscrituras();
+    }
+  const regs = (await Promise.all(ids.map(id => DB.leer('grabaciones', id)))).filter(Boolean);
     const adj = {}; for (const r of regs) adj[r.id] = await DB.porGrabacion('adjuntos', r.id);
-    const tam = {}; for (const r of regs) { const tr = await Medios.trozos(r); tam[r.id] = { archivo: tr.archivo.reduce((a, x) => a + x.datos.size, 0), consulta: tr.consulta.reduce((a, x) => a + x.datos.size, 0) }; }
+    const tam = {};
+
+    try {
+      for (const r of regs) {
+        const tr = await Medios.trozos(r);
+    
+        const plan = tr.archivo.length
+          ? Medios.planArchivo(tr.archivo, r)
+          : null;
+        tam[r.id] = {
+          archivo: plan ? plan.bytes : 0,
+          bytesArchivoGuardados: tr.archivo.reduce((a, x) => a + x.datos.size, 0),
+          consulta: tr.consulta.reduce((a, x) => a + x.datos.size, 0),
+          tieneArchivo: !!tr.archivo.length,
+          tieneConsulta: !!tr.consulta.length
+        };
+      }
+    } catch {
+      avisar(t('No se pudo comprobar la integridad del audio. La exportación se detuvo para evitar generar un paquete incompleto.'), 7000);
+      return;
+    }
     this.regs = regs; this.adj = adj; this.tam = tam;
     const nAdj = Object.values(adj).reduce((a, l) => a + l.length, 0), nClips = regs.reduce((a, r) => a + (r.clips || []).filter(c => !c.descartado).length, 0);
     const conf = regs.filter(r => r.ficha.confidencial).length, sinCons = regs.filter(r => r.ficha.consentimiento.estado === 'pendiente').length, ogg = !!window.AudioEncoder;
@@ -2011,10 +3280,21 @@ const Exportar = {
     } catch (e) { prog.textContent = '⚠️ ' + e.message; boton.disabled = false; Bitacora.poner('exportar', e.message); }
   },
   async marcarRespaldo(o) {
-    // Es respaldo completo si van los audios tal como se grabaron y todos los adjuntos
+    // Es respaldo completo solo si incluye todas las pistas que realmente tenía la grabación y todos los adjuntos.
     if (o.audio !== 'ambos' || o.modoAdj !== 'todos') return;
     const ahora = Date.now();
-    for (const r of this.regs) { const x = await DB.leer('grabaciones', r.id); if (x) { x.respaldo = ahora; if (x.modificada > ahora) x.modificada = ahora; await DB.poner('grabaciones', x); } }
+    for (const r of this.regs) {
+      const tam = this.tam[r.id] || {};
+      const tecnica = r.tecnica || {};
+      if (tecnica.conArchivo && !tam.tieneArchivo) continue;
+      if (tecnica.conConsulta && !tam.tieneConsulta) continue;
+      const x = await DB.leer('grabaciones', r.id);
+      if (x) {
+        x.respaldo = ahora;
+        if (x.modificada > ahora) x.modificada = ahora;
+        await DB.poner('grabaciones', x);
+      }
+    }
   },
   /** Todo lo que va dentro de un paquete. */
   async entradas(regs, o, decir) {
@@ -2257,40 +3537,176 @@ ${capas.join('\n')}
 
 /* ═════════════════ IMPORTAR: un paquete .zip de Vírgula (propio o de otra persona) ═════════════════ */
 async function leerZip(file) {
-  const cola = Math.min(file.size, 65557), fin = new DataView(await file.slice(file.size - cola).arrayBuffer());
-  let p = -1; for (let i = cola - 22; i >= 0; i--) if (fin.getUint32(i, true) === 0x06054b50) { p = i; break; }
-  if (p < 0) throw new Error(t('No parece un archivo .zip.'));
-  const n = fin.getUint16(p + 10, true), tam = fin.getUint32(p + 12, true), ini = fin.getUint32(p + 16, true);
-  if (ini === 0xffffffff) throw new Error(t('Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.'));
-  const cd = new DataView(await file.slice(ini, ini + tam).arrayBuffer()), dec = new TextDecoder(), entradas = {};
-  for (let i = 0, o = 0; i < n; i++) {
-    if (cd.getUint32(o, true) !== 0x02014b50) throw new Error(t('El .zip está dañado.'));
-    const metodo = cd.getUint16(o + 10, true), comp = cd.getUint32(o + 20, true), real = cd.getUint32(o + 24, true),
-      ln = cd.getUint16(o + 28, true), le = cd.getUint16(o + 30, true), lc = cd.getUint16(o + 32, true), loc = cd.getUint32(o + 42, true);
-    const nombre = dec.decode(new Uint8Array(cd.buffer, o + 46, ln));
-    if (!nombre.endsWith('/')) entradas[nombre] = { metodo, comp, real, loc };
-    o += 46 + ln + le + lc;
+  if (!file || !Number.isSafeInteger(file.size) || file.size < 22) {
+    throw new Error(t('No parece un archivo .zip.'));
   }
+
+  const cola = Math.min(file.size, 65557);
+  const finBlob = await file.slice(file.size - cola).arrayBuffer();
+  const fin = new DataView(finBlob);
+  let p = -1;
+  for (let i = cola - 22; i >= 0; i--) {
+    if (fin.getUint32(i, true) === 0x06054b50) { p = i; break; }
+  }
+  if (p < 0) throw new Error(t('No parece un archivo .zip.'));
+
+  const disco = fin.getUint16(p + 4, true);
+  const discoCentral = fin.getUint16(p + 6, true);
+  const cantidadDisco = fin.getUint16(p + 8, true);
+  const cantidad = fin.getUint16(p + 10, true);
+  const tamCentral = fin.getUint32(p + 12, true);
+  const inicioCentral = fin.getUint32(p + 16, true);
+  const comentario = fin.getUint16(p + 20, true);
+  const eocd = file.size - cola + p;
+
+  if (disco || discoCentral || cantidadDisco !== cantidad) {
+    throw new Error(t('Vírgula no puede importar archivos .zip divididos en varios discos.'));
+  }
+  if (cantidad === 0xffff || tamCentral === 0xffffffff || inicioCentral === 0xffffffff) {
+    throw new Error(t('Este .zip usa ZIP64; Vírgula aún no lo lee.'));
+  }
+  if (eocd + 22 + comentario > file.size || inicioCentral + tamCentral > eocd) {
+    throw new Error(t('El directorio del .zip está fuera de sus límites.'));
+  }
+
+  const centralBytes = await file.slice(inicioCentral, inicioCentral + tamCentral).arrayBuffer();
+  const cd = new DataView(centralBytes);
+  const dec = new TextDecoder('utf-8', { fatal: true });
+  const entradas = Object.create(null);
+  let o = 0;
+
+  for (let i = 0; i < cantidad; i++) {
+    if (o + 46 > cd.byteLength || cd.getUint32(o, true) !== 0x02014b50) {
+      throw new Error(t('El directorio central del .zip está dañado.'));
+    }
+
+    const flags = cd.getUint16(o + 8, true);
+    const metodo = cd.getUint16(o + 10, true);
+    const crc = cd.getUint32(o + 16, true);
+    const comp = cd.getUint32(o + 20, true);
+    const real = cd.getUint32(o + 24, true);
+    const ln = cd.getUint16(o + 28, true);
+    const le = cd.getUint16(o + 30, true);
+    const lc = cd.getUint16(o + 32, true);
+    const loc = cd.getUint32(o + 42, true);
+    const finEntrada = o + 46 + ln + le + lc;
+
+    if (finEntrada > cd.byteLength || loc === 0xffffffff || comp === 0xffffffff || real === 0xffffffff) {
+      throw new Error(t('El .zip contiene una entrada con tamaños o posiciones no compatibles.'));
+    }
+    if (flags & 1) throw new Error(t('El .zip está cifrado; Vírgula no puede importarlo.'));
+    if (metodo !== 0 && metodo !== 8) throw new Error(t('El .zip usa un método de compresión no compatible.'));
+
+    const nombre = dec.decode(new Uint8Array(centralBytes, o + 46, ln));
+    if (!nombre || nombre.startsWith('/') || nombre.includes('\\') || nombre.split('/').some(x => x === '..' || x === '.')) {
+      throw new Error(t('El .zip contiene una ruta de archivo no válida.'));
+    }
+    if (!nombre.endsWith('/')) {
+      if (Object.prototype.hasOwnProperty.call(entradas, nombre)) {
+        throw new Error(t('El .zip contiene nombres de archivo duplicados.'));
+      }
+      entradas[nombre] = { flags, metodo, crc, comp, real, loc, nombre };
+    }
+    o = finEntrada;
+  }
+
+  if (o > cd.byteLength) throw new Error(t('El directorio central del .zip está incompleto.'));
+
   const leer = async ruta => {
-    const e = entradas[ruta]; if (!e) return null;
-    const h = new DataView(await file.slice(e.loc, e.loc + 30).arrayBuffer()), datos = e.loc + 30 + h.getUint16(26, true) + h.getUint16(28, true);
-    const b = file.slice(datos, datos + e.comp);
-    if (e.metodo === 0) return b;
-    if (e.metodo === 8) { if (!window.DecompressionStream) throw new Error(t('Este navegador no descomprime .zip.')); return new Response(b.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob(); }
-    throw new Error(t('Compresión no reconocida en {ruta}', { ruta }));
+    const e = entradas[ruta];
+    if (!e) return null;
+    if (e.loc + 30 > file.size) throw new Error(t('El encabezado de «{ruta}» está incompleto.', { ruta }));
+
+    const hb = await file.slice(e.loc, e.loc + 30).arrayBuffer();
+    if (hb.byteLength !== 30) throw new Error(t('El encabezado de «{ruta}» está incompleto.', { ruta }));
+    const h = new DataView(hb);
+    if (h.getUint32(0, true) !== 0x04034b50) {
+      throw new Error(t('El encabezado local de «{ruta}» está dañado.', { ruta }));
+    }
+
+    const flags = h.getUint16(6, true);
+    const metodo = h.getUint16(8, true);
+    const crcLocal = h.getUint32(14, true);
+    const compLocal = h.getUint32(18, true);
+    const realLocal = h.getUint32(22, true);
+    const ln = h.getUint16(26, true);
+    const le = h.getUint16(28, true);
+    const inicioDatos = e.loc + 30 + ln + le;
+    const finDatos = inicioDatos + e.comp;
+
+    if ((flags & 1) || metodo !== e.metodo || flags !== e.flags || finDatos > file.size) {
+      throw new Error(t('El encabezado local de «{ruta}» no coincide con el directorio central.', { ruta }));
+    }
+    if (!(flags & 8) && (crcLocal !== e.crc || compLocal !== e.comp || realLocal !== e.real)) {
+      throw new Error(t('Los tamaños declarados de «{ruta}» no coinciden.', { ruta }));
+    }
+
+    const nombreLocal = dec.decode(await file.slice(e.loc + 30, e.loc + 30 + ln).arrayBuffer());
+    if (nombreLocal !== ruta) throw new Error(t('El nombre de «{ruta}» no coincide en sus encabezados.', { ruta }));
+
+    const comprimido = file.slice(inicioDatos, finDatos);
+    if (comprimido.size !== e.comp) throw new Error(t('El contenido de «{ruta}» está truncado.', { ruta }));
+
+    let datos;
+    if (e.metodo === 0) {
+      datos = comprimido;
+    } else {
+      if (!window.DecompressionStream) throw new Error(t('Este navegador no descomprime .zip.'));
+      datos = await new Response(
+        comprimido.stream().pipeThrough(new DecompressionStream('deflate-raw'))
+      ).blob();
+    }
+
+    if (datos.size !== e.real) throw new Error(t('La longitud de «{ruta}» no coincide después de descomprimir.', { ruta }));
+    const crc = await crc32Blob(datos);
+    if (crc !== e.crc) throw new Error(t('La comprobación de integridad de «{ruta}» no coincide.', { ruta }));
+    return datos;
   };
+
   return { rutas: Object.keys(entradas), leer };
 }
 /** Quita la cabecera de un WAV (busca el bloque «data»; no da por hecho 44 bytes). */
 async function pcmDeWav(blob) {
-  const h = new DataView(await blob.slice(0, Math.min(blob.size, 65536)).arrayBuffer()), t = (o) => String.fromCharCode(h.getUint8(o), h.getUint8(o + 1), h.getUint8(o + 2), h.getUint8(o + 3));
-  if (t(0) !== 'RIFF' || t(8) !== 'WAVE') return null;
-  let o = 12, info = {};
+  if (!blob || blob.size < 44) return null;
+  const limite = Math.min(blob.size, 1024 * 1024);
+  const h = new DataView(await blob.slice(0, limite).arrayBuffer());
+  const texto = o => {
+    if (o < 0 || o + 4 > h.byteLength) return '';
+    return String.fromCharCode(h.getUint8(o), h.getUint8(o + 1), h.getUint8(o + 2), h.getUint8(o + 3));
+  };
+  if (texto(0) !== 'RIFF' || texto(8) !== 'WAVE') return null;
+
+  let o = 12;
+  let info = null;
   while (o + 8 <= h.byteLength) {
-    const id = t(o), n = h.getUint32(o + 4, true);
-    if (id === 'fmt ') info = { ch: h.getUint16(o + 10, true), sr: h.getUint32(o + 12, true), bits: h.getUint16(o + 22, true) };
-    if (id === 'data') return Object.assign(info, { datos: blob.slice(o + 8, Math.min(blob.size, o + 8 + n)) });
-    o += 8 + n + (n & 1);
+    const id = texto(o);
+    const n = h.getUint32(o + 4, true);
+    const inicio = o + 8;
+    const fin = inicio + n;
+    if (!Number.isSafeInteger(fin) || fin > blob.size) return null;
+
+    if (id === 'fmt ') {
+      if (n < 16 || inicio + 16 > h.byteLength) return null;
+      info = {
+        formato: h.getUint16(inicio, true),
+        canales: h.getUint16(inicio + 2, true),
+        sr: h.getUint32(inicio + 4, true),
+        bytesSegundo: h.getUint32(inicio + 8, true),
+        alineacion: h.getUint16(inicio + 12, true),
+        bits: h.getUint16(inicio + 14, true)
+      };
+    }
+
+    if (id === 'data') {
+      if (!info) return null;
+      const { formato, canales, sr, bytesSegundo, alineacion, bits } = info;
+      if (formato !== 1 || bits !== 16 || (canales !== 1 && canales !== 2) || !Number.isSafeInteger(sr) || sr < 8000) return null;
+      if (alineacion !== canales * 2 || bytesSegundo !== sr * alineacion || n % alineacion !== 0 || fin > blob.size) return null;
+      const datos = blob.slice(inicio, fin);
+      return { ch: canales, sr, bits, datos };
+    }
+
+    o = fin + (n & 1);
   }
   return null;
 }
@@ -2304,7 +3720,34 @@ const Importar = {
       const rj = z.rutas.find(r => /(^|\/)fichas\.json$/.test(r)); if (!rj) throw new Error(t('El paquete no tiene fichas.json: no es un paquete de Vírgula.'));
       this.raiz = rj.slice(0, -'fichas.json'.length);
       p = JSON.parse(await (await z.leer(rj)).text());
-      if (!p || !/^virgula-paquete-/.test(p.formato) || !Array.isArray(p.grabaciones)) throw new Error(t('fichas.json no tiene el formato de Vírgula.'));
+      if (!p || !/^virgula-paquete-/.test(p.formato) || !Array.isArray(p.grabaciones)) {
+        throw new Error(t('fichas.json no tiene el formato de Vírgula.'));
+      }
+      if (p.grabaciones.length > 10000) throw new Error(t('El paquete contiene demasiadas grabaciones para importarlo de forma segura.'));
+      const ids = new Set();
+      const idsAdjuntos = new Set();
+      for (const g of p.grabaciones) {
+        if (!g || typeof g.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(g.id) ||
+            !g.ficha || typeof g.ficha !== 'object' || typeof g.ficha.titulo !== 'string' ||
+            !g.tecnica || typeof g.tecnica !== 'object') {
+          throw new Error(t('El paquete contiene una ficha o un código de grabación inválido.'));
+        }
+        if (ids.has(g.id)) throw new Error(t('El paquete repite el código de una grabación.'));
+        ids.add(g.id);
+
+        if (g.adjuntos != null && !Array.isArray(g.adjuntos)) {
+          throw new Error(t('El paquete contiene una lista de adjuntos no válida.'));
+        }
+        for (const adjunto of g.adjuntos || []) {
+          if (!adjunto || typeof adjunto.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(adjunto.id)) {
+            throw new Error(t('El paquete contiene un adjunto con código no válido.'));
+          }
+          if (idsAdjuntos.has(adjunto.id)) {
+            throw new Error(t('El paquete repite el código de un adjunto.'));
+          }
+          idsAdjuntos.add(adjunto.id);
+        }
+      }
     } catch (e) { return avisar('⚠️ ' + e.message, 6000); }
     const ya = [];
     for (const g of p.grabaciones) if (await DB.leer('grabaciones', g.id)) ya.push(g);
@@ -2332,32 +3775,129 @@ const Importar = {
     };
   },
   async una(z, g, reemplazar) {
-    const avisos = [], ruta = r => r ? this.raiz + r : null, ahora = Date.now();
-    if (reemplazar) await DB.borrarGrabacion(g.id);
-    const reg = Object.assign({}, g, { estado: 'lista', respaldo: ahora, modificada: ahora, importada: ahora });
-    const archivos = reg.archivos || {}, adjuntos = reg.adjuntos || [];
-    delete reg.archivos; delete reg.adjuntos;
-    reg.clips = (reg.clips || []).map(c => { const x = Object.assign({}, c); delete x.archivoWav; delete x.archivoOgg; return x; });
+    const avisos = [];
+    const ahora = Date.now();
+    const ruta = r => {
+      if (r == null || r === '') return null;
+      if (typeof r !== 'string' || r.startsWith('/') || r.includes('\\') ||
+          r.split('/').some(x => !x || x === '.' || x === '..')) {
+        throw new Error('El paquete contiene una ruta de archivo no válida.');
+      }
+      return this.raiz + r;
+    };
+
+    if (G && G.id === g.id) throw new Error('No se puede reemplazar una grabación que está abierta.');
+
+    const reg = JSON.parse(JSON.stringify(g));
+    Object.assign(reg, { estado: 'lista', respaldo: ahora, modificada: ahora, importada: ahora });
+    const archivos = reg.archivos || {};
+    const adjuntos = Array.isArray(reg.adjuntos) ? reg.adjuntos : [];
+    delete reg.archivos;
+    delete reg.adjuntos;
+    reg.clips = (reg.clips || []).map(c => {
+      const x = Object.assign({}, c);
+      delete x.archivoWav;
+      delete x.archivoOgg;
+      return x;
+    });
+
+    const trozosNuevos = [];
+    const adjuntosNuevos = [];
     let n = 0;
+    let bytesArchivo = 0;
+    let bytesConsulta = 0;
+
     if (archivos.archivo) {
-      const w = await z.leer(ruta(archivos.archivo)), d = w && await pcmDeWav(w);
-      if (d) { await DB.poner('trozos', { grabacion: reg.id, tipo: 'archivo', n: ++n, datos: d.datos, frames: d.datos.size / (2 * d.ch) }); reg.tecnica.conArchivo = true; reg.tecnica.sr = d.sr; reg.tecnica.canales = d.ch; }
-      else avisos.push(t('falta el WAV de «{titulo}»', { titulo: reg.ficha.titulo }));
-    } else reg.tecnica.conArchivo = false;
+      const w = await z.leer(ruta(archivos.archivo));
+      const d = w && await pcmDeWav(w);
+      if (d) {
+        const frames = d.datos.size / (2 * d.ch);
+        if (!Number.isSafeInteger(frames) || frames <= 0) throw new Error('El WAV importado tiene una duración inválida.');
+        trozosNuevos.push({
+          grabacion: reg.id,
+          tipo: 'archivo',
+          n: ++n,
+          datos: d.datos,
+          frames,
+          inicioFrame: 0
+        });
+        reg.tecnica.conArchivo = true;
+        reg.tecnica.sr = d.sr;
+        reg.tecnica.canales = d.ch;
+        reg.frames = frames;
+        reg.duracion = frames / d.sr;
+        bytesArchivo = d.datos.size;
+      } else {
+        if (reemplazar) throw new Error('No se pudo leer el WAV del paquete; la grabación anterior se conserva.');
+        avisos.push(t('falta o no es compatible el WAV de «{titulo}»', { titulo: reg.ficha.titulo }));
+        reg.tecnica.conArchivo = false;
+        reg.frames = 0;
+      }
+    } else {
+      reg.tecnica.conArchivo = false;
+      reg.frames = 0;
+    }
+
     if (archivos.consulta) {
       const c = await z.leer(ruta(archivos.consulta));
-      if (c) await DB.poner('trozos', { grabacion: reg.id, tipo: 'consulta', n: ++n, datos: new Blob([c], { type: (reg.tecnica.mime || '').split(';')[0] }), frames: 0 });
-      else avisos.push(t('falta la consulta de «{titulo}»', { titulo: reg.ficha.titulo }));
-    } else reg.tecnica.mime = '';
-    for (const a of adjuntos) {
-      if (!a.archivo) continue;   // no venía en el paquete
-      const b = await z.leer(ruta(a.archivo));
-      if (!b) { avisos.push(t('falta el adjunto «{nombre}»', { nombre: a.nombre })); continue; }
-      await DB.poner('adjuntos', { id: a.id, grabacion: reg.id, nombre: a.nombre, tipo: a.tipo || '', tam: b.size, papel: a.papel || 'otro', nota: a.nota || '', blob: new Blob([b], { type: a.tipo || '' }), fecha: a.fecha || ahora });
+      if (c && c.size) {
+        const mime = (reg.tecnica.mime || '').split(';')[0] || 'application/octet-stream';
+        trozosNuevos.push({
+          grabacion: reg.id,
+          tipo: 'consulta',
+          n: ++n,
+          datos: new Blob([c], { type: mime }),
+          frames: 0
+        });
+        reg.tecnica.conConsulta = true;
+        bytesConsulta = c.size;
+      } else {
+        if (reemplazar) throw new Error('No se pudo leer el audio de consulta; la grabación anterior se conserva.');
+        avisos.push(t('falta la consulta de «{titulo}»', { titulo: reg.ficha.titulo }));
+        reg.tecnica.conConsulta = false;
+        reg.tecnica.mime = '';
+      }
+    } else {
+      reg.tecnica.conConsulta = false;
+      reg.tecnica.mime = '';
     }
-    const sinIncluir = adjuntos.filter(a => !a.archivo).length;
-    if (sinIncluir) reg.eventos = (reg.eventos || []).concat([{ t: 0, hora: horaBonita(Date.now()), tipo: t('importada'), detalle: t('{n} adjunto(s) no venían en el paquete', { n: sinIncluir }) }]);
-    await DB.poner('grabaciones', reg);
+
+    for (const a of adjuntos) {
+      if (!a || typeof a.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(a.id)) {
+        throw new Error('El paquete contiene un adjunto con código no válido.');
+      }
+      if (!a.archivo) continue;
+      const b = await z.leer(ruta(a.archivo));
+      if (!b) {
+        if (reemplazar) throw new Error(`No se pudo leer el adjunto «${a.nombre || a.id}»; la grabación anterior se conserva.`);
+        avisos.push(t('falta el adjunto «{nombre}»', { nombre: a.nombre || a.id }));
+        continue;
+      }
+      adjuntosNuevos.push({
+        id: a.id,
+        grabacion: reg.id,
+        nombre: String(a.nombre || 'adjunto').slice(0, 240),
+        tipo: String(a.tipo || '').slice(0, 160),
+        tam: b.size,
+        papel: a.papel || 'otro',
+        nota: String(a.nota || '').slice(0, 4000),
+        blob: new Blob([b], { type: a.tipo || '' }),
+        fecha: a.fecha || ahora
+      });
+    }
+
+    const sinIncluir = adjuntos.filter(a => !a.archivo).length + avisos.filter(x => String(x).includes('adjunto')).length;
+    if (sinIncluir) {
+      reg.eventos = (reg.eventos || []).concat([{
+        t: 0,
+        hora: horaBonita(Date.now()),
+        tipo: t('importada'),
+        detalle: t('{n} adjunto(s) no venían completos en el paquete', { n: sinIncluir })
+      }]);
+    }
+
+    reg.bytes = { archivo: bytesArchivo, consulta: bytesConsulta };
+    await DB.guardarImportacion(reg, trozosNuevos, adjuntosNuevos, !!reemplazar);
     return avisos;
   }
 };
@@ -2480,7 +4020,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       const n = r.installing; if (!n) return;
       n.addEventListener('statechange', () => {
         if (n.state === 'installed' && navigator.serviceWorker.controller) {
-          const b = $('avisoRecuperar');
+          const b = $('avisoActualizacion');
           if (!b.classList.contains('oculto')) return;
           b.classList.remove('oculto', 'aviso'); b.classList.add('ok');
           b.innerHTML = `${tH('✨ Hay una versión nueva de Vírgula.')} <div class="fila fija"><button class="chico prim" id="bActualizar">${tH('Actualizar ahora')}</button></div>`;
@@ -2500,8 +4040,31 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   Ajustes.pintar();
   if (ES_IOS) $('avisoIos').classList.remove('oculto');
   $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
-  await revisarPendientes();
-  Espacio.actualizar(); Recordatorio.revisar();
+  let resultadoTemporal = {
+    recuperados: 0,
+    pendientes: 0,
+    grabacionesPendientes: []
+  };
+
+  let recuperacionComprobada = true;
+
+  try {
+    resultadoTemporal = await RespaldoTemporal.recuperar();
+  } catch (e) {
+    recuperacionComprobada = false;
+    Bitacora.poner(
+      'recuperación OPFS',
+      e && e.message ? e.message : String(e)
+    );
+  }
+
+  await revisarPendientes(
+    resultadoTemporal.grabacionesPendientes || [],
+    recuperacionComprobada
+  );
+
+  Espacio.actualizar();
+  Recordatorio.revisar();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) Recordatorio.revisar(); });
   if (new URLSearchParams(location.search).get('v') === 'acervo') Nav.ir('vAcervo');
 })();
