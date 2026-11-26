@@ -1,4 +1,4 @@
-/*
+/* 
  * Vírgula · memoria sonora viva
  * Service Worker de la versión pública 1.0.0 (compilación interna 1.3.4)
  * Copyright (c) 2026 Alejandro Estrada
