@@ -1,24 +1,104 @@
-/* Vírgula · service worker: guarda la app en el aparato para que abra sin internet.
-   Copyright (c) 2026 Alejandro Estrada · SPDX-License-Identifier: AGPL-3.0-only
-   Al publicar una versión nueva, cambia VERSION: así el aparato descarga la nueva y avisa. */
-const VERSION = 'virgula-1.2';
-const ARCHIVOS = ['./', './index.html', './manifest.webmanifest', './icono-192.png', './icono-512.png', './icono-maskable-512.png', './apple-touch-icon.png'];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(ARCHIVOS.map(u => new Request(u, { cache: 'reload' })))));
+/*
+ * Vírgula · memoria sonora viva
+ * Service Worker de la versión 1.3
+ * Copyright (c) 2026 Alejandro Estrada
+ * SPDX-License-Identifier: AGPL-3.0-only
+ *
+ * Al publicar una versión nueva:
+ * 1. Cambia VERSION en este archivo.
+ * 2. Cambia VERSION en index.html.
+ * 3. Publica ambos archivos juntos.
+ */
+
+const VERSION = 'virgula-1.3';
+const PREFIJO_CACHE = 'virgula-';
+
+const ARCHIVOS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icono-192.png',
+  './icono-512.png',
+  './icono-maskable-512.png',
+  './apple-touch-icon.png'
+];
+
+self.addEventListener('install', evento => {
+  evento.waitUntil((async () => {
+    const cache = await caches.open(VERSION);
+    const solicitudes = ARCHIVOS.map(ruta =>
+      new Request(new URL(ruta, self.registration.scope).href, {
+        cache: 'reload',
+        credentials: 'same-origin'
+      })
+    );
+
+    await cache.addAll(solicitudes);
+  })());
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+self.addEventListener('activate', evento => {
+  evento.waitUntil((async () => {
+    const nombres = await caches.keys();
+
+    await Promise.all(
+      nombres
+        .filter(nombre =>
+          nombre.startsWith(PREFIJO_CACHE) &&
+          nombre !== VERSION
+        )
+        .map(nombre => caches.delete(nombre))
+    );
+
+    await self.clients.claim();
+  })());
 });
 
-// Primero lo guardado (abre al instante, aunque la señal sea mala); la versión nueva llega con un cambio de VERSION.
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request).catch(() => caches.match('./index.html')))
-  );
+self.addEventListener('fetch', evento => {
+  const solicitud = evento.request;
+  if (solicitud.method !== 'GET') return;
+
+  const url = new URL(solicitud.url);
+  const alcance = new URL(self.registration.scope);
+
+  if (
+    url.origin !== alcance.origin ||
+    !url.href.startsWith(alcance.href)
+  ) return;
+
+  if (solicitud.cache === 'no-store') {
+    evento.respondWith(fetch(solicitud));
+    return;
+  }
+
+  evento.respondWith((async () => {
+    const cache = await caches.open(VERSION);
+    const guardada = await cache.match(solicitud);
+
+    if (guardada) return guardada;
+
+    try {
+      return await fetch(solicitud);
+    } catch (error) {
+      if (solicitud.mode === 'navigate') {
+        const indice = await cache.match(
+          new URL('./index.html', alcance).href
+        );
+        if (indice) return indice;
+      }
+      throw error;
+    }
+  })());
 });
 
-// La página pide activar la versión nueva cuando la persona toca «Actualizar ahora»
-self.addEventListener('message', e => { if (e.data === 'saltar') self.skipWaiting(); });
+self.addEventListener('message', evento => {
+  const mensaje = evento.data;
+
+  if (
+    mensaje === 'saltar' ||
+    (mensaje && mensaje.tipo === 'saltar')
+  ) {
+    self.skipWaiting();
+  }
+});
