@@ -1,6 +1,6 @@
 # Pruebas automatizadas de Vírgula 1.0.0
 
-Estas pruebas de extremo a extremo usan Playwright y Chromium. La versión pública esperada es `1.0.0`; las pruebas también comprueban que el Service Worker y el HTML tengan la misma compilación interna (`1.3.4`).
+Estas pruebas de extremo a extremo usan Playwright y Chromium. La versión pública esperada es `1.0.0`; las pruebas también comprueban que el Service Worker y el HTML tengan la misma compilación interna (`1.3.5`).
 
 ## Requisitos
 
@@ -41,6 +41,7 @@ node pruebas/prueba_ingles.js
 node pruebas/prueba_accesibilidad_iphone.js
 node pruebas/prueba_atras_adjuntos.js
 node pruebas/prueba_listas_actualizaciones.js
+node pruebas/prueba_borrado_masivo.js
 ```
 
 También puedes ejecutar una sola prueba para aislar un fallo. Todas usan `http://localhost:8765/` como dirección base.
@@ -52,6 +53,7 @@ También puedes ejecutar una sola prueba para aislar un fallo. Todas usan `http:
 - `prueba_ingles.js`: descarga e instalación del idioma publicado, traducción de la pestaña Listas y de los controles **Siguiente** y **Repetir**, grabación, ficha y créditos de traducción.
 - `prueba_accesibilidad_iphone.js`: tamaño de letra, temas claro y alto contraste, reducción de movimiento, instrucciones de instalación para iPhone y presentación móvil simulada.
 - `prueba_atras_adjuntos.js`: navegación con el botón atrás durante la grabación, retorno desde la ficha y apertura de adjuntos dentro de la aplicación.
+- `prueba_borrado_masivo.js`: selección múltiple, confirmación de seguridad, cancelación sin pérdida de datos y eliminación asociada de fragmentos y adjuntos.
 - `prueba_listas_actualizaciones.js`: coordinación entre versión HTML y Service Worker, botón de comprobación manual, creación y pegado de listas, normalización de viñetas, exportación TXT, barra de grabación fija al desplazarse, vinculación de elementos con clips, repetición sin avanzar, instantánea de lista, guion, exportación ZIP e importación de la lista asociada.
 
 ## Alcance y límites
