@@ -31,7 +31,72 @@ const Acervo = {
     }).join('') : `<p class="nota">${todas.length ? tH('Nada coincide con la búsqueda.') : tH('Todavía no hay grabaciones. Ve a ⏺ Grabar.')}</p>`;
     this.contar();
   },
-  contar() { $('nSel').textContent = this.sel.size; $('bExportarSel').disabled = !this.sel.size; }
+  contar() {
+    $('nSel').textContent = this.sel.size;
+    $('nBorrarSel').textContent = this.sel.size;
+    $('bExportarSel').disabled = !this.sel.size;
+    $('bBorrarSel').disabled = !this.sel.size || !!this.borrando;
+  },
+  async borrarSeleccionadas() {
+    if (this.borrando || !this.sel.size) return;
+
+    // Revalidar la selección contra IndexedDB: puede haber cambiado desde que se pintó.
+    const registros = [];
+    for (const id of this.sel) {
+      const reg = await DB.leer('grabaciones', id).catch(() => null);
+      if (reg && reg.estado === 'lista') registros.push(reg);
+    }
+
+    if (!registros.length) {
+      this.sel.clear();
+      await this.pintar();
+      avisar(t('No se encontraron las grabaciones seleccionadas.'));
+      return;
+    }
+
+    // Quitar IDs obsoletos, pero mantener los registros reales seleccionados.
+    this.sel = new Set(registros.map(r => r.id));
+    const sinRespaldo = registros.filter(r => this.sinRespaldo(r));
+    let mensaje = t('¿Borrar {n} grabación(es) seleccionada(s), junto con su audio, clips y adjuntos? Esta acción no se puede deshacer.', { n: registros.length });
+    if (sinRespaldo.length) {
+      mensaje += '\n\n' + t('{n} grabación(es) no tienen respaldo actualizado.', { n: sinRespaldo.length });
+    }
+    if (!confirm(mensaje)) return;
+    if (sinRespaldo.length && prompt(t('Para confirmar, escribe BORRAR')) !== t('BORRAR')) return;
+
+    this.borrando = true;
+    const boton = $('bBorrarSel');
+    boton.disabled = true;
+    boton.innerHTML = `<span>${tH('🗑️ Borrando…')}</span> (<span id="nBorrarSel">${registros.length}</span>)`;
+    const borradas = [], fallidas = [];
+
+    try {
+      for (const reg of registros) {
+        try {
+          // Este método integra y limpia OPFS, y elimina grabación, fragmentos y adjuntos.
+          await DB.borrarGrabacion(reg.id);
+          borradas.push(reg.id);
+          this.sel.delete(reg.id);
+        } catch (e) {
+          fallidas.push(reg.id);
+          Bitacora.poner('borrado masivo', `${reg.id}: ${e && e.message ? e.message : String(e)}`);
+        }
+      }
+    } finally {
+      this.borrando = false;
+      this.sel = new Set(fallidas);
+      boton.innerHTML = `<span data-t>${tH('🗑️ Borrar')}</span> (<span id="nBorrarSel">${fallidas.length}</span>)`;
+      await this.pintar();
+    }
+
+    if (borradas.length && !fallidas.length) {
+      avisar(t('🗑️ Se borraron {n} grabación(es).', { n: borradas.length }), 5000);
+    } else if (borradas.length) {
+      avisar(t('Se borraron {n} grabación(es); {m} no se pudieron borrar y siguen seleccionadas.', { n: borradas.length, m: fallidas.length }), 7000);
+    } else {
+      avisar(t('No se pudo borrar ninguna grabación. No se eliminó ningún contenido.'), 7000);
+    }
+  }
 };
 $('lista').addEventListener('click', e => {
   const s = e.target.closest('[data-sel]'); if (s) { s.checked ? Acervo.sel.add(s.dataset.sel) : Acervo.sel.delete(s.dataset.sel); Acervo.contar(); return; }
@@ -40,6 +105,7 @@ $('lista').addEventListener('click', e => {
 $('buscar').addEventListener('input', () => { Acervo.q = $('buscar').value; clearTimeout(Acervo._t); Acervo._t = setTimeout(() => Acervo.pintar(), 250); });
 $('bTodas').onclick = async () => { const l = await Acervo.lista(); if (Acervo.sel.size === l.length) Acervo.sel.clear(); else l.forEach(r => Acervo.sel.add(r.id)); Acervo.pintar(); };
 $('bExportarSel').onclick = () => Exportar.abrir([...Acervo.sel]);
+$('bBorrarSel').onclick = () => Acervo.borrarSeleccionadas();
 $('bImportar').onclick = () => $('archivoImportar').click();
 $('archivoImportar').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) Importar.paquete(f); };
 

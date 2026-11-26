@@ -1,6 +1,6 @@
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
 const VERSION = '1.0.0';
-const BUILD_INTERNO = '1.3.4';
+const BUILD_INTERNO = '1.3.5';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
