@@ -17,7 +17,7 @@
   <section id="vGrabar" class="vista">
     <div id="zonaCaptura" class="zona-captura">
       <div class="panel">
-        <button id="bGrabar" aria-pressed="false"></button>
+        <button id="bGrabar" aria-label="Grabar"></button>
         <div id="tiempo">00:00:00</div>
         <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
         <p class="nota" id="nivelNota" style="text-align:center"></p>
@@ -35,7 +35,7 @@
         <p class="nota aviso-ios oculto" id="avisoIos" data-t>En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.</p>
         <p class="resumen-ajustes" id="resumenAjustes"></p>
       </div>
-      <section class="panel lista-grabacion" id="panelListaGrabacion" aria-label="Lista de trabajo" data-ta="Lista de trabajo">
+      <section class="panel lista-grabacion" id="panelListaGrabacion" aria-label="Lista de trabajo">
         <div class="lista-controles">
           <h2 data-t>Lista de trabajo</h2>
           <label for="listaGrabacion" data-t>Seleccionar lista para esta grabación</label>
@@ -54,40 +54,41 @@
   <!-- ───── Listas ───── -->
   <section id="vListas" class="vista oculto">
     <div class="panel">
-      <h2 data-t>Listas de trabajo</h2>
-      <p class="nota" data-t>Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.</p>
+      <h2>Listas de trabajo</h2>
+      <p class="nota">Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.</p>
       <div class="fila">
-        <div style="flex:2 1 240px"><label for="listaSeleccion" data-t>Mis listas</label><select id="listaSeleccion"><option value="" data-t>Selecciona una lista</option></select></div>
-        <button id="bListaNueva" class="prim" data-t>＋ Nueva lista</button>
+        <div style="flex:2 1 240px"><label for="listaSeleccion">Mis listas</label><select id="listaSeleccion"><option value="">Selecciona una lista</option></select></div>
+        <button id="bListaNueva" class="prim">＋ Nueva lista</button>
       </div>
       <div class="fila">
-        <button id="bListaPegar" class="chico" data-t>📋 Pegar texto</button>
-        <button id="bListaArchivo" class="chico" data-t>📥 Importar TXT</button>
+        <button id="bListaPegar" class="chico">📋 Pegar texto</button>
+        <button id="bListaArchivo" class="chico">📥 Importar TXT</button>
         <input type="file" id="archivoLista" accept=".txt,text/plain" class="oculto">
       </div>
       <div id="listaEditor" class="oculto">
         <div class="lista-editor-grid">
           <div>
-            <label for="listaNombre" data-t>Nombre de la lista</label>
-            <input type="text" id="listaNombre" maxlength="120" placeholder="Ej. Vocabulario de alimentos" data-tp="Ej. Vocabulario de alimentos">
-            <label for="listaTipo" data-t>Tipo de lista</label>
-            <select id="listaTipo"><option value="elementos" data-t>Elementos (una entrada por renglón)</option><option value="guion" data-t>Guion (texto completo)</option></select>
-            <p class="nota" id="listaAyuda" data-t>En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.</p>
+            <label for="listaNombre">Nombre de la lista</label>
+            <input type="text" id="listaNombre" maxlength="120" placeholder="Ej. Vocabulario de alimentos">
+            <label for="listaTipo">Tipo de lista</label>
+            <select id="listaTipo"><option value="elementos">Elementos (una entrada por renglón)</option><option value="guion">Guion (texto completo)</option></select>
+            <p class="nota" id="listaAyuda">En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.</p>
           </div>
           <div>
-            <label for="listaContenido" data-t>Contenido</label>
-            <textarea id="listaContenido" rows="14" maxlength="100000" placeholder="Pega o escribe aquí.&#10;Un elemento por renglón." data-tp="Pega o escribe aquí.&#10;Un elemento por renglón."></textarea>
+            <label for="listaContenido">Contenido</label>
+            <textarea id="listaContenido" rows="14" maxlength="100000" placeholder="Pega o escribe aquí.
+Un elemento por renglón."></textarea>
             <p class="nota" id="listaVistaPrevia"></p>
           </div>
         </div>
         <div class="fila">
-          <button id="bListaGuardar" class="prim" data-t>💾 Guardar lista</button>
-          <button id="bListaCopiar" data-t>Copiar texto</button>
-          <button id="bListaExportar" data-t>⬇️ Exportar TXT</button>
-          <button id="bListaBorrar" class="peligro" data-t>Borrar</button>
+          <button id="bListaGuardar" class="prim">💾 Guardar lista</button>
+          <button id="bListaCopiar">Copiar texto</button>
+          <button id="bListaExportar">⬇️ Exportar TXT</button>
+          <button id="bListaBorrar" class="peligro">Borrar</button>
         </div>
       </div>
-      <p id="listaVacia" class="nota" data-t>Todavía no tienes listas. Crea una o pega texto para comenzar.</p>
+      <p id="listaVacia" class="nota">Todavía no tienes listas. Crea una o pega texto para comenzar.</p>
     </div>
   </section>
 
@@ -212,8 +213,8 @@
     <div class="panel">
       <h2>ℹ️ <span data-t>Acerca de</span></h2>
       <p class="nota"><span data-t>Vírgula · memoria sonora viva · versión</span> <span id="version"></span></p>
-      <div class="fila"><button id="bComprobarActualizaciones" class="chico" data-t>↻ Comprobar actualizaciones</button></div>
-      <p id="estadoActualizaciones" class="nota" role="status" aria-live="polite" data-t>La comprobación se realiza al abrir la aplicación.</p>
+      <div class="fila"><button id="bComprobarActualizaciones" class="chico">↻ Comprobar actualizaciones</button></div>
+      <p id="estadoActualizaciones" class="nota" role="status" aria-live="polite">La comprobación se realiza al abrir la aplicación.</p>
       <p class="nota" data-t>Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.</p>
       <p class="nota" data-t>En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
       <p class="nota" id="creditosIdioma"></p>

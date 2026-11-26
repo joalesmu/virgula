@@ -227,7 +227,13 @@ const Grabadora = {
     G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
     Atras.abrir();   // «atrás» no saca de la app mientras se graba
     G.cuadro = requestAnimationFrame(() => this.medir());
-    $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>' + tH('Grabando'); $('bGrabar').setAttribute('aria-pressed', 'true');
+    // El botón principal pasa a detener cuando la captura ya está lista.
+    // Durante la inicialización G existe, pero todavía no debe aceptar el cierre.
+    G.interfazActiva = true;
+    $('bGrabar').classList.add('on');
+    $('bGrabar').innerHTML = tH('⏹ Detener');
+    $('bGrabar').setAttribute('aria-label', t('⏹ Detener'));
+    $('bGrabar').disabled = false;
     ['bMarcar', 'bRepetirElemento', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
     $('zonaCaptura').classList.add('grabando');
     vibrar(40);
@@ -425,7 +431,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
           }
 
           if (!guardadoPrincipal && !respaldadoTemporal) {
-            throw new Error(t('No se pudo guardar el fragmento en ningún almacén.'));
+            throw new Error('No se pudo guardar el fragmento en ningún almacén.');
           }
 
           if (guardadoPrincipal && nombreTemporal) {
@@ -520,7 +526,8 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
 
       $('bGrabar').classList.remove('on');
       $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar');
-      $('bGrabar').setAttribute('aria-pressed', 'false');
+      $('bGrabar').setAttribute('aria-label', t('Grabar'));
+      $('bGrabar').disabled = false;
 
       ['bMarcar', 'bRepetirElemento', 'bPausa', 'bDetener'].forEach(
         b => $(b).disabled = true
@@ -551,6 +558,10 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
       Bitacora.poner('finalizar', sesion.errorFinalizacion);
 
       if (G === sesion) {
+        // El audio ya está detenido; habilitar ambos accesos para reintentar
+        // el guardado final de los metadatos.
+        $('bGrabar').disabled = false;
+        $('bDetener').disabled = false;
         this.evento(
           t('error al finalizar'),
           sesion.errorFinalizacion
@@ -663,9 +674,14 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
   },
   async detener() {
     if (!G) return;
-    if (G.capturaDetenida) return this.finalizarDetenida(G);
-    $('bDetener').disabled = true;
-    if (G.pausaDesde) await this.pausa();
+    const sesion = G;
+    if (sesion.capturaDetenida) return this.finalizarDetenida(sesion);
+    // Los dos botones llaman a esta misma rutina; el cerrojo evita dos cierres
+    // simultáneos si la persona pulsa ambos o repite el toque.
+    if (sesion.deteniendo) return;
+    sesion.deteniendo = true;
+    ['bGrabar', 'bMarcar', 'bRepetirElemento', 'bPausa', 'bDetener'].forEach(b => { $(b).disabled = true; });
+    if (sesion.pausaDesde) await this.pausa();
     if (!G.finSolicitado) {
     this.evento(t('fin'));
     G.finSolicitado = true;
@@ -697,7 +713,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
               sesion.alVaciar = null;
             }
     
-            mal(new Error(t('El procesador no confirmó el vaciado.')));
+            mal(new Error('El procesador no confirmó el vaciado.'));
           }, 5000);
     
           try {
@@ -718,8 +734,11 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
           e && e.message ? e.message : String(e)
         );
     
+        sesion.deteniendo = false;
         $('bMarcar').disabled = true;
+        $('bRepetirElemento').disabled = true;
         $('bPausa').disabled = true;
+        $('bGrabar').disabled = false;
         $('bDetener').disabled = false;
         // Si el cierre falla, la captura sigue activa: reanudar el guardado periódico
         // para no acumular indefinidamente los siguientes bloques en memoria.
@@ -748,8 +767,11 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
         });
       } catch (e) {
         Bitacora.poner('cierre de consulta', e && e.message ? e.message : String(e));
+        sesion.deteniendo = false;
         $('bMarcar').disabled = true;
+        $('bRepetirElemento').disabled = true;
         $('bPausa').disabled = true;
+        $('bGrabar').disabled = false;
         $('bDetener').disabled = false;
         G.intervalo = setInterval(() => this.cadaSegundo(), 1000);
         G.cuadro = requestAnimationFrame(() => this.medir());
@@ -763,11 +785,11 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
     await this.esperarEscrituras();
     G.stream.getTracks().forEach(t => t.stop()); await G.ctx.close().catch(() => {});
     await this.pantalla(false);
-    const sesion = G;
 
     sesion.capturaDetenida = true;
+    sesion.deteniendo = false;
     sesion.duracionFinal = this.segundos();
-    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => { $(b).disabled = true; });
+    ['bMarcar', 'bPausa', 'bDetener', 'bGrabar'].forEach(b => { $(b).disabled = true; });
 
     await this.finalizarDetenida(sesion);
   },
@@ -795,7 +817,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
       ? `<span class="chip mal">⚠️ ${tH('{n} fragmento(s) sin guardar', { n: fallidos })}</span>
          <button type="button" class="chico" id="bReintentarFallidos"
            ${G.reintentando ? 'disabled' : ''}>
-           ${G.reintentando ? tH('Reintentando…') : tH('↻ Reintentar guardado')}
+           ${tH(G.reintentando ? 'Reintentando…' : '↻ Reintentar guardado')}
          </button>`
       : '',
 
@@ -803,7 +825,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
       ? `<span class="chip mal">⚠️ ${tH('No se pudo guardar el cierre de la grabación.')}</span>
          <button type="button" class="chico" id="bReintentarFinalizacion"
            ${G.finalizando ? 'disabled' : ''}>
-           ${G.finalizando ? tH('Guardando…') : tH('↻ Reintentar finalización')}
+           ${tH(G.finalizando ? 'Guardando…' : '↻ Reintentar finalización')}
          </button>`
       : ''
 
@@ -919,7 +941,7 @@ async function revisarPendientes(
     for (const original of recuperables) {
       try {
         const r = await DB.leer('grabaciones', original.id);
-        if (!r) throw new Error(t('No se encontró la ficha de esta grabación.'));
+        if (!r) throw new Error('No se encontró la ficha de esta grabación.');
         const tr = await Medios.trozos(r);
         let plan = null;
         if (tr.archivo.length) plan = Medios.planArchivo(tr.archivo, r);
@@ -980,7 +1002,11 @@ async function revisarPendientes(
 }
 
 
-$('bGrabar').onclick = () => G ? null : Grabadora.iniciar();
+$('bGrabar').onclick = () => {
+  if (!G) return Grabadora.iniciar();
+  // Durante la preparación de la captura se ignoran toques adicionales.
+  if (G.interfazActiva) return Grabadora.detener();
+};
 $('bMarcar').onclick = () => Grabadora.marcar('siguiente');
 $('bRepetirElemento').onclick = () => Grabadora.marcar('otra vez');
 $('bPausa').onclick = () => Grabadora.pausa();

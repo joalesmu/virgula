@@ -216,7 +216,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   await ListaTrabajo.cargar();
   Ajustes.pintar();
   if (ES_IOS) $('avisoIos').classList.remove('oculto');
-  $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
+  $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bGrabar').setAttribute('aria-label', t('Grabar')); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
   let resultadoTemporal = {
     recuperados: 0,
     pendientes: 0,
