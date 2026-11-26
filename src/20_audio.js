@@ -425,7 +425,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
           }
 
           if (!guardadoPrincipal && !respaldadoTemporal) {
-            throw new Error('No se pudo guardar el fragmento en ningún almacén.');
+            throw new Error(t('No se pudo guardar el fragmento en ningún almacén.'));
           }
 
           if (guardadoPrincipal && nombreTemporal) {
@@ -697,7 +697,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
               sesion.alVaciar = null;
             }
     
-            mal(new Error('El procesador no confirmó el vaciado.'));
+            mal(new Error(t('El procesador no confirmó el vaciado.')));
           }, 5000);
     
           try {
@@ -795,7 +795,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
       ? `<span class="chip mal">⚠️ ${tH('{n} fragmento(s) sin guardar', { n: fallidos })}</span>
          <button type="button" class="chico" id="bReintentarFallidos"
            ${G.reintentando ? 'disabled' : ''}>
-           ${tH(G.reintentando ? 'Reintentando…' : '↻ Reintentar guardado')}
+           ${G.reintentando ? tH('Reintentando…') : tH('↻ Reintentar guardado')}
          </button>`
       : '',
 
@@ -803,7 +803,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
       ? `<span class="chip mal">⚠️ ${tH('No se pudo guardar el cierre de la grabación.')}</span>
          <button type="button" class="chico" id="bReintentarFinalizacion"
            ${G.finalizando ? 'disabled' : ''}>
-           ${tH(G.finalizando ? 'Guardando…' : '↻ Reintentar finalización')}
+           ${G.finalizando ? tH('Guardando…') : tH('↻ Reintentar finalización')}
          </button>`
       : ''
 
@@ -919,7 +919,7 @@ async function revisarPendientes(
     for (const original of recuperables) {
       try {
         const r = await DB.leer('grabaciones', original.id);
-        if (!r) throw new Error('No se encontró la ficha de esta grabación.');
+        if (!r) throw new Error(t('No se encontró la ficha de esta grabación.'));
         const tr = await Medios.trozos(r);
         let plan = null;
         if (tr.archivo.length) plan = Medios.planArchivo(tr.archivo, r);

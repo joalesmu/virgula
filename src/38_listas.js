@@ -42,7 +42,7 @@ const ListaTrabajo = {
   async instantaneaSeleccionada() {
     if (!this.seleccionGrabacion) return null;
     const l = await this.obtener(this.seleccionGrabacion);
-    if (!l) throw new Error('La lista seleccionada ya no existe.');
+    if (!l) throw new Error(t('La lista seleccionada ya no existe.'));
     return JSON.parse(JSON.stringify(l));
   },
   async seleccionarGrabacion(id) {

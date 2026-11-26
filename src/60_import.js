@@ -246,12 +246,12 @@ const Importar = {
       if (r == null || r === '') return null;
       if (typeof r !== 'string' || r.startsWith('/') || r.includes('\\') ||
           r.split('/').some(x => !x || x === '.' || x === '..')) {
-        throw new Error('El paquete contiene una ruta de archivo no válida.');
+        throw new Error(t('El paquete contiene una ruta de archivo no válida.'));
       }
       return this.raiz + r;
     };
 
-    if (G && G.id === g.id) throw new Error('No se puede reemplazar una grabación que está abierta.');
+    if (G && G.id === g.id) throw new Error(t('No se puede reemplazar una grabación que está abierta.'));
 
     const reg = JSON.parse(JSON.stringify(g));
     Object.assign(reg, { estado: 'lista', respaldo: ahora, modificada: ahora, importada: ahora });
@@ -277,7 +277,7 @@ const Importar = {
       const d = w && await pcmDeWav(w);
       if (d) {
         const frames = d.datos.size / (2 * d.ch);
-        if (!Number.isSafeInteger(frames) || frames <= 0) throw new Error('El WAV importado tiene una duración inválida.');
+        if (!Number.isSafeInteger(frames) || frames <= 0) throw new Error(t('El WAV importado tiene una duración inválida.'));
         trozosNuevos.push({
           grabacion: reg.id,
           tipo: 'archivo',
@@ -293,7 +293,7 @@ const Importar = {
         reg.duracion = frames / d.sr;
         bytesArchivo = d.datos.size;
       } else {
-        if (reemplazar) throw new Error('No se pudo leer el WAV del paquete; la grabación anterior se conserva.');
+        if (reemplazar) throw new Error(t('No se pudo leer el WAV del paquete; la grabación anterior se conserva.'));
         avisos.push(t('falta o no es compatible el WAV de «{titulo}»', { titulo: reg.ficha.titulo }));
         reg.tecnica.conArchivo = false;
         reg.frames = 0;
@@ -317,7 +317,7 @@ const Importar = {
         reg.tecnica.conConsulta = true;
         bytesConsulta = c.size;
       } else {
-        if (reemplazar) throw new Error('No se pudo leer el audio de consulta; la grabación anterior se conserva.');
+        if (reemplazar) throw new Error(t('No se pudo leer el audio de consulta; la grabación anterior se conserva.'));
         avisos.push(t('falta la consulta de «{titulo}»', { titulo: reg.ficha.titulo }));
         reg.tecnica.conConsulta = false;
         reg.tecnica.mime = '';
@@ -329,12 +329,12 @@ const Importar = {
 
     for (const a of adjuntos) {
       if (!a || typeof a.id !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(a.id)) {
-        throw new Error('El paquete contiene un adjunto con código no válido.');
+        throw new Error(t('El paquete contiene un adjunto con código no válido.'));
       }
       if (!a.archivo) continue;
       const b = await z.leer(ruta(a.archivo));
       if (!b) {
-        if (reemplazar) throw new Error(`No se pudo leer el adjunto «${a.nombre || a.id}»; la grabación anterior se conserva.`);
+        if (reemplazar) throw new Error(t('No se pudo leer el adjunto «{nombre}»; la grabación anterior se conserva.', { nombre: a.nombre || a.id }));
         avisos.push(t('falta el adjunto «{nombre}»', { nombre: a.nombre || a.id }));
         continue;
       }

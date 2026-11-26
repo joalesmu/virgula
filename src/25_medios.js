@@ -23,7 +23,7 @@ async trozos(reg) {
             `${reg.id} · ${respaldo.tipo} · ${respaldo.n}`
           );
           throw new Error(
-            'No se pudo comprobar la integridad de uno de los audios. Se conservan ambas copias.'
+            t('No se pudo comprobar la integridad de uno de los audios. Se conservan ambas copias.')
           );
         }
       }
@@ -32,12 +32,12 @@ async trozos(reg) {
         .map(x => x.inicioFrame)
         .filter(Number.isSafeInteger);
       if (new Set(posiciones).size > 1) {
-        throw new Error('Hay copias del mismo fragmento con posiciones temporales diferentes.');
+        throw new Error(t('Hay copias del mismo fragmento con posiciones temporales diferentes.'));
       }
 
       if (Number.isSafeInteger(respaldo.inicioFrame)) {
         if (posiciones.length && posiciones[0] !== respaldo.inicioFrame) {
-          throw new Error('El respaldo y el fragmento principal tienen posiciones temporales diferentes.');
+          throw new Error(t('El respaldo y el fragmento principal tienen posiciones temporales diferentes.'));
         }
         if (!posiciones.length) {
           await DB.fijarInicioFrame(
@@ -63,11 +63,11 @@ async trozos(reg) {
     if (respaldo.tipo === 'archivo') {
       const canales = reg.tecnica && reg.tecnica.canales;
       if (canales !== 1 && canales !== 2) {
-        throw new Error('No se pudo determinar el número de canales del audio.');
+        throw new Error(t('No se pudo determinar el número de canales del audio.'));
       }
       frames = datos.size / (2 * canales);
       if (!Number.isSafeInteger(frames)) {
-        throw new Error('El tamaño del audio temporal no es válido.');
+        throw new Error(t('El tamaño del audio temporal no es válido.'));
       }
     }
 
@@ -101,7 +101,7 @@ async trozos(reg) {
     const canales = tecnica.canales;
     const sr = tecnica.sr;
     if ((canales !== 1 && canales !== 2) || !Number.isSafeInteger(sr) || sr < 8000) {
-      throw new Error('La ficha no contiene una frecuencia o cantidad de canales válida.');
+      throw new Error(t('La ficha no contiene una frecuencia o cantidad de canales válida.'));
     }
 
     const unidad = canales * 2;
@@ -111,23 +111,23 @@ async trozos(reg) {
 
     for (const x of ordenados) {
       if (!x.datos || !Number.isSafeInteger(x.datos.size) || x.datos.size <= 0 || x.datos.size % unidad) {
-        throw new Error(`El fragmento ${x.n} contiene PCM incompleto o inválido.`);
+        throw new Error(t('El fragmento {n} contiene PCM incompleto o inválido.', { n: x.n }));
       }
 
       const frames = x.datos.size / unidad;
       if (x.frames != null && x.frames !== 0 && x.frames !== frames) {
-        throw new Error(`La duración declarada del fragmento ${x.n} no coincide con sus datos.`);
+        throw new Error(t('La duración declarada del fragmento {n} no coincide con sus datos.', { n: x.n }));
       }
 
       if (x.inicioFrame != null && (!Number.isSafeInteger(x.inicioFrame) || x.inicioFrame < 0)) {
-        throw new Error(`La posición temporal del fragmento ${x.n} no es válida.`);
+        throw new Error(t('La posición temporal del fragmento {n} no es válida.', { n: x.n }));
       }
 
       // Los registros antiguos no tenían inicioFrame: se interpretan en secuencia.
       const inicioFrame = x.inicioFrame == null ? cursor : x.inicioFrame;
       const finFrame = inicioFrame + frames;
       if (!Number.isSafeInteger(finFrame) || inicioFrame < cursor) {
-        throw new Error(`Los fragmentos PCM se superponen o exceden el límite temporal en el fragmento ${x.n}.`);
+        throw new Error(t('Los fragmentos PCM se superponen o exceden el límite temporal en el fragmento {n}.', { n: x.n }));
       }
 
       partes.push({ ...x, inicioFrame, frames, finFrame });
@@ -140,7 +140,7 @@ async trozos(reg) {
     const frames = Math.max(cursor, declarado);
     const bytes = frames * unidad;
     if (!Number.isSafeInteger(bytes)) {
-      throw new Error('La grabación supera el tamaño que puede reconstruirse de forma segura.');
+      throw new Error(t('La grabación supera el tamaño que puede reconstruirse de forma segura.'));
     }
 
     return { partes, frames, bytes, canales, sr, unidad };
@@ -168,7 +168,7 @@ async trozos(reg) {
       if (b <= a) continue;
       if (a > cursor) agregarSilencio((a - cursor) * plan.unidad);
       if (a < cursor) {
-        throw new Error('Se detectó una superposición al reconstruir el audio.');
+        throw new Error(t('Se detectó una superposición al reconstruir el audio.'));
       }
       const desplazamiento = (a - x.inicioFrame) * plan.unidad;
       const longitud = (b - a) * plan.unidad;
@@ -192,7 +192,7 @@ async trozos(reg) {
       const extras = bwf ? metaWav(reg) : [];
       const bytesExtras = extras.reduce((a, x) => a + x.byteLength, 0);
       if (36 + bytesExtras + plan.bytes > 0xffffffff) {
-        throw new Error('El WAV supera el límite del formato RIFF. Exporta una grabación más corta o solo la consulta.');
+        throw new Error(t('El WAV supera el límite del formato RIFF. Exporta una grabación más corta o solo la consulta.'));
       }
       const pcm = this.pcmDesdePlan(plan);
       r.wav = new File([

@@ -1,6 +1,6 @@
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
 const VERSION = '1.0.0';
-const BUILD_INTERNO = '1.3.3';
+const BUILD_INTERNO = '1.3.4';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
@@ -85,11 +85,11 @@ const DB = {
     if (iguales.length) {
       for (const anterior of iguales) {
         if (!await mismosDatos(anterior.datos, registro.datos)) {
-          throw new Error('Ya existe un fragmento con la misma identidad y datos diferentes.');
+          throw new Error(t('Ya existe un fragmento con la misma identidad y datos diferentes.'));
         }
         const a = anterior.inicioFrame, b = registro.inicioFrame;
         if (Number.isSafeInteger(a) && Number.isSafeInteger(b) && a !== b) {
-          throw new Error('El fragmento duplicado tiene una posición temporal diferente.');
+          throw new Error(t('El fragmento duplicado tiene una posición temporal diferente.'));
         }
       }
 
@@ -124,7 +124,7 @@ const DB = {
       };
       x.oncomplete = () => ok(cambios);
       x.onerror = () => mal(x.error);
-      x.onabort = () => mal(x.error || new Error('No se pudo actualizar la posición del fragmento.'));
+      x.onabort = () => mal(x.error || new Error(t('No se pudo actualizar la posición del fragmento.')));
     });
   },
   async prepararBorradoOPFS(id) {
@@ -132,7 +132,7 @@ const DB = {
     // nunca elimina la única copia que contenía un fragmento.
     const resultado = await RespaldoTemporal.recuperar();
     if ((resultado.grabacionesPendientes || []).includes(id)) {
-      throw new Error('No se pudieron integrar todos los respaldos temporales de esta grabación.');
+      throw new Error(t('No se pudieron integrar todos los respaldos temporales de esta grabación.'));
     }
     await RespaldoTemporal.borrarGrabacion(id);
   },
@@ -148,7 +148,7 @@ const DB = {
       });
       x.oncomplete = ok;
       x.onerror = () => mal(x.error);
-      x.onabort = () => mal(x.error || new Error('No se pudo borrar la grabación.'));
+      x.onabort = () => mal(x.error || new Error(t('No se pudo borrar la grabación.')));
     });
   },
   async guardarImportacion(registro, trozosNuevos, adjuntosNuevos, reemplazar = false) {
@@ -156,21 +156,21 @@ const DB = {
     if (reemplazar) {
       await this.prepararBorradoOPFS(id);
     } else if (await this.leer('grabaciones', id)) {
-      throw new Error('Ya existe una grabación con ese código.');
+      throw new Error(t('Ya existe una grabación con ese código.'));
     }
 
     const idsAdjuntos = new Set();
     for (const adjunto of adjuntosNuevos) {
       if (!adjunto || typeof adjunto.id !== 'string' || !adjunto.id) {
-        throw new Error('La importación contiene un adjunto sin código válido.');
+        throw new Error(t('La importación contiene un adjunto sin código válido.'));
       }
       if (idsAdjuntos.has(adjunto.id)) {
-        throw new Error('La importación contiene códigos de adjunto repetidos.');
+        throw new Error(t('La importación contiene códigos de adjunto repetidos.'));
       }
       idsAdjuntos.add(adjunto.id);
       const existente = await this.leer('adjuntos', adjunto.id);
       if (existente && (!reemplazar || existente.grabacion !== id)) {
-        throw new Error('El código de un adjunto ya pertenece a otra grabación.');
+        throw new Error(t('El código de un adjunto ya pertenece a otra grabación.'));
       }
     }
 
@@ -201,7 +201,7 @@ const DB = {
 
       x.oncomplete = () => ok(true);
       x.onerror = () => mal(x.error);
-      x.onabort = () => mal(x.error || new Error('No se pudo completar la importación.'));
+      x.onabort = () => mal(x.error || new Error(t('No se pudo completar la importación.')));
     });
   }
 };
@@ -222,7 +222,7 @@ const RespaldoTemporal = {
 
   async abrir() {
     if (!this.disponible()) {
-      throw new Error('El navegador no admite respaldo temporal OPFS.');
+      throw new Error(t('El navegador no admite respaldo temporal OPFS.'));
     }
 
     if (!this.directorio) {
@@ -347,11 +347,11 @@ const RespaldoTemporal = {
         if (respaldo.tipo === 'archivo') {
           const canales = reg.tecnica && reg.tecnica.canales;
           if (canales !== 1 && canales !== 2) {
-            throw new Error('No se pudo determinar el número de canales.');
+            throw new Error(t('No se pudo determinar el número de canales.'));
           }
           frames = respaldo.archivo.size / (2 * canales);
           if (!Number.isSafeInteger(frames)) {
-            throw new Error('El tamaño del audio PCM no es válido.');
+            throw new Error(t('El tamaño del audio PCM no es válido.'));
           }
         }
 
@@ -402,9 +402,9 @@ const RespaldoTemporal = {
         if (canales === 1 || canales === 2) {
           for (const x of archivo) {
             const fr = x.datos.size / (2 * canales);
-            if (!Number.isSafeInteger(fr)) throw new Error('Un fragmento PCM tiene un tamaño inválido.');
+            if (!Number.isSafeInteger(fr)) throw new Error(t('Un fragmento PCM tiene un tamaño inválido.'));
             const inicio = Number.isSafeInteger(x.inicioFrame) ? x.inicioFrame : cursor;
-            if (inicio < cursor) throw new Error('Los fragmentos recuperados se superponen en el tiempo.');
+            if (inicio < cursor) throw new Error(t('Los fragmentos recuperados se superponen en el tiempo.'));
             cursor = inicio + fr;
           }
           reg.frames = Math.max(Number.isSafeInteger(reg.frames) ? reg.frames : 0, cursor);

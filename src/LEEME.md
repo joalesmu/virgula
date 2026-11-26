@@ -1,6 +1,6 @@
 # Código fuente modular de Vírgula 1.0.0
 
-Esta carpeta contiene las fuentes que generan el `index.html` público. El identificador de esta compilación interna es `1.3.3`; no representa una versión pública independiente.
+Esta carpeta contiene las fuentes que generan el `index.html` público. El identificador de esta compilación interna es `1.3.4`; no representa una versión pública independiente.
 
 ## Archivos y orden de carga
 
@@ -36,7 +36,7 @@ El constructor exige, entre otros, `00_head.html`, `01_body.html`, `05_idioma.js
 ## Versiones
 
 - Versión pública: `1.0.0`.
-- Compilación interna: `1.3.3`.
-- Service Worker correspondiente: `virgula-1.0.0-build-1.3.3`.
+- Compilación interna: `1.3.4`.
+- Service Worker correspondiente: `virgula-1.0.0-build-1.3.4`.
 
 Al preparar otro lanzamiento, actualiza `BUILD_INTERNO` en `10_base.js` y la constante `VERSION` en `sw.js`; luego construye de nuevo y ejecuta las pruebas.
