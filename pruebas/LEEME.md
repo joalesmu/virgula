@@ -1,6 +1,6 @@
 # Pruebas automatizadas de Vírgula 1.0.0
 
-Estas pruebas de extremo a extremo usan Playwright y Chromium. La versión pública esperada es `1.0.0`; las pruebas también comprueban que el Service Worker y el HTML tengan la misma compilación interna (`1.3.3`).
+Estas pruebas de extremo a extremo usan Playwright y Chromium. La versión pública esperada es `1.0.0`; las pruebas también comprueban que el Service Worker y el HTML tengan la misma compilación interna (`1.3.4`).
 
 ## Requisitos
 

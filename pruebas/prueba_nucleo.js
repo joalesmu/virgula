@@ -10,7 +10,7 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'BORRAR' : undefined));
   await p.goto(BASE); await p.waitForTimeout(800);
   ok(await p.textContent('#version') === '1.0.0', 'versión pública visible');
-  ok(await p.evaluate(() => BUILD_INTERNO) === '1.3.3', 'compilación interna registrada');
+  ok(await p.evaluate(() => BUILD_INTERNO) === '1.3.4', 'compilación interna registrada');
   await p.screenshot({ path: OUT + '/1_grabar.png' });
   // Grabar
   await p.click('#bGrabar'); await p.waitForTimeout(3000);
