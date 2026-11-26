@@ -10,6 +10,7 @@ const CORREO_PROYECTO = 'joalesmu@gmail.com';
 const REPO = 'https://github.com/joalesmu/virgula';
 const FORMATO_IDIOMA = 'virgula-idioma-1';
 const RE_VAR = /\{(\w+)\}/g;
+const APPWEB = 'https://joalesmu.github.io/virgula/';
 
 const Idioma = {
   codigo: 'es', locale: 'es-MX', textos: {}, paquete: null, instalados: [],
@@ -175,3 +176,4 @@ function leerCsv(txt) {
   if (campo || fila.length) { fila.push(campo); filas.push(fila); }
   return filas.filter(f => f.some(x => x.trim()));
 }
+

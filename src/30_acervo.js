@@ -23,7 +23,7 @@ const Acervo = {
       const f = r.ficha, c = f.consentimiento.estado, clips = (r.clips || []).filter(x => !x.descartado).length, faltan = Plantillas.faltan(r).filter(x => x !== t('Consentimiento')).length;
       return `<div class="tarjeta"><input type="checkbox" data-sel="${r.id}" ${this.sel.has(r.id) ? 'checked' : ''} aria-label="${tH('Elegir {titulo}', { titulo: f.titulo })}">
         <div class="cuerpo" data-abrir="${r.id}"><h3>${esc(f.titulo)}</h3>
-        <div class="nota">${fechaBonita(r.creada)} · ${reloj(r.duracion)}${f.lugar ? ' · ' + esc(f.lugar) : ''} · 🧩 ${esc(Plantillas.nombre(Plantillas.de(f.plantilla && f.plantilla.id)))}</div>
+        <div class="nota">${fechaBonita(r.creada)} · ${reloj(r.duracion)}${f.lugar ? ' · ' + esc(f.lugar) : ''} · 🧩 ${esc(Plantillas.nombre(f.plantillaDef || Plantillas.de(f.plantilla && f.plantilla.id)))}</div>
         <div>${chip(c === 'otorgado' ? tH('✔ consentimiento') : c === 'no aplica' ? tH('consentimiento no aplica') : tH('⏳ consentimiento pendiente'), c === 'pendiente' ? 'aviso' : 'ok')}
         ${faltan ? chip(tH('📝 faltan {n} dato(s)', { n: faltan }), 'aviso') : ''}
         ${clips ? chip(tH('🔖 {n} clip(s)', { n: clips })) : ''}${adj[r.id] ? chip('📎 ' + adj[r.id]) : ''}${f.transcripcion.texto ? chip(tH('✍️ transcripción')) : ''}${(f.traducciones || []).length ? chip(tH('🌐 {n} traducción(es)', { n: f.traducciones.length })) : ''}
@@ -56,3 +56,4 @@ const Recordatorio = {
     $('bRecordarManana').onclick = async () => { Ajustes.v.recordarDesde = Date.now() + 86400000; await Ajustes.guardar(); d.innerHTML = ''; };
   }
 };
+

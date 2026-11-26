@@ -39,7 +39,7 @@ $('bReportar').onclick = async () => {
   $('repNo').onclick = () => Ventana.cerrar();
   $('repOk').onclick = async () => {
     const e = await Espacio.datos().catch(() => null), regs = await DB.todas('grabaciones').catch(() => []), ult = regs.sort((a, b) => b.creada - a.creada)[0], v = Ajustes.v;
-    const informe = [`Vírgula ${VERSION} · ${new Date().toISOString()}`, `${t('Qué pasó')}: ${$('repQue').value.trim() || '—'}`, '',
+    const informe = [`Vírgula ${VERSION} · ${new Date().toISOString()}`, `Compilación interna: ${BUILD_INTERNO}`, `${t('Qué pasó')}: ${$('repQue').value.trim() || '—'}`, '',
       `UA: ${navigator.userAgent}`, `${t('Instalada')}: ${matchMedia('(display-mode: standalone)').matches ? t('sí') : t('no')} · ${t('Idioma')}: ${Idioma.codigo}`,
       `${t('Espacio')}: ${e ? mb(e.usado) + ' / ' + mb(e.cuota) : '—'} · ${t('Grabaciones')}: ${regs.length}`,
       `${t('Ajustes')}: calidad=${v.calidad} canales=${v.canales} volAuto=${v.volAuto} ruido=${v.ruido} eco=${v.eco} mic=${v.mic ? 'externo' : 'predeterminado'}`,
@@ -59,6 +59,38 @@ $('bReportar').onclick = async () => {
   };
 };
 
+/* ── Compartir la aplicación ── */
+async function compartirApp() {
+  const datos = {
+    title: 'Vírgula · memoria sonora viva',
+    text: 'Una herramienta para grabar, documentar y preservar la memoria sonora.',
+    url: APPWEB
+  };
+
+  try {
+    if (navigator.share) {
+      await navigator.share(datos);
+      return;
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+  }
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(APPWEB);
+      avisar(t('🔗 Enlace copiado. Ya puedes compartirlo.'));
+    } else {
+      window.prompt(t('Copia el enlace de Vírgula:'), APPWEB);
+    }
+  } catch (e) {
+    window.prompt(t('Copia el enlace de Vírgula:'), APPWEB);
+  }
+}
+
+$('bCompartir').onclick = compartirApp;
+
+  
 /* ── Instalar como app ── */
 let pedidoInstalar = null;
 if (ES_IOS && !INSTALADA) $('bInstalar').classList.remove('oculto');   // en iPhone no hay aviso automático: se explica cómo
@@ -75,24 +107,104 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedido
 $('bInstalar').onclick = async () => { if (ES_IOS && !pedidoInstalar) return instruccionesIos(); if (!pedidoInstalar) return; pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; $('bInstalar').classList.add('oculto'); };
 window.addEventListener('appinstalled', () => { $('bInstalar').classList.add('oculto'); avisar(t('✅ Vírgula quedó instalada.')); });
 
-/* ── Sin conexión; avisa cuando hay versión nueva (nunca recarga en medio de una grabación) ── */
+/* ── Actualizaciones: comprobación automática y manual, sin interrumpir grabaciones ── */
+let registroSW = null;
+let trabajadorPendiente = null;
+let recargaActualizacionPendiente = false;
+let controladorEstablecido = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+let ultimaComprobacionSW = 0;
+
+function estadoActualizacion(mensaje, tipo = '') {
+  const el = $('estadoActualizaciones');
+  if (el) { el.textContent = t(mensaje); el.className = 'nota' + (tipo ? ' ' + tipo : ''); }
+}
+
+function mostrarActualizacionDisponible(worker) {
+  trabajadorPendiente = worker || (registroSW && registroSW.waiting) || null;
+  if (!trabajadorPendiente) return;
+  const aviso = $('avisoActualizacion');
+  aviso.classList.remove('oculto', 'aviso'); aviso.classList.add('ok');
+  aviso.innerHTML = `${tH('✨ Hay una versión nueva de Vírgula disponible.')} <div class="fila fija"><button class="chico prim" id="bActualizar">${tH('Actualizar ahora')}</button></div>`;
+  $('bActualizar').onclick = () => {
+    if (G) return avisar(t('Termina la grabación antes de actualizar. La nueva versión permanecerá pendiente.'));
+    if (!trabajadorPendiente) return avisar(t('La actualización ya no está pendiente. Comprueba de nuevo.'));
+    trabajadorPendiente.postMessage('saltar');
+    estadoActualizacion('Preparando la actualización…');
+  };
+  estadoActualizacion('Hay una actualización lista para instalar.', 'ok');
+}
+
+async function comprobarActualizaciones(manual = false) {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') {
+    estadoActualizacion('Este navegador no permite actualizar Vírgula como aplicación instalada.', 'aviso');
+    return;
+  }
+  if (!navigator.onLine) {
+    estadoActualizacion('No hay conexión. No se pudo comprobar si existe una versión nueva.', 'aviso');
+    if (manual) avisar(t('Conéctate a internet para comprobar actualizaciones.'));
+    return;
+  }
+  try {
+    if (!registroSW) registroSW = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+    if (registroSW.waiting) { mostrarActualizacionDisponible(registroSW.waiting); return; }
+    estadoActualizacion('Buscando actualizaciones…');
+    await registroSW.update();
+    ultimaComprobacionSW = Date.now();
+    if (registroSW.waiting) {
+      mostrarActualizacionDisponible(registroSW.waiting);
+    } else if (registroSW.installing) {
+      const instalando = registroSW.installing;
+      if (instalando.state === 'installed' && navigator.serviceWorker.controller) { mostrarActualizacionDisponible(registroSW.waiting || instalando); return; }
+      estadoActualizacion('Se encontró una versión nueva. Se está descargando…');
+      instalando.addEventListener('statechange', () => {
+        if (instalando.state === 'installed' && navigator.serviceWorker.controller) mostrarActualizacionDisponible(registroSW.waiting || instalando);
+        if (instalando.state === 'redundant') estadoActualizacion('No se pudo instalar la actualización. Revisa la conexión e inténtalo de nuevo.', 'aviso');
+      });
+    } else {
+      estadoActualizacion('Vírgula está actualizada.', 'ok');
+      if (manual) avisar(t('✅ Vírgula está actualizada.'));
+    }
+  } catch (e) {
+    Bitacora.poner('comprobar actualización', e && e.message ? e.message : String(e));
+    estadoActualizacion('No se pudo comprobar la actualización. Revisa la conexión e inténtalo de nuevo.', 'aviso');
+    if (manual) avisar(t('No se pudo comprobar la actualización. Revisa la conexión.'));
+  }
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  const habia = !!navigator.serviceWorker.controller;   // en la primera visita no se recarga
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (habia && !G) location.reload(); });
-  navigator.serviceWorker.register('sw.js').then(r => {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!controladorEstablecido) { controladorEstablecido = true; return; }
+    if (G || Nav.actual === 'vFicha') {
+      recargaActualizacionPendiente = true;
+      estadoActualizacion('La versión nueva está activa. Recarga Vírgula cuando termines de trabajar.', 'ok');
+      $('avisoActualizacion').classList.remove('oculto');
+      $('avisoActualizacion').innerHTML = `${tH('La actualización está lista.')} <div class="fila fija"><button class="chico prim" id="bRecargarActualizada">${tH('Recargar ahora')}</button></div>`;
+      $('bRecargarActualizada').onclick = () => {
+        if (G) return avisar(t('Termina la grabación antes de recargar.'));
+        recargaActualizacionPendiente = false; location.reload();
+      };
+      return;
+    }
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => {
+    registroSW = r;
+    if (r.waiting) mostrarActualizacionDisponible(r.waiting);
     r.addEventListener('updatefound', () => {
       const n = r.installing; if (!n) return;
       n.addEventListener('statechange', () => {
-        if (n.state === 'installed' && navigator.serviceWorker.controller) {
-          const b = $('avisoRecuperar');
-          if (!b.classList.contains('oculto')) return;
-          b.classList.remove('oculto', 'aviso'); b.classList.add('ok');
-          b.innerHTML = `${tH('✨ Hay una versión nueva de Vírgula.')} <div class="fila fija"><button class="chico prim" id="bActualizar">${tH('Actualizar ahora')}</button></div>`;
-          $('bActualizar').onclick = () => { if (G) return avisar(t('Termina la grabación antes de actualizar.')); n.postMessage('saltar'); };
-        }
+        if (n.state === 'installed' && navigator.serviceWorker.controller) mostrarActualizacionDisponible(r.waiting || n);
+        if (n.state === 'redundant') Bitacora.poner('service worker', 'La nueva versión no pudo instalarse.');
       });
     });
-  }).catch(() => {});
+    comprobarActualizaciones(false);
+  }).catch(e => {
+    Bitacora.poner('registro service worker', e && e.message ? e.message : String(e));
+    estadoActualizacion('No se pudo registrar el sistema de actualizaciones.', 'aviso');
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - ultimaComprobacionSW > 5 * 60 * 1000) comprobarActualizaciones(false);
+  });
 }
 
 (async () => {
@@ -101,11 +213,36 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   await Ajustes.cargar();
   await Idioma.cargar();
   await Plantillas.cargar();
+  await ListaTrabajo.cargar();
   Ajustes.pintar();
   if (ES_IOS) $('avisoIos').classList.remove('oculto');
   $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
-  await revisarPendientes();
-  Espacio.actualizar(); Recordatorio.revisar();
+  let resultadoTemporal = {
+    recuperados: 0,
+    pendientes: 0,
+    grabacionesPendientes: []
+  };
+
+  let recuperacionComprobada = true;
+
+  try {
+    resultadoTemporal = await RespaldoTemporal.recuperar();
+  } catch (e) {
+    recuperacionComprobada = false;
+    Bitacora.poner(
+      'recuperación OPFS',
+      e && e.message ? e.message : String(e)
+    );
+  }
+
+  await revisarPendientes(
+    resultadoTemporal.grabacionesPendientes || [],
+    recuperacionComprobada
+  );
+
+  Espacio.actualizar();
+  Recordatorio.revisar();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) Recordatorio.revisar(); });
   if (new URLSearchParams(location.search).get('v') === 'acervo') Nav.ir('vAcervo');
 })();
+

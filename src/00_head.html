@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1e3a5f">
+<meta name="theme-color" content="#14283b">
 <meta name="description" content="Vírgula · memoria sonora viva. Grabadora de campo: graba en un toque, documenta cada sonido con su ficha y exporta audios y fichas.">
 <title>Vírgula</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -47,6 +47,37 @@
   body{font-size:1rem}
   body{padding:max(10px,env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom))}
   main{max-width:45rem;margin:0 auto}
+  .lista-grabacion{display:grid;grid-template-columns:1fr;gap:10px}
+  .lista-grabacion .lista-controles{min-width:0}
+  .zona-captura{position:relative}
+  .barra-controles-grabacion{max-width:54rem;margin:8px auto}
+  .barra-controles-grabacion .controles{margin-top:0}
+  /* Durante la grabación, los controles permanecen a la vista al consultar la lista. */
+  .zona-captura.grabando .barra-controles-grabacion{
+    position:sticky;top:max(6px,env(safe-area-inset-top));z-index:30;
+    padding:8px;background:var(--panel);border:1px solid var(--borde);
+    border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.28)
+  }
+  .lista-lectura{background:var(--fondo);border:1px solid var(--borde);border-radius:12px;padding:12px;min-width:0}
+  .lista-actual{background:var(--panel2);border-radius:10px;padding:12px;margin-bottom:10px;text-align:center}
+  .lista-actual .meta{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px;color:var(--suave);font-size:0.8125rem;text-align:left}
+  .lista-actual .valor{font-size:clamp(1.5rem,5vw,2.25rem);font-weight:800;overflow-wrap:anywhere}
+  .lista-elementos{padding-left:2rem;margin:8px 0 0;display:grid;grid-template-columns:1fr;gap:4px}
+  .lista-elementos li{padding:5px 7px;border-radius:8px;overflow-wrap:anywhere}
+  .lista-elementos li.actual{background:var(--panel2);outline:2px solid var(--acento);font-weight:800}
+  .lista-elementos li.completado{color:var(--suave)}
+  .lista-guion{white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;background:var(--fondo);border-radius:10px;padding:12px}
+  .plantilla-detalle{background:var(--panel2);border:1px solid var(--borde);border-radius:12px;padding:12px;margin-top:10px}
+  .lista-campos{padding-left:1.25rem;line-height:1.5}.lista-campos li{padding:5px 0;border-bottom:1px solid var(--borde)}
+  .icono-accesibilidad{width:1.35em;height:1.35em;vertical-align:-.28em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  @media(min-width:900px){
+    main{max-width:72rem}
+    #zonaCaptura>.panel:first-child,#zonaCaptura>.panel-estado-grabacion{max-width:54rem;margin-left:auto;margin-right:auto}
+    .lista-grabacion{grid-template-columns:minmax(250px,.75fr) minmax(0,1.8fr);align-items:start}
+    .lista-elementos{grid-template-columns:repeat(3,minmax(0,1fr));padding-left:1.5rem}
+    #vListas .lista-editor-grid{display:grid;grid-template-columns:minmax(230px,.7fr) minmax(0,1.8fr);gap:12px;align-items:start}
+  }
+  @media(min-width:600px) and (max-width:899px){.lista-elementos{grid-template-columns:repeat(2,minmax(0,1fr))}}
   a{color:var(--azul)}
   h1{font-size:1.25rem;margin:0}
   h2{font-size:1.0625rem;margin:0 0 8px}
@@ -94,10 +125,11 @@
   .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:8px 0 4px}
   .medidor i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--verde) 0 70%,var(--ambar) 70% 88%,var(--rojo) 88%)}
   .medidor b{position:absolute;top:0;bottom:0;width:2px;background:var(--texto);left:0}
-  .controles{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controles{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:10px}
+  @media(min-width:650px){.controles{grid-template-columns:1.3fr 1fr 1fr 1fr}}
   .controles button{min-height:4.5rem;font-size:1.0625rem}
+  @media(max-width:649px){.zona-captura.grabando .barra-controles-grabacion .controles button{min-height:3.75rem;font-size:0.96875rem;padding:8px 9px}}
   #bMarcar{background:var(--acento);color:var(--sobreAcento);font-weight:800}
-  #bMarcar small{display:block;font-weight:500;font-size:0.75rem}
   .resumen-ajustes{text-align:center;color:var(--suave);font-size:0.8125rem}
   /* Acervo */
   .tarjeta{background:var(--panel);border:var(--linea) solid var(--borde);border-radius:14px;padding:12px;margin:8px 0;display:flex;gap:10px;align-items:flex-start}
@@ -128,5 +160,331 @@
   :root[data-tema="claro"] nav.abajo button.on{background:var(--panel2)}
   :root[data-tema="claro"] .ventana{box-shadow:0 -6px 30px rgba(0,0,0,.25)}
   .aviso-ios{font-size:0.8125rem}
+
+
+  /* ═════════════════ DIRECCIÓN VISUAL · CUADERNO DE CAMPO SONORO ═════════════════ */
+  :root{
+    --fondo:#101f30;
+    --panel:#182f45;
+    --panel2:#203b52;
+    --borde:#36536a;
+    --texto:#f2f5f4;
+    --suave:#b4c4cd;
+    --acento:#f1c65b;
+    --sobreAcento:#172b3c;
+    --rojo:#e7655c;
+    --verde:#55b8a7;
+    --ambar:#e7a64c;
+    --azul:#75c5d2;
+    --barra:rgba(11,25,39,.96);
+    --peligro:#9e454a;
+    --avisoF:#3d321e;
+    --avisoB:#b58a42;
+    --avisoT:#ffe2a2;
+    --okF:#173d39;
+    --okB:#4d9c8d;
+    --okT:#b8eee2;
+    --malB:#bd625d;
+    --malT:#ffd0ca;
+    --infoF:#1a344b;
+    --infoB:#528fa4;
+    --infoT:#c5eaf0;
+    --linea:1px;
+    --radio:18px;
+    --sombra-panel:0 10px 26px rgba(0,0,0,.13);
+    --sombra-elevada:0 12px 30px rgba(0,0,0,.24);
+  }
+  :root[data-tema="claro"]{
+    --fondo:#f4f1e8;
+    --panel:#fffdf7;
+    --panel2:#eeeae0;
+    --borde:#d8d4c8;
+    --texto:#223543;
+    --suave:#5e6c72;
+    --acento:#e9b94c;
+    --sobreAcento:#263747;
+    --rojo:#d9534f;
+    --verde:#287f73;
+    --ambar:#b8792f;
+    --azul:#267f91;
+    --barra:rgba(255,253,247,.96);
+    --peligro:#a93f43;
+    --avisoF:#fff1cf;
+    --avisoB:#b8792f;
+    --avisoT:#563813;
+    --okF:#e4f2e9;
+    --okB:#347d61;
+    --okT:#194b38;
+    --malB:#b84b48;
+    --malT:#762d2b;
+    --infoF:#e5f0f1;
+    --infoB:#398293;
+    --infoT:#164c59;
+    --sombra-panel:0 8px 24px rgba(50,55,45,.065);
+    --sombra-elevada:0 12px 28px rgba(50,55,45,.16);
+  }
+  :root[data-tema="contraste"]{
+    --sombra-panel:none;
+    --sombra-elevada:none;
+  }
+
+  html{scroll-behavior:smooth;scroll-padding-top:1rem}
+  body{
+    background:
+      radial-gradient(ellipse at 12% 0%,rgba(85,184,167,.085),transparent 38rem),
+      radial-gradient(ellipse at 92% 18%,rgba(241,198,91,.055),transparent 32rem),
+      var(--fondo);
+    letter-spacing:.005em;
+  }
+  main{max-width:48rem;padding-top:5px}
+  @media(min-width:900px){main{max-width:76rem}}
+  header.app{
+    gap:12px;
+    margin:4px auto 16px;
+    padding:7px 2px 13px;
+    border-bottom:1px solid var(--borde);
+  }
+  header.app img{
+    width:42px;height:42px;border-radius:13px;
+    box-shadow:0 4px 13px rgba(0,0,0,.17);
+  }
+  header.app h1{font-size:1.38rem;letter-spacing:-.035em;font-weight:800}
+  header.app small{font-size:.76rem;letter-spacing:.025em;margin-top:1px}
+  header.app button.chico{border:1px solid var(--borde);background:var(--panel);min-height:2.5rem}
+
+  h1,h2,h3{letter-spacing:-.02em}
+  h2{font-size:1.1rem;font-weight:760;margin-bottom:12px}
+  h3{font-size:1rem;font-weight:720}
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--borde);
+    border-radius:var(--radio);
+    padding:clamp(15px,2.4vw,21px);
+    margin:13px 0;
+    box-shadow:var(--sombra-panel);
+  }
+  .panel > h2:first-child{display:flex;align-items:center;gap:9px}
+  .panel > h2:first-child::after{
+    content:"";height:3px;width:22px;border-radius:4px;
+    background:var(--verde);margin-left:auto;opacity:.9;
+  }
+  .nota{font-size:.8rem;line-height:1.45;opacity:.88}
+  label{font-weight:590;letter-spacing:.005em}
+  input[type=text],input[type=search],input[type=url],input[type=date],input[type=time],textarea,select{
+    border:1px solid var(--borde);
+    border-radius:13px;
+    background:var(--fondo);
+    min-height:2.9rem;
+    padding:11px 13px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.035);
+    transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+  }
+  textarea{line-height:1.55}
+  input:focus,textarea:focus,select:focus{
+    border-color:var(--verde);
+    box-shadow:0 0 0 3px rgba(85,184,167,.17);
+    outline:none;
+  }
+  button,a.boton{
+    border-radius:13px;
+    font-weight:650;
+    letter-spacing:.005em;
+    background:var(--panel2);
+    border:1px solid transparent;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.055);
+    transition:transform .14s ease,background .14s ease,border-color .14s ease,box-shadow .14s ease;
+  }
+  button.prim,a.boton.prim{
+    background:linear-gradient(145deg,#f5d477,#eab94b);
+    color:#253544;
+    border-color:rgba(120,85,20,.18);
+    box-shadow:0 4px 12px rgba(215,168,64,.19),inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  button.peligro{background:var(--peligro);color:#fff;border-color:rgba(255,255,255,.08)}
+  button.chico{border-radius:11px}
+  button:disabled{box-shadow:none}
+  @media(hover:hover){
+    button:not(:disabled):hover,a.boton:hover{transform:translateY(-1px);border-color:var(--verde)}
+    button.prim:not(:disabled):hover{background:linear-gradient(145deg,#f8df91,#efc45f);box-shadow:0 6px 16px rgba(215,168,64,.24)}
+  }
+  button:not(:disabled):active,a.boton:active{transform:translateY(1px) scale(.985)}
+  :focus-visible{outline:3px solid var(--azul);outline-offset:3px}
+
+  .fila{gap:9px;margin-top:10px}
+  .op label{border-radius:12px;background:rgba(127,150,160,.055)}
+  .chip{border-radius:999px;padding:3px 10px;font-weight:600}
+  .banda{border-radius:14px;padding:12px 14px}
+  .tarjeta{
+    background:var(--panel);
+    border:1px solid var(--borde);
+    border-radius:16px;
+    padding:14px;
+    box-shadow:var(--sombra-panel);
+    transition:transform .16s ease,border-color .16s ease;
+  }
+  .clip,.rep,.adj{
+    border-color:var(--borde);
+    border-radius:14px;
+    background:var(--panel2);
+    padding:11px 13px;
+  }
+  details.sec{border-radius:15px;border-color:var(--borde);padding:8px 14px}
+  details.sec > summary{gap:8px}
+  .vista:not(.oculto){animation:entradaVista .2s ease-out both}
+  @keyframes entradaVista{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Zona de captura: identidad sonora y controles claros. */
+  #zonaCaptura>.panel:first-child{
+    text-align:center;
+    padding:20px 17px 17px;
+    background:linear-gradient(155deg,var(--panel),var(--panel2));
+    border-color:rgba(117,197,210,.25);
+  }
+  #bGrabar{
+    width:clamp(9.25rem,40vw,11.2rem);
+    height:clamp(9.25rem,40vw,11.2rem);
+    margin:10px auto 9px;
+    background:linear-gradient(145deg,#f17469,#d94f4c);
+    color:#fff;
+    border:5px solid rgba(255,255,255,.11);
+    box-shadow:0 0 0 7px rgba(231,101,92,.12),0 9px 24px rgba(0,0,0,.2),inset 0 2px 3px rgba(255,255,255,.2);
+    font-size:1.32rem;
+    letter-spacing:.015em;
+  }
+  #bGrabar.on{background:linear-gradient(145deg,#d84a48,#a72d37);animation:latido 1.55s infinite}
+  #tiempo{font-size:clamp(2.35rem,7vw,3.05rem);font-weight:780;letter-spacing:.025em;margin:1px 0 8px}
+  .medidor{height:13px;border:0;background:rgba(4,15,26,.36);border-radius:999px;margin:12px 0 7px;overflow:hidden}
+  .medidor i{border-radius:999px;background:linear-gradient(90deg,#55b8a7 0 70%,#e7b34f 70% 88%,#e7655c 88%)}
+  .medidor b{width:2px;background:#fff;box-shadow:0 0 5px rgba(255,255,255,.45)}
+  .barra-controles-grabacion{max-width:58rem;margin:9px auto 12px}
+  .controles{gap:9px}
+  .controles button{
+    min-height:4.2rem;
+    border-radius:15px;
+    padding:10px 12px;
+    font-size:1rem;
+    font-weight:720;
+  }
+  #bMarcar{background:linear-gradient(145deg,#f5d477,#e9b747);color:#243747;border:1px solid rgba(120,85,20,.17);box-shadow:0 4px 12px rgba(215,168,64,.14)}
+  #bRepetirElemento{background:var(--panel2);color:var(--texto);border:1px solid var(--borde)}
+  #bPausa{background:#2b5870;color:#f4f8f8}
+  #bDetener{background:#82464a;color:#fff}
+  .controles button:disabled{opacity:.53;filter:saturate(.65)}
+  .zona-captura.grabando .barra-controles-grabacion{
+    top:max(5px,env(safe-area-inset-top));
+    padding:8px;
+    border:1px solid rgba(117,197,210,.26);
+    border-radius:17px;
+    background:var(--barra);
+    box-shadow:0 9px 26px rgba(0,0,0,.2);
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+  }
+  .zona-captura.grabando .barra-controles-grabacion .controles button{min-height:3.75rem}
+  .panel-estado-grabacion{border-style:dashed;background:transparent;box-shadow:none}
+  .resumen-ajustes{font-size:.78rem;line-height:1.5}
+
+  /* Listas: aspecto de cuaderno de campo, con el elemento actual muy visible. */
+  .lista-grabacion{gap:13px}
+  .lista-grabacion .lista-controles{padding:2px 1px}
+  .lista-lectura{background:var(--panel2);border:1px solid var(--borde);border-radius:16px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+  .lista-actual{background:var(--panel);border:1px solid rgba(85,184,167,.28);border-radius:14px;padding:15px;margin-bottom:12px}
+  .lista-actual .valor{font-size:clamp(1.65rem,5.5vw,2.5rem);line-height:1.2;letter-spacing:-.025em}
+  .lista-elementos{gap:5px;padding-left:1.9rem}
+  .lista-elementos li{padding:8px 10px;border-radius:10px;line-height:1.4}
+  .lista-elementos li.actual{background:rgba(85,184,167,.14);outline:2px solid var(--verde);outline-offset:-1px;color:var(--texto)}
+  .lista-elementos li.completado{opacity:.68}
+  .lista-guion{background:var(--panel);border:1px solid var(--borde);border-radius:13px;line-height:1.65;padding:15px}
+  #listaEditor{padding-top:13px}
+  #listaContenido{min-height:15rem}
+  .plantilla-detalle{border-radius:15px;background:var(--panel2);border-color:var(--borde)}
+  .lista-campos li{padding:7px 0}
+
+  /* Navegación: base discreta, selección visible y consistente entre plataformas. */
+  nav.abajo{
+    background:var(--barra);
+    border-top:1px solid var(--borde);
+    box-shadow:0 -8px 28px rgba(0,0,0,.12);
+    -webkit-backdrop-filter:blur(18px);
+    backdrop-filter:blur(18px);
+    padding:7px 9px calc(7px + env(safe-area-inset-bottom));
+  }
+  nav.abajo button{
+    position:relative;
+    border:0;
+    border-radius:13px;
+    min-height:3.55rem;
+    font-size:.78rem;
+    font-weight:650;
+    letter-spacing:.01em;
+    gap:4px;
+    background:transparent;
+  }
+  nav.abajo button .nav-ico{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  nav.abajo button.on{color:var(--acento);background:rgba(85,184,167,.11)}
+  nav.abajo button.on::before{content:"";position:absolute;top:-7px;left:30%;right:30%;height:3px;border-radius:0 0 4px 4px;background:var(--verde)}
+
+  .ventana{border-radius:22px 22px 0 0;box-shadow:var(--sombra-elevada)}
+  @media(min-width:47.5rem){.ventana{border-radius:22px}}
+  .velo{background:rgba(5,13,22,.66);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+  .aviso-toast{border-radius:14px;box-shadow:var(--sombra-elevada);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+  footer{padding:4px 8px 8px;letter-spacing:.02em}
+
+  :root[data-tema="claro"] body{
+    background:
+      radial-gradient(ellipse at 10% 0%,rgba(40,127,115,.07),transparent 38rem),
+      radial-gradient(ellipse at 92% 20%,rgba(233,185,76,.08),transparent 32rem),
+      var(--fondo);
+  }
+  :root[data-tema="claro"] #zonaCaptura>.panel:first-child{background:linear-gradient(150deg,#fffdf7,#f0eee5);border-color:#d7d5c9}
+  :root[data-tema="claro"] .panel-estado-grabacion{background:transparent}
+  :root[data-tema="claro"] .zona-captura.grabando .barra-controles-grabacion{background:rgba(255,253,247,.94)}
+  :root[data-tema="claro"] .medidor{background:#dce1dc}
+  :root[data-tema="claro"] #bPausa{background:#dcebef;color:#244451}
+  :root[data-tema="claro"] #bDetener{background:#a94748;color:#fff}
+  :root[data-tema="claro"] #bRepetirElemento{background:#e4efec;color:#24443f;border-color:#c5ddd6}
+  :root[data-tema="claro"] nav.abajo button.on{background:rgba(40,127,115,.1)}
+  :root[data-tema="claro"] .lista-actual{background:#fffdf7}
+  :root[data-tema="claro"] .lista-guion{background:#fffdf7}
+
+  :root[data-tema="contraste"] body{background:#000}
+  :root[data-tema="contraste"] .panel,
+  :root[data-tema="contraste"] .tarjeta,
+  :root[data-tema="contraste"] .lista-lectura,
+  :root[data-tema="contraste"] .lista-actual,
+  :root[data-tema="contraste"] .lista-guion,
+  :root[data-tema="contraste"] .plantilla-detalle{background:#000;border:2px solid #fff;box-shadow:none}
+  :root[data-tema="contraste"] #zonaCaptura>.panel:first-child{background:#000}
+  :root[data-tema="contraste"] .controles button,
+  :root[data-tema="contraste"] #bRepetirElemento,
+  :root[data-tema="contraste"] #bPausa,
+  :root[data-tema="contraste"] #bDetener{background:#000;color:#fff;border:2px solid #fff}
+  :root[data-tema="contraste"] #bMarcar,
+  :root[data-tema="contraste"] #bGrabar{background:#ffe600;color:#000;border:2px solid #fff}
+  :root[data-tema="contraste"] .zona-captura.grabando .barra-controles-grabacion{background:#000;border:2px solid #fff;backdrop-filter:none}
+  :root[data-tema="contraste"] nav.abajo{background:#000;border-top:2px solid #fff;box-shadow:none;backdrop-filter:none}
+  :root[data-tema="contraste"] nav.abajo button.on{background:#ffe600;color:#000}
+  :root[data-tema="contraste"] nav.abajo button.on::before{background:#ffe600}
+  :root[data-tema="contraste"] input,
+  :root[data-tema="contraste"] textarea,
+  :root[data-tema="contraste"] select{background:#000;color:#fff;border:2px solid #fff;box-shadow:none}
+
+  @media(max-width:649px){
+    header.app{gap:8px}
+    header.app img{width:38px;height:38px}
+    header.app h1{font-size:1.22rem}
+    header.app button.chico{padding:6px 8px;font-size:.8rem}
+    .controles{gap:7px}
+    .controles button{min-height:3.9rem;padding:8px 7px;font-size:.92rem}
+    .zona-captura.grabando .barra-controles-grabacion{padding:6px;border-radius:15px}
+    .zona-captura.grabando .barra-controles-grabacion .controles button{min-height:3.45rem;font-size:.9rem;padding:7px 5px;border-radius:12px}
+    .panel{padding:14px;border-radius:17px}
+    nav.abajo button{font-size:.75rem}
+  }
+  @media(hover:hover){.tarjeta:hover{transform:translateY(-2px);border-color:var(--verde)}}
+  @media(prefers-reduced-motion:reduce){
+    .vista:not(.oculto){animation:none}
+    button,a.boton,.tarjeta,input,textarea,select{transition:none}
+  }
 </style>
 </head>

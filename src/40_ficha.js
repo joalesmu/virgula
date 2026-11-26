@@ -27,6 +27,7 @@ const Ficha = {
     const reg = await DB.leer('grabaciones', id); if (!reg) return avisar(t('No se encontró la grabación.'));
     const f = reg.ficha; f.extra = f.extra || {}; f.extraEtiquetas = f.extraEtiquetas || {};
     if (!f.plantilla) f.plantilla = Plantillas.referencia(Plantillas.de('general'));
+    if (!f.plantillaDef) f.plantillaDef = JSON.parse(JSON.stringify(Plantillas.de(f.plantilla.id)));
     this.reg = reg; this.adjuntos = await DB.porGrabacion('adjuntos', id);
     Nav.ir('vFicha'); this.pintar(); this.cargarAudio();
   },
@@ -38,7 +39,7 @@ const Ficha = {
     };
     if (inmediato) return f(); this._t = setTimeout(f, 500);
   },
-  plantilla() { return Plantillas.de(this.reg.ficha.plantilla && this.reg.ficha.plantilla.id); },
+  plantilla() { return this.reg.ficha.plantillaDef || Plantillas.de(this.reg.ficha.plantilla && this.reg.ficha.plantilla.id); },
   campoTexto(id, etiqueta, valor, { largo, max = 4000, ph = '', enlaces, dato = 'c' } = {}) {
     return `<label for="${id}">${etiqueta}</label>` + (largo
       ? `<textarea id="${id}" data-${dato}="${dato === 'x' ? id.slice(3) : id}" maxlength="${max}" placeholder="${esc(ph)}">${esc(valor)}</textarea>${enlaces ? `<div class="fila fija"><button class="chico" data-enlazar="${id}">${tH('🔗 Enlazar a un adjunto o página')}</button></div><div class="vista-texto oculto" id="vista-${id}"></div>` : ''}`
@@ -369,7 +370,25 @@ const Ficha = {
     const f = this.reg.ficha;
     if (!confirm(t('¿Borrar «{titulo}» de este aparato, con su audio y sus adjuntos?', { titulo: f.titulo }) + (!this.reg.respaldo ? '\n\n' + t('⚠️ Esta grabación NO tiene respaldo.') : ''))) return;
     if (!this.reg.respaldo && prompt(t('Para confirmar, escribe BORRAR')) !== t('BORRAR')) return;
-    await DB.borrarGrabacion(this.reg.id); Acervo.sel.delete(this.reg.id); avisar(t('🗑 Borrada.')); Nav.ir('vAcervo');
+    try {
+      await DB.borrarGrabacion(this.reg.id);
+    } catch (e) {
+      Bitacora.poner(
+        'borrar grabación',
+        e && e.message ? e.message : String(e)
+      );
+    
+      avisar(
+        t('No se pudo completar el borrado. La grabación se conserva en Vírgula.'),
+        7000
+      );
+    
+      return;
+    }
+    
+    Acervo.sel.delete(this.reg.id);
+    avisar(t('🗑 Borrada.'));
+    Nav.ir('vAcervo');
   }
 };
 
@@ -408,3 +427,4 @@ $('vFicha').addEventListener('click', e => {
   if (b.dataset.oirclip) Ficha.oirClip(Number(b.dataset.oirclip));
   if (b.dataset.quitarclip && confirm(t('¿Quitar este clip? El audio de la grabación no cambia.'))) { Ficha.reg.clips.splice(Number(b.dataset.quitarclip), 1); Ficha.pintarClips(); Ficha.guardar(); }
 });
+

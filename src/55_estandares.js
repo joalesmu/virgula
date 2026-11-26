@@ -7,7 +7,7 @@
 const xml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
 /** Valores de los campos propios que equivalen a un término de un estándar. */
 function valoresEstandar(r, prefijo) {
-  const p = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id), out = {};
+  const p = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id), out = {};
   p.campos.filter(c => !c.base && c.estandar && c.estandar.startsWith(prefijo + ':')).forEach(c => {
     let v = (r.ficha.extra || {})[c.id]; if (Plantillas.vacio(v)) return; if (Array.isArray(v)) v = v.join('; '); if (v === true) v = 'sí';
     const k = c.estandar.slice(prefijo.length + 1); out[k] = out[k] ? out[k] + ' | ' + v : String(v);
@@ -115,3 +115,4 @@ ${capas.join('\n')}
 </ANNOTATION_DOCUMENT>
 `;
 }
+

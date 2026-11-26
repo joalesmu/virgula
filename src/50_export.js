@@ -12,9 +12,17 @@ async function crc32Blob(b, alAvanzar) {
 }
 const ZIP_MAX = 4 * 1024 * 1048576 - 65536;
 async function hacerZip(entradas, alAvanzar) {   // entradas: [{ruta, datos: Blob|string, fecha}]
+  if (entradas.length > 0xffff) throw new Error(t('El paquete tiene demasiados archivos para ZIP clásico.'));
   const partes = [], central = [], enc = new TextEncoder(); let pos = 0;
+  const rutas = new Set();
   for (const e of entradas) {
-    const datos = typeof e.datos === 'string' ? new Blob([e.datos]) : e.datos, nombre = enc.encode(e.ruta), crc = await crc32Blob(datos, alAvanzar);
+    const datos = typeof e.datos === 'string' ? new Blob([e.datos]) : e.datos;
+    const nombre = enc.encode(e.ruta);
+    if (!datos || !Number.isSafeInteger(datos.size) || datos.size > ZIP_MAX || nombre.length > 0xffff || rutas.has(e.ruta)) {
+      throw new Error(t('El paquete contiene un archivo demasiado grande, un nombre inválido o una ruta duplicada.'));
+    }
+    rutas.add(e.ruta);
+    const crc = await crc32Blob(datos, alAvanzar);
     const d = new Date(e.fecha || Date.now()), hora = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dia = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
     const loc = new DataView(new ArrayBuffer(30));
     loc.setUint32(0, 0x04034b50, true); loc.setUint16(4, 20, true); loc.setUint16(6, 0x0800, true); loc.setUint16(8, 0, true);
@@ -28,7 +36,11 @@ async function hacerZip(entradas, alAvanzar) {   // entradas: [{ruta, datos: Blo
     pos += 30 + nombre.length + datos.size;
     if (pos > ZIP_MAX) throw new Error(t('El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.'));
   }
-  const tamCentral = central.reduce((a, b) => a + b.byteLength, 0), fin = new DataView(new ArrayBuffer(22));
+  const tamCentral = central.reduce((a, b) => a + b.byteLength, 0);
+  if (pos + tamCentral + 22 > ZIP_MAX || tamCentral > 0xffffffff) {
+    throw new Error(t('El directorio del paquete supera el límite de ZIP clásico. Divide la exportación en varios paquetes.'));
+  }
+  const fin = new DataView(new ArrayBuffer(22));
   fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, entradas.length, true); fin.setUint16(10, entradas.length, true);
   fin.setUint32(12, tamCentral, true); fin.setUint32(16, pos, true);
   return new Blob([...partes, ...central, fin.buffer], { type: 'application/zip' });
@@ -42,9 +54,34 @@ const rutaAdjunto = a => `adjuntos/${a.grabacion}/${a.id}__${nombreArchivo(a.nom
 const Exportar = {
   async abrir(ids) {
     if (!ids.length) return avisar(t('Elige al menos una grabación.'));
-    const regs = (await Promise.all(ids.map(id => DB.leer('grabaciones', id)))).filter(Boolean);
+  
+    if (!G && Grabadora.escrituras.size) {
+      avisar(t('Terminando de guardar el audio. La ventana de exportación aparecerá al concluir.'), 7000);
+      await Grabadora.esperarEscrituras();
+    }
+  const regs = (await Promise.all(ids.map(id => DB.leer('grabaciones', id)))).filter(Boolean);
     const adj = {}; for (const r of regs) adj[r.id] = await DB.porGrabacion('adjuntos', r.id);
-    const tam = {}; for (const r of regs) { const tr = await Medios.trozos(r); tam[r.id] = { archivo: tr.archivo.reduce((a, x) => a + x.datos.size, 0), consulta: tr.consulta.reduce((a, x) => a + x.datos.size, 0) }; }
+    const tam = {};
+
+    try {
+      for (const r of regs) {
+        const tr = await Medios.trozos(r);
+    
+        const plan = tr.archivo.length
+          ? Medios.planArchivo(tr.archivo, r)
+          : null;
+        tam[r.id] = {
+          archivo: plan ? plan.bytes : 0,
+          bytesArchivoGuardados: tr.archivo.reduce((a, x) => a + x.datos.size, 0),
+          consulta: tr.consulta.reduce((a, x) => a + x.datos.size, 0),
+          tieneArchivo: !!tr.archivo.length,
+          tieneConsulta: !!tr.consulta.length
+        };
+      }
+    } catch {
+      avisar(t('No se pudo comprobar la integridad del audio. La exportación se detuvo para evitar generar un paquete incompleto.'), 7000);
+      return;
+    }
     this.regs = regs; this.adj = adj; this.tam = tam;
     const nAdj = Object.values(adj).reduce((a, l) => a + l.length, 0), nClips = regs.reduce((a, r) => a + (r.clips || []).filter(c => !c.descartado).length, 0);
     const conf = regs.filter(r => r.ficha.confidencial).length, sinCons = regs.filter(r => r.ficha.consentimiento.estado === 'pendiente').length, ogg = !!window.AudioEncoder;
@@ -140,14 +177,25 @@ const Exportar = {
     } catch (e) { prog.textContent = '⚠️ ' + e.message; boton.disabled = false; Bitacora.poner('exportar', e.message); }
   },
   async marcarRespaldo(o) {
-    // Es respaldo completo si van los audios tal como se grabaron y todos los adjuntos
+    // Es respaldo completo solo si incluye todas las pistas que realmente tenía la grabación y todos los adjuntos.
     if (o.audio !== 'ambos' || o.modoAdj !== 'todos') return;
     const ahora = Date.now();
-    for (const r of this.regs) { const x = await DB.leer('grabaciones', r.id); if (x) { x.respaldo = ahora; if (x.modificada > ahora) x.modificada = ahora; await DB.poner('grabaciones', x); } }
+    for (const r of this.regs) {
+      const tam = this.tam[r.id] || {};
+      const tecnica = r.tecnica || {};
+      if (tecnica.conArchivo && !tam.tieneArchivo) continue;
+      if (tecnica.conConsulta && !tam.tieneConsulta) continue;
+      const x = await DB.leer('grabaciones', r.id);
+      if (x) {
+        x.respaldo = ahora;
+        if (x.modificada > ahora) x.modificada = ahora;
+        await DB.poner('grabaciones', x);
+      }
+    }
   },
   /** Todo lo que va dentro de un paquete. */
   async entradas(regs, o, decir) {
-    const e = [], datos = [], ahora = Date.now(), plantillas = {};
+    const e = [], datos = [], ahora = Date.now(), plantillas = {}, listas = {};
     for (const r of regs) {
       decir(t('Preparando «{titulo}»…', { titulo: r.ficha.titulo }));
       const a = await Medios.archivos(r, { bwf: o.bwf }), rutas = {};
@@ -170,13 +218,16 @@ const Exportar = {
       const adjuntos = this.adj[r.id].map(ad => { const m = { id: ad.id, nombre: ad.nombre, tipo: ad.tipo, tam: ad.tam, papel: ad.papel, nota: ad.nota, fecha: ad.fecha };
         if (o.adj(ad)) { m.archivo = rutaAdjunto(ad); e.push({ ruta: m.archivo, datos: ad.blob, fecha: ad.fecha }); } else m.noIncluido = true; return m; });
       const copia = JSON.parse(JSON.stringify(r)); delete copia.estado;
-      const pl = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id); plantillas[pl.id] = pl;
+      const pl = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id); plantillas[pl.id] = pl;
+      if (copia.listaTrabajo && copia.listaTrabajo.id) listas[`${r.id}:${copia.listaTrabajo.id}`] = copia.listaTrabajo;
       datos.push(Object.assign(copia, { clips, adjuntos, archivos: rutas }));
     }
     const lista = Object.values(plantillas).map(p => { const c = JSON.parse(JSON.stringify(p)); delete c.autoria; delete c.modificada; return c; });
-    const paquete = { formato: FORMATO_PAQUETE, app: 'Vírgula · memoria sonora viva', version: VERSION, exportado: fechaISO(ahora), idioma: Idioma.codigo, plantillas: lista, grabaciones: datos };
+    const listasPaquete = Object.values(listas);
+    const paquete = { formato: FORMATO_PAQUETE, app: 'Vírgula · memoria sonora viva', version: VERSION, exportado: fechaISO(ahora), idioma: Idioma.codigo, plantillas: lista, listas: listasPaquete, grabaciones: datos };
     const fijos = [{ ruta: 'fichas.json', datos: JSON.stringify(paquete, null, 1) }, { ruta: 'fichas.csv', datos: this.csvFichas(datos) }, { ruta: 'clips.csv', datos: this.csvClips(datos) },
       { ruta: 'indice.html', datos: indiceHtml(paquete) }, { ruta: 'LEEME.txt', datos: leeme(o) }];
+    listasPaquete.forEach((l, i) => fijos.push({ ruta: `listas/${String(i + 1).padStart(3, '0')}_${ascii(l.id)}_${nombreArchivo(l.nombre, 80) || 'lista'}.txt`, datos: ListaTrabajo.textoDe(l) }));
     if (o.dc) fijos.push({ ruta: 'estandares/dublin_core.xml', datos: dublinCore(datos) });
     if (o.dwc) { const d = darwinCore(datos); if (d) fijos.push({ ruta: 'estandares/darwin_core/occurrence.csv', datos: d.ocurrencias }, { ruta: 'estandares/darwin_core/meta.xml', datos: d.meta }); }
     if (o.elan) datos.filter(tieneElan).forEach(r => fijos.push({ ruta: `elan/${nombreArchivo(Medios.nombreBase(r), 90)}.eaf`, datos: elan(r) }));
@@ -186,7 +237,7 @@ const Exportar = {
   /** Columnas de los campos propios (de cualquier plantilla) presentes en el paquete. */
   columnasExtra(d) {
     const cols = new Map();
-    d.forEach(r => { const p = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id);
+    d.forEach(r => { const p = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id);
       Object.keys(r.ficha.extra || {}).forEach(k => { if (cols.has(k)) return; const c = p.campos.find(x => x.id === k); cols.set(k, c ? c.etiqueta : (r.ficha.extraEtiquetas || {})[k] || k); }); });
     return [...cols.entries()];
   },
@@ -206,8 +257,8 @@ const Exportar = {
         ...extra.map(([k]) => val((f.extra || {})[k]))]; })]);
   },
   csvClips(d) {
-    const filas = [['codigo_grabacion', 'titulo_grabacion', 'clip', 'etiqueta', 'desde_s', 'hasta_s', 'texto', 'traduccion', 'descartado', 'archivo_wav', 'archivo_ogg']];
-    d.forEach(r => (r.clips || []).forEach(c => filas.push([r.id, r.ficha.titulo, c.n, c.etiqueta, c.desde.toFixed(2), c.hasta.toFixed(2), c.texto, c.traduccion, c.descartado ? 'sí' : 'no', c.archivoWav, c.archivoOgg])));
+    const filas = [['codigo_grabacion', 'titulo_grabacion', 'clip', 'etiqueta', 'desde_s', 'hasta_s', 'texto', 'traduccion', 'descartado', 'archivo_wav', 'archivo_ogg', 'lista_id', 'lista_elemento_id', 'lista_indice']];
+    d.forEach(r => (r.clips || []).forEach(c => filas.push([r.id, r.ficha.titulo, c.n, c.etiqueta, c.desde.toFixed(2), c.hasta.toFixed(2), c.texto, c.traduccion, c.descartado ? 'sí' : 'no', c.archivoWav, c.archivoOgg, c.listaId || '', c.listaElementoId || '', Number.isSafeInteger(c.listaIndice) ? c.listaIndice + 1 : ''])));
     return csv(filas);
   }
 };
@@ -223,6 +274,7 @@ function leeme(o) {
     '  audios/       ' + t('Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).'),
     '  clips/        ' + t('Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».'),
     '  adjuntos/     ' + t('Fotos, documentos y consentimientos, en una carpeta por grabación.'),
+    '  listas/       ' + t('Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.'),
     o.dc || o.dwc ? '  estandares/   ' + t('Dublin Core (dublin_core.xml) y, si aplica, Darwin Core (carpeta darwin_core, lista para GBIF/SNIB).') : '',
     o.elan ? '  elan/         ' + t('Un archivo .eaf por grabación: ábrelo con ELAN junto con la carpeta audios/.') : '',
     o.bwf ? '  ' + t('Los WAV llevan dentro el título, la fecha, el código y los derechos (Broadcast WAV).') : '', '',
@@ -236,7 +288,7 @@ function indiceHtml(p) {
   const tx = (s, adj) => textoConEnlaces(s || '', adj, rutaAdj).replace(/\n/g, '<br>');
   const fila = (k, v) => v ? `<tr><th>${tH(k)}</th><td>${v}</td></tr>` : '';
   const fichas = p.grabaciones.map(r => {
-    const f = r.ficha, u = f.ubicacion, c = f.consentimiento, adj = r.adjuntos, pl = Plantillas.de(f.plantilla && f.plantilla.id);
+    const f = r.ficha, u = f.ubicacion, c = f.consentimiento, adj = r.adjuntos, pl = f.plantillaDef || Plantillas.de(f.plantilla && f.plantilla.id);
     const extras = Object.entries(f.extra || {}).filter(([, v]) => !Plantillas.vacio(v)).map(([k, v]) => { const cp = pl.campos.find(x => x.id === k);
       return fila(cp ? cp.etiqueta : (f.extraEtiquetas || {})[k] || k, cp && cp.tipo === 'largo' ? tx(v, adj) : esc(Array.isArray(v) ? v.map(x => t(x)).join(', ') : v === true ? t('sí') : t(String(v)))); }).join('');
     const audio = (ruta, tipo) => ruta ? `<p>${tipo}: <a href="${esc(ruta)}">${esc(ruta.split('/').pop())}</a></p><audio controls preload="none" src="${esc(ruta)}"></audio>` : '';
@@ -253,6 +305,7 @@ function indiceHtml(p) {
       ${fila(N_('Notas'), tx(f.notas, adj))}${fila(N_('Tramos sin audio'), (r.silencios || []).map(s => relojFino(s.desde) + '–' + relojFino(s.hasta)).join(', '))}</table>
       ${f.transcripcion.texto ? `<h3>${tH('Transcripción')}${f.transcripcion.lengua ? ' (' + esc(f.transcripcion.lengua) + ')' : ''}</h3><div class="txt">${tx(f.transcripcion.texto, adj)}</div>` : ''}
       ${(f.traducciones || []).map(x => `<h3>${tH('Traducción')}${x.lengua ? ' — ' + esc(x.lengua) : ''}${x.autor ? ' · ' + esc(x.autor) : ''}</h3><div class="txt">${tx(x.texto, adj)}</div>`).join('')}
+      ${r.listaTrabajo ? `<h3>${tH('Lista de trabajo')}: ${esc(r.listaTrabajo.nombre)}</h3><div class="txt">${esc(ListaTrabajo.textoDe(r.listaTrabajo))}</div>` : ''}
       ${(r.clips || []).some(x => !x.descartado) ? `<h3>${tH('Clips')}</h3><table>${r.clips.filter(x => !x.descartado).map(x => `<tr><th>#${x.n} ${esc(x.etiqueta)}</th><td>${relojFino(x.desde)}–${relojFino(x.hasta)}${x.traduccion ? ' · ' + esc(x.traduccion) : ''}${x.texto ? '<br>' + esc(x.texto) : ''}${x.archivoWav ? `<br><audio controls preload="none" src="${esc(x.archivoOgg || x.archivoWav)}"></audio>` : ''}</td></tr>`).join('')}</table>` : ''}
       ${adj.length ? `<h3>${tH('Adjuntos')}</h3><ul>${adj.map(a => `<li>${a.archivo ? `<a href="${esc(a.archivo)}">${esc(a.nombre)}</a>` : esc(a.nombre) + ' <i>(' + tH('no incluido') + ')</i>'} · ${tH(PAPELES[a.papel] || a.papel)}${a.nota ? ' — ' + esc(a.nota) : ''}${/^image\//.test(a.tipo) && a.archivo ? `<br><img src="${esc(a.archivo)}" alt="${esc(a.nota || a.nombre)}" loading="lazy">` : ''}</li>`).join('')}</ul>` : ''}
     </article>`;
@@ -265,3 +318,4 @@ function indiceHtml(p) {
 <nav>${p.grabaciones.map(r => `<a href="#${r.id}">${esc(r.ficha.titulo)}</a>`).join('')}</nav>${fichas}
 <p class="m">${tH('Respeta las condiciones de consentimiento y derechos de cada ficha.')}</p></body></html>`;
 }
+

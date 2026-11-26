@@ -93,6 +93,8 @@ const Plantillas = {
     let l = null; try { l = await DB.leer('ajustes', 'plantillas'); } catch (e) {}
     if (!Array.isArray(l) || !l.length) { l = PLANTILLAS_FABRICA(); await DB.poner('ajustes', l, 'plantillas').catch(() => {}); }
     this.lista = l;
+    const activa = this.lista.find(p => p.id === (Ajustes.v.plantilla || 'general'));
+    if (!activa || activa.archivada) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
   },
   guardar() { return DB.poner('ajustes', this.lista, 'plantillas'); },
   de(id) { return this.lista.find(p => p.id === id) || this.lista.find(p => p.id === 'general') || PLANTILLAS_FABRICA()[0]; },
@@ -110,33 +112,54 @@ const Plantillas = {
   },
   /** Campos obligatorios vacíos de una ficha (más el consentimiento pendiente). */
   faltan(reg) {
-    const f = reg.ficha, p = this.de(f.plantilla && f.plantilla.id);
+    const f = reg.ficha, p = f.plantillaDef || this.de(f.plantilla && f.plantilla.id);
     const l = this.campos(p).filter(c => c.obligatorio && (c.visible || CAMPOS_BASE[c.id] && CAMPOS_BASE[c.id].nucleo) && this.vacio(this.valor(f, c))).map(c => c.etiqueta);
     if (f.consentimiento.estado === 'pendiente') l.push(t('Consentimiento'));
     return l;
   },
   aplicarPredet(f, p) {
-    f.plantilla = this.referencia(p); f.extra = f.extra || {};
+    f.plantilla = this.referencia(p);
+    f.plantillaDef = JSON.parse(JSON.stringify(p));
+    f.extra = f.extra || {};
     if (p.uso && !f.uso) f.uso = p.uso;
     if (p.predet.confidencial) f.confidencial = true;
     if (p.predet.consentimiento && f.consentimiento.estado === 'pendiente' && !f.consentimiento.forma) f.consentimiento.estado = p.predet.consentimiento;
   },
   enUso: async id => (await DB.todas('grabaciones')).filter(r => r.ficha.plantilla && r.ficha.plantilla.id === id).length,
 
-  /* ── Ajustes: lista de plantillas ── */
+  /* ── Ajustes: una plantilla seleccionada, sin saturar la pantalla ── */
+  vistaId: null,
   pintarAjustes() {
     const d = $('plantillas'); if (!d) return;
-    const act = Ajustes.v.plantilla || 'general';
-    d.innerHTML = this.lista.map(p => `<div class="tarjeta" style="cursor:default"><div class="cuerpo">
-      <h3>${esc(this.nombre(p))} ${p.id === act ? chip(tH('✓ para grabaciones nuevas'), 'ok') : ''}</h3>
-      <div class="nota">${esc(t(p.descripcion || ''))}</div>
-      <div>${chip('v' + p.version)}${p.equipo ? chip('👥 ' + esc(p.equipo)) : ''}${p.fija ? chip(tH('🔒 fija')) : ''}${p.autoria === 'importada' ? chip(tH('📥 importada')) : ''}${chip(tH('{n} campo(s) propios', { n: p.campos.filter(c => !c.base).length }))}</div>
-      <div class="fila fija" style="margin-top:6px">${p.id !== act ? `<button class="chico prim" data-pusar="${p.id}">${tH('Usar')}</button>` : ''}
-        <button class="chico" data-peditar="${p.id}">${this.soloLectura(p) ? tH('👁 Ver') : tH('✏️ Editar')}</button><button class="chico" data-pduplicar="${p.id}">${tH('⧉ Duplicar')}</button>
-        <button class="chico" data-pexportar="${p.id}">${tH('⬇️ Exportar')}</button>${p.id !== 'general' ? `<button class="chico" data-pborrar="${p.id}" aria-label="${tH('Borrar')}">🗑</button>` : ''}</div></div></div>`).join('');
+    const activa = Ajustes.v.plantilla || 'general';
+    const ids = this.lista.some(p => p.id === this.vistaId) ? this.vistaId : (this.lista.some(p => p.id === activa) ? activa : 'general');
+    this.vistaId = ids;
+    const p = this.de(ids);
+    d.innerHTML = `<label for="plSeleccion">${tH('Seleccionar plantilla')}</label>
+      <select id="plSeleccion">${this.lista.slice().sort((a,b)=>this.nombre(a).localeCompare(this.nombre(b))).map(x => `<option value="${esc(x.id)}" ${x.id === ids ? 'selected' : ''}>${esc(this.nombre(x))}${x.archivada ? ' · archivada' : ''}</option>`).join('')}</select>
+      <div class="plantilla-detalle">
+        <h3>${esc(this.nombre(p))} ${p.id === activa ? chip(tH('✓ para grabaciones nuevas'), 'ok') : ''}</h3>
+        <p class="nota">${esc(t(p.descripcion || ''))}</p>
+        <div>${chip('v' + p.version)}${p.equipo ? chip('👥 ' + esc(p.equipo)) : ''}${p.fija ? chip(tH('🔒 fija')) : ''}${p.autoria === 'importada' ? chip(tH('📥 importada')) : ''}${p.archivada ? chip(tH('Archivada'), 'aviso') : ''}${chip(tH('{n} campo(s) propios', { n: (p.campos || []).filter(c => !c.base).length }))}</div>
+        <div class="fila">
+          ${p.id !== activa && !p.archivada ? `<button class="chico prim" data-pusar="${esc(p.id)}">${tH('Usar en grabaciones nuevas')}</button>` : ''}
+          <button class="chico" data-pver="${esc(p.id)}">${tH('👁 Ver plantilla')}</button>
+          ${this.soloLectura(p) ? '' : `<button class="chico" data-peditar="${esc(p.id)}">${tH('✏️ Editar')}</button>`}
+          <button class="chico" data-pduplicar="${esc(p.id)}">${tH('⧉ Duplicar')}</button>
+          <button class="chico" data-pexportar="${esc(p.id)}">${tH('⬇️ Exportar')}</button>
+          ${p.archivada ? `<button class="chico" data-prestaurar="${esc(p.id)}">${tH('Restaurar')}</button>` : p.id !== 'general' ? `<button class="chico" data-pborrar="${esc(p.id)}">${tH('Archivar o eliminar')}</button>` : ''}
+        </div>
+      </div>`;
+  },
+  ver(id) {
+    const p = this.de(id);
+    const campos = this.campos(p).map(c => `<li><b>${esc(c.etiqueta)}</b> · ${tH(TIPOS_CAMPO[c.tipo] || c.tipo || 'Texto')} · ${c.visible || c.base ? tH('Visible') : tH('Oculto')} · ${c.obligatorio ? tH('Obligatorio') : tH('Opcional')}${c.ayuda ? `<div class="nota">${esc(c.ayuda)}</div>` : ''}</li>`).join('');
+    Ventana.abrir(`<h2>${tH('Vista de plantilla')}</h2><h3>${esc(this.nombre(p))} · v${p.version || 1}</h3><p class="nota">${esc(t(p.descripcion || ''))}</p><ul class="lista-campos">${campos}</ul><div class="fila"><button id="plVistaCerrar">${tH('Cerrar')}</button>${this.soloLectura(p) ? '' : `<button class="prim" id="plVistaEditar">${tH('Editar')}</button>`}</div>`);
+    $('plVistaCerrar').onclick = () => Ventana.cerrar();
+    if ($('plVistaEditar')) $('plVistaEditar').onclick = () => { Ventana.cerrar(); this.editar(id); };
   },
   soloLectura: p => p.fija && p.autoria === 'importada',
-  async usar(id) { Ajustes.v.plantilla = id; await Ajustes.guardar(); this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 Las grabaciones nuevas usarán «{nombre}».', { nombre: this.nombre(this.de(id)) })); },
+  async usar(id) { const p = this.de(id); if (p.archivada) return avisar(t('Primero restaura la plantilla archivada.')); Ajustes.v.plantilla = id; await Ajustes.guardar(); this.vistaId = id; this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 Las grabaciones nuevas usarán «{nombre}».', { nombre: this.nombre(this.de(id)) })); },
   async duplicar(id) {
     const o = this.de(id), n = JSON.parse(JSON.stringify(o));
     Object.assign(n, { id: 'P' + Date.now().toString(36) + azar(3), nombre: t('{nombre} (copia)', { nombre: this.nombre(o) }), descripcion: t(o.descripcion || ''), version: 1, fija: false, fabrica: false, autoria: 'local', modificada: Date.now() });
@@ -148,10 +171,21 @@ const Plantillas = {
     Object.assign(n, { fabrica: false, modificada: Date.now() }); this.lista.push(n); await this.guardar(); this.pintarAjustes(); this.editar(n.id);
   },
   async borrar(id) {
+    if (id === 'general') return;
     const p = this.de(id), n = await this.enUso(id);
-    if (!confirm(t('¿Borrar la plantilla «{nombre}»?', { nombre: this.nombre(p) }) + (n ? '\n\n' + t('{n} ficha(s) la usan: conservarán sus datos y se verán con la plantilla General.', { n }) : ''))) return;
-    this.lista = this.lista.filter(x => x.id !== id); if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
-    await this.guardar(); this.pintarAjustes();
+    if (n > 0) {
+      if (!confirm(t('La plantilla «{nombre}» está vinculada a {n} ficha(s). Se archivará y esas grabaciones conservarán su definición original. ¿Continuar?', { nombre: this.nombre(p), n }))) return;
+      p.archivada = true;
+      if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
+    } else {
+      if (!confirm(t('¿Eliminar definitivamente la plantilla «{nombre}»?', { nombre: this.nombre(p) }))) return;
+      this.lista = this.lista.filter(x => x.id !== id);
+      if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
+    }
+    await this.guardar(); this.vistaId = 'general'; this.pintarAjustes();
+  },
+  async restaurar(id) {
+    const p = this.de(id); p.archivada = false; await this.guardar(); this.vistaId = id; this.pintarAjustes();
   },
   async exportar(id) {
     const p = JSON.parse(JSON.stringify(this.de(id))); delete p.autoria; delete p.modificada;
@@ -258,14 +292,20 @@ const Plantillas = {
     await this.guardar(); Ventana.cerrar(); this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 «{nombre}» guardada (v{v}).', { nombre: p.nombre, v: p.version }));
   }
 };
+$('vAjustes').addEventListener('change', e => {
+  if (e.target.id === 'plSeleccion') { Plantillas.vistaId = e.target.value; Plantillas.pintarAjustes(); }
+});
 $('vAjustes').addEventListener('click', e => {
-  const b = e.target.closest('[data-pusar],[data-peditar],[data-pduplicar],[data-pexportar],[data-pborrar]'); if (!b) return;
+  const b = e.target.closest('[data-pusar],[data-pver],[data-peditar],[data-pduplicar],[data-pexportar],[data-pborrar],[data-prestaurar]'); if (!b) return;
   if (b.dataset.pusar) Plantillas.usar(b.dataset.pusar);
+  if (b.dataset.pver) Plantillas.ver(b.dataset.pver);
   if (b.dataset.peditar) Plantillas.editar(b.dataset.peditar);
   if (b.dataset.pduplicar) Plantillas.duplicar(b.dataset.pduplicar);
   if (b.dataset.pexportar) Plantillas.exportar(b.dataset.pexportar);
   if (b.dataset.pborrar) Plantillas.borrar(b.dataset.pborrar);
+  if (b.dataset.prestaurar) Plantillas.restaurar(b.dataset.prestaurar);
 });
 $('bPlNueva').onclick = () => Plantillas.nueva();
 $('bPlImportar').onclick = () => $('archivoPlantilla').click();
 $('archivoPlantilla').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) Plantillas.importarArchivo(f); };
+
