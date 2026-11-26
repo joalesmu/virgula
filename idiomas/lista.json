@@ -1,137 +1,137 @@
 {
-  "idiomas": [
-    {
-      "codigo": "en",
-      "nombre": "English",
-      "version": 1,
-      "archivo": "en.json",
-      "avance": 100
-    },
-    {
-      "codigo": "fr",
-      "nombre": "Français",
-      "version": 1,
-      "archivo": "fr.json",
-      "avance": 100
-    },
-    {
-      "codigo": "de",
-      "nombre": "Deutsch",
-      "version": 1,
-      "archivo": "de.json",
-      "avance": 100
-    },
-    {
-      "codigo": "it",
-      "nombre": "Italiano",
-      "version": 1,
-      "archivo": "it.json",
-      "avance": 100
-    },
-    {
-      "codigo": "pt-BR",
-      "nombre": "Português (Brasil)",
-      "version": 1,
-      "archivo": "pt-BR.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ja",
-      "nombre": "日本語",
-      "version": 1,
-      "archivo": "ja.json",
-      "avance": 100
-    },
-    {
-      "codigo": "zh-CN",
-      "nombre": "简体中文",
-      "version": 1,
-      "archivo": "zh-CN.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ko",
-      "nombre": "한국어",
-      "version": 1,
-      "archivo": "ko.json",
-      "avance": 100
-    },
-    {
-      "codigo": "hi",
-      "nombre": "हिन्दी",
-      "version": 1,
-      "archivo": "hi.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ar",
-      "nombre": "العربية",
-      "version": 1,
-      "archivo": "ar.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ru",
-      "nombre": "Русский",
-      "version": 1,
-      "archivo": "ru.json",
-      "avance": 100
-    },
-    {
-      "codigo": "id",
-      "nombre": "Bahasa Indonesia",
-      "version": 1,
-      "archivo": "id.json",
-      "avance": 100
-    },
-    {
-      "codigo": "nl",
-      "nombre": "Nederlands",
-      "version": 1,
-      "archivo": "nl.json",
-      "avance": 100
-    },
-    {
-      "codigo": "pl",
-      "nombre": "Polski",
-      "version": 1,
-      "archivo": "pl.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ca",
-      "nombre": "Català",
-      "version": 1,
-      "archivo": "ca.json",
-      "avance": 100
-    },
-    {
-      "codigo": "ro",
-      "nombre": "Română",
-      "version": 1,
-      "archivo": "ro.json",
-      "avance": 100
-    },
-    {
-      "codigo": "tr",
-      "nombre": "Türkçe",
-      "version": 1,
-      "archivo": "tr.json",
-      "avance": 100
-    },
-    {
-      "codigo": "uk",
-      "nombre": "Українська",
-      "version": 1,
-      "archivo": "uk.json",
-      "avance": 100
-    },
-    {
-      "codigo": "el",
-      "nombre": "Ελληνικά",
-      "version": 1,
-      "archivo": "el.json",
-      "avance": 100
-    }
-  ]
+ "idiomas": [
+  {
+   "codigo": "en",
+   "nombre": "English",
+   "version": 8,
+   "archivo": "en.json",
+   "avance": 100
+  },
+  {
+   "codigo": "fr",
+   "nombre": "Français",
+   "version": 2,
+   "archivo": "fr.json",
+   "avance": 100
+  },
+  {
+   "codigo": "de",
+   "nombre": "Deutsch",
+   "version": 2,
+   "archivo": "de.json",
+   "avance": 100
+  },
+  {
+   "codigo": "it",
+   "nombre": "Italiano",
+   "version": 2,
+   "archivo": "it.json",
+   "avance": 100
+  },
+  {
+   "codigo": "pt-BR",
+   "nombre": "Português (Brasil)",
+   "version": 2,
+   "archivo": "pt-BR.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ja",
+   "nombre": "日本語",
+   "version": 2,
+   "archivo": "ja.json",
+   "avance": 100
+  },
+  {
+   "codigo": "zh-CN",
+   "nombre": "简体中文",
+   "version": 2,
+   "archivo": "zh-CN.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ko",
+   "nombre": "한국어",
+   "version": 2,
+   "archivo": "ko.json",
+   "avance": 100
+  },
+  {
+   "codigo": "hi",
+   "nombre": "हिन्दी",
+   "version": 2,
+   "archivo": "hi.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ar",
+   "nombre": "العربية",
+   "version": 2,
+   "archivo": "ar.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ru",
+   "nombre": "Русский",
+   "version": 2,
+   "archivo": "ru.json",
+   "avance": 100
+  },
+  {
+   "codigo": "id",
+   "nombre": "Bahasa Indonesia",
+   "version": 2,
+   "archivo": "id.json",
+   "avance": 100
+  },
+  {
+   "codigo": "nl",
+   "nombre": "Nederlands",
+   "version": 2,
+   "archivo": "nl.json",
+   "avance": 100
+  },
+  {
+   "codigo": "pl",
+   "nombre": "Polski",
+   "version": 2,
+   "archivo": "pl.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ca",
+   "nombre": "Català",
+   "version": 2,
+   "archivo": "ca.json",
+   "avance": 100
+  },
+  {
+   "codigo": "ro",
+   "nombre": "Română",
+   "version": 2,
+   "archivo": "ro.json",
+   "avance": 100
+  },
+  {
+   "codigo": "tr",
+   "nombre": "Türkçe",
+   "version": 2,
+   "archivo": "tr.json",
+   "avance": 100
+  },
+  {
+   "codigo": "uk",
+   "nombre": "Українська",
+   "version": 2,
+   "archivo": "uk.json",
+   "avance": 100
+  },
+  {
+   "codigo": "el",
+   "nombre": "Ελληνικά",
+   "version": 2,
+   "archivo": "el.json",
+   "avance": 100
+  }
+ ]
 }
