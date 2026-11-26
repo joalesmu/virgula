@@ -9,12 +9,13 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   p.on('pageerror', e => errores.push(e.message)); p.on('console', m => m.type() === 'error' && errores.push(m.text()));
   p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'BORRAR' : undefined));
   await p.goto(BASE); await p.waitForTimeout(800);
-  ok(await p.textContent('#version') === '1.2', 'versión visible');
+  ok(await p.textContent('#version') === '1.0.0', 'versión pública visible');
+  ok(await p.evaluate(() => BUILD_INTERNO) === '1.3.2', 'compilación interna registrada');
   await p.screenshot({ path: OUT + '/1_grabar.png' });
   // Grabar
   await p.click('#bGrabar'); await p.waitForTimeout(3000);
   await p.click('#bMarcar'); await p.waitForTimeout(2000);
-  await p.click('#bMarcar'); await p.waitForTimeout(150); await p.click('#bMarcar'); await p.waitForTimeout(2200);
+  await p.click('#bRepetirElemento'); await p.waitForTimeout(2200);
   await p.screenshot({ path: OUT + '/2_grabando.png' });
   await p.click('#bDetener'); await p.waitForSelector('#vFicha h2', { timeout: 8000 }); await p.waitForTimeout(1200);
   const reg = await p.evaluate(async () => { const l = await DB.todas('grabaciones'); return l[0]; });
@@ -22,7 +23,9 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   ok(reg.duracion > 6.5 && reg.duracion < 9, 'duración ' + reg.duracion.toFixed(2));
   ok(reg.clips.length === 3 && reg.clips.filter(c => c.descartado).length === 1, 'clips 3, uno descartado: ' + JSON.stringify(reg.clips.map(c => [c.desde.toFixed(1), c.hasta.toFixed(1), c.descartado])));
   const tr = await p.evaluate(async id => { const t = await DB.porGrabacion('trozos', id); return { a: t.filter(x => x.tipo === 'archivo').reduce((s, x) => s + x.datos.size, 0), c: t.filter(x => x.tipo === 'consulta').reduce((s, x) => s + x.datos.size, 0) }; }, reg.id);
-  ok(Math.abs(tr.a - reg.duracion * 48000 * 2) < 48000 * 2 * 0.3, `WAV bytes ${tr.a} ≈ duración`);
+  const bytesEsperados = (reg.frames || 0) * 2 * (reg.tecnica.canales || 1);
+  const tolerancia = (reg.tecnica.sr || 48000) * 2 * (reg.tecnica.canales || 1) * 0.3;
+  ok(Math.abs(tr.a - bytesEsperados) < tolerancia, `WAV bytes ${tr.a} ≈ ${bytesEsperados} según frames y canales`);
   ok(tr.c > 1000, 'consulta bytes ' + tr.c);
   ok(await p.locator('#fAudios audio').count() === 2, 'dos reproductores');
   // Ficha

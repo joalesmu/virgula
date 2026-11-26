@@ -11,6 +11,8 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   await p.check('input[name="aIdioma"][value="en"]'); await p.waitForTimeout(1500);
   await p.screenshot({ path: OUT + '/10_en_grabar.png' });
   ok((await p.textContent('#bGrabar')).includes('Record') && (await p.textContent('#vGrabar')).includes('Input level'), 'pantalla de grabar en inglés');
+  ok((await p.textContent('nav.abajo')).includes('Lists'), 'pestaña Listas traducida');
+  ok((await p.textContent('#bMarcar')).includes('Next') && (await p.textContent('#bRepetirElemento')).includes('Repeat'), 'acciones Siguiente y Repetir traducidas');
   await p.click('#bGrabar'); await p.waitForTimeout(1500); await p.click('#bDetener'); await p.waitForSelector('#vFicha h2');
   ok((await p.textContent('#vFicha')).includes('Consent') && (await p.textContent('#vFicha h2')).startsWith('Recording'), 'ficha en inglés');
   await p.screenshot({ path: OUT + '/11_en_ficha.png' });

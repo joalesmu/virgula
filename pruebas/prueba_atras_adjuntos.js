@@ -1,4 +1,4 @@
-// Vírgula 1.2: botón «atrás» del teléfono y adjuntos dentro de la app.
+// Vírgula 1.0.0: botón «atrás» del teléfono y adjuntos dentro de la app.
 // Uso: python3 -m http.server 8765 &   y luego   node pruebas/prueba_atras_adjuntos.js
 const { chromium } = require('playwright');
 const OUT = require('os').tmpdir(), BASE = 'http://localhost:8765/', fs = require('fs');

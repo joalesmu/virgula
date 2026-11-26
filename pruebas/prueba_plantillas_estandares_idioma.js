@@ -9,7 +9,8 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   await p.goto(BASE); await p.waitForTimeout(600);
   // ── Plantillas ──
   await p.click('nav.abajo [data-vista="vAjustes"]');
-  ok(await p.locator('#plantillas .tarjeta').count() === 6, '6 plantillas de fábrica');
+  ok(await p.locator('#plSeleccion option').count() === 6, '6 plantillas disponibles en el selector');
+  await p.selectOption('#plSeleccion', 'naturaleza');
   await p.click('[data-pusar="naturaleza"]'); await p.waitForTimeout(300);
   ok((await p.textContent('#resumenAjustes')).includes('Sonidos de la naturaleza'), 'resumen muestra la plantilla activa');
   await p.click('nav.abajo [data-vista="vGrabar"]'); await p.click('#bGrabar'); await p.waitForTimeout(2500); await p.click('#bMarcar'); await p.waitForTimeout(1500); await p.click('#bDetener');
@@ -24,8 +25,25 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   await p.fill('[data-clip="0"][data-k="etiqueta"]', 'ranas');
   await p.fill('#descripcion', 'Coro nocturno junto al arroyo');
   await p.waitForTimeout(700);
+  // Archivar una plantilla en uso no debe alterar la definición histórica de la ficha.
+  await p.click('nav.abajo [data-vista="vAjustes"]');
+  await p.selectOption('#plSeleccion', 'naturaleza');
+  await p.click('[data-pborrar="naturaleza"]'); await p.waitForTimeout(350);
+  const archivoHistorico = await p.evaluate(async () => {
+    const registro = (await DB.todas('grabaciones'))[0];
+    const plantilla = Plantillas.lista.find(x => x.id === 'naturaleza');
+    return {
+      archivada: !!(plantilla && plantilla.archivada),
+      conservaDefinicion: !!(registro && registro.ficha.plantillaDef && registro.ficha.plantillaDef.campos.some(c => c.id === 'x_especie')),
+      activaGeneral: Ajustes.v.plantilla === 'general'
+    };
+  });
+  ok(archivoHistorico.archivada && archivoHistorico.conservaDefinicion && archivoHistorico.activaGeneral,
+    'archivar una plantilla en uso conserva la definición histórica de sus fichas');
+
   // ── Editor: duplicar «Lengua», campo propio, fija ──
-  await p.click('nav.abajo [data-vista="vAjustes"]'); await p.click('[data-pduplicar="lengua"]'); await p.waitForSelector('#plNombre');
+  await p.selectOption('#plSeleccion', 'lengua');
+  await p.click('[data-pduplicar="lengua"]'); await p.waitForSelector('#plNombre');
   await p.fill('#plNombre', 'Vocabulario wixárika'); await p.click('#plAgregar');
   const n = await p.locator('[data-pc][data-k="etiqueta"]').count();
   await p.locator('[data-pc][data-k="etiqueta"]').nth(n - 1).fill('Campo semántico');
@@ -38,9 +56,11 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   await p.click('#plGuardar'); await p.waitForTimeout(400);
   const pl = await p.evaluate(() => Plantillas.lista.find(x => x.nombre === 'Vocabulario wixárika'));
   ok(pl && pl.version === 2 && pl.fija && pl.campos.some(c => c.etiqueta === 'Campo semántico' && c.opciones.length === 3 && c.obligatorio), 'plantilla nueva guardada v2, fija, con campo propio');
+  await p.selectOption('#plSeleccion', pl.id);
   const [dlP] = await Promise.all([p.waitForEvent('download'), p.click(`[data-pexportar="${pl.id}"]`)]);
   const rutaPl = OUT + '/' + dlP.suggestedFilename(); await dlP.saveAs(rutaPl); ok(/plantilla_Vocabulario-wixarika_v2\.json/.test(rutaPl), 'plantilla exportada: ' + dlP.suggestedFilename());
   // grabar con la plantilla nueva
+  await p.selectOption('#plSeleccion', pl.id);
   await p.click(`[data-pusar="${pl.id}"]`); await p.click('nav.abajo [data-vista="vGrabar"]'); await p.click('#bGrabar'); await p.waitForTimeout(2000); await p.click('#bDetener'); await p.waitForSelector('#vFicha h2');
   const idCampo = pl.campos.find(c => c.etiqueta === 'Campo semántico').id;
   ok(await p.locator('#cx_' + idCampo).count() === 1, 'campo propio en la ficha');
@@ -63,7 +83,7 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   ok((await p.textContent('#avisoGlobal')).trim() === '', '«Mañana» pospone el recordatorio');
   // ── Reportar problema ──
   await p.click('nav.abajo [data-vista="vAjustes"]'); await p.click('#bReportar'); await p.fill('#repQue', 'prueba'); await p.click('#repOk'); await p.waitForSelector('#repSalida pre');
-  const inf = await p.textContent('#repSalida pre'); ok(inf.includes('Vírgula 1.2') && !inf.includes('Coro de ranas'), 'informe técnico sin datos de fichas');
+  const inf = await p.textContent('#repSalida pre'); ok(inf.includes('Vírgula 1.0.0') && inf.includes('Compilación interna: 1.3.2') && !inf.includes('Coro de ranas'), 'informe técnico con versiones y sin datos de fichas');
   ok((await p.getAttribute('#repSalida a.boton.prim', 'href')).startsWith('mailto:joalesmu@gmail.com'), 'informe por correo al proyecto');
   await p.click('#repNo');
   // ── Idioma: plantilla de traducción → probar ──
@@ -96,8 +116,11 @@ const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) process.e
   q.on('pageerror', e => err2.push(e.message)); q.on('dialog', d => d.accept());
   await q.goto(BASE); await q.click('nav.abajo [data-vista="vAjustes"]');
   await q.setInputFiles('#archivoPlantilla', rutaPl); await q.waitForTimeout(500);
-  ok(await q.locator(`[data-peditar="${pl.id}"]`).textContent().then(s => s.includes('Ver')), 'plantilla fija importada: solo «Ver»');
-  await q.click(`[data-peditar="${pl.id}"]`); ok(await q.locator('#plGuardar').count() === 0 && await q.isDisabled('#plNombre'), 'editor en solo lectura'); await q.click('#plCerrar');
+  await q.selectOption('#plSeleccion', pl.id);
+  ok(await q.locator(`[data-pver="${pl.id}"]`).count() === 1 && await q.locator(`[data-peditar="${pl.id}"]`).count() === 0, 'plantilla fija importada: permite verla, no editarla');
+  await q.click(`[data-pver="${pl.id}"]`);
+  ok(await q.locator('#plVistaCerrar').count() === 1 && await q.locator('#plVistaEditar').count() === 0, 'vista de plantilla fija sin acción de edición');
+  await q.click('#plVistaCerrar');
   await q.click('nav.abajo [data-vista="vAcervo"]'); await q.setInputFiles('#archivoImportar', zip); await q.waitForSelector('#iOk'); await q.click('#iOk'); await q.waitForTimeout(1500);
   ok(await q.locator('#lista .tarjeta').count() === 2, 'paquete importado (2 grabaciones)');
   ok(await q.evaluate(() => Plantillas.lista.some(p => p.id === 'naturaleza')), 'plantillas del paquete disponibles');
