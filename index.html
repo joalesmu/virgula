@@ -47,6 +47,27 @@
   body{font-size:1rem}
   body{padding:max(10px,env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom))}
   main{max-width:45rem;margin:0 auto}
+  .lista-grabacion{display:grid;grid-template-columns:1fr;gap:10px}
+  .lista-grabacion .lista-controles{min-width:0}
+  .lista-lectura{background:var(--fondo);border:1px solid var(--borde);border-radius:12px;padding:12px;min-width:0}
+  .lista-actual{background:var(--panel2);border-radius:10px;padding:12px;margin-bottom:10px;text-align:center}
+  .lista-actual .valor{font-size:clamp(1.5rem,5vw,2.25rem);font-weight:800;overflow-wrap:anywhere}
+  .lista-elementos{padding-left:2rem;margin:8px 0 0;display:grid;grid-template-columns:1fr;gap:4px}
+  .lista-elementos li{padding:5px 7px;border-radius:8px;overflow-wrap:anywhere}
+  .lista-elementos li.actual{background:var(--panel2);outline:2px solid var(--acento);font-weight:800}
+  .lista-elementos li.completado{color:var(--suave)}
+  .lista-guion{white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;background:var(--fondo);border-radius:10px;padding:12px}
+  .plantilla-detalle{background:var(--panel2);border:1px solid var(--borde);border-radius:12px;padding:12px;margin-top:10px}
+  .lista-campos{padding-left:1.25rem;line-height:1.5}.lista-campos li{padding:5px 0;border-bottom:1px solid var(--borde)}
+  .icono-accesibilidad{width:1.35em;height:1.35em;vertical-align:-.28em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  @media(min-width:900px){
+    main{max-width:72rem}
+    #vGrabar>.panel:first-child{max-width:54rem;margin-left:auto;margin-right:auto}
+    .lista-grabacion{grid-template-columns:minmax(250px,.75fr) minmax(0,1.8fr);align-items:start}
+    .lista-elementos{grid-template-columns:repeat(3,minmax(0,1fr));padding-left:1.5rem}
+    #vListas .lista-editor-grid{display:grid;grid-template-columns:minmax(230px,.7fr) minmax(0,1.8fr);gap:12px;align-items:start}
+  }
+  @media(min-width:600px) and (max-width:899px){.lista-elementos{grid-template-columns:repeat(2,minmax(0,1fr))}}
   a{color:var(--azul)}
   h1{font-size:1.25rem;margin:0}
   h2{font-size:1.0625rem;margin:0 0 8px}
@@ -94,7 +115,8 @@
   .medidor{height:18px;background:var(--fondo);border:1px solid var(--borde);border-radius:9px;overflow:hidden;position:relative;margin:8px 0 4px}
   .medidor i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--verde) 0 70%,var(--ambar) 70% 88%,var(--rojo) 88%)}
   .medidor b{position:absolute;top:0;bottom:0;width:2px;background:var(--texto);left:0}
-  .controles{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-top:10px}
+  .controles{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-top:10px}
+  @media(min-width:650px){.controles{grid-template-columns:1.3fr 1fr 1fr 1fr}}
   .controles button{min-height:4.5rem;font-size:1.0625rem}
   #bMarcar{background:var(--acento);color:var(--sobreAcento);font-weight:800}
   #bMarcar small{display:block;font-weight:500;font-size:0.75rem}
@@ -153,7 +175,8 @@
       <div class="medidor" aria-hidden="true"><i id="nivel"></i><b id="pico"></b></div>
       <p class="nota" id="nivelNota" style="text-align:center"></p>
       <div class="controles">
-        <button id="bMarcar" disabled><span data-t>🔖 Marcar</span><small data-t>1 toque: siguiente · 2 toques: otra vez</small></button>
+        <button id="bMarcar" disabled><span data-t>🔖 Siguiente</span><small data-t>Cerrar elemento actual</small></button>
+        <button id="bRepetirElemento" disabled><span data-t>↩ Repetir</span><small data-t>Sin avanzar la lista</small></button>
         <button id="bPausa" disabled></button>
         <button id="bDetener" disabled data-t>⏹ Detener</button>
       </div>
@@ -161,7 +184,61 @@
       <p class="nota aviso-ios oculto" id="avisoIos" data-t>En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.</p>
       <p class="resumen-ajustes" id="resumenAjustes"></p>
     </div>
+    <section class="panel lista-grabacion" id="panelListaGrabacion" aria-label="Lista de trabajo">
+      <div class="lista-controles">
+        <h2 data-t>Lista de trabajo</h2>
+        <label for="listaGrabacion" data-t>Seleccionar lista para esta grabación</label>
+        <select id="listaGrabacion"><option value="" data-t>Sin lista</option></select>
+        <div class="fila">
+          <button id="bListaImportar" class="chico" data-t>📋 Importar o pegar lista</button>
+          <button id="bListaCrear" class="chico" data-t>＋ Crear lista</button>
+        </div>
+        <p class="nota" data-t>La lista seleccionada se copia en la grabación. Puedes modificar la lista original sin alterar grabaciones anteriores.</p>
+      </div>
+      <div id="listaLectura" class="lista-lectura oculto" aria-live="off"></div>
+    </section>
     <p class="nota" style="text-align:center" data-t>Graba primero; la ficha se completa después, con calma.</p>
+  </section>
+
+  <!-- ───── Listas ───── -->
+  <section id="vListas" class="vista oculto">
+    <div class="panel">
+      <h2>Listas de trabajo</h2>
+      <p class="nota">Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.</p>
+      <div class="fila">
+        <div style="flex:2 1 240px"><label for="listaSeleccion">Mis listas</label><select id="listaSeleccion"><option value="">Selecciona una lista</option></select></div>
+        <button id="bListaNueva" class="prim">＋ Nueva lista</button>
+      </div>
+      <div class="fila">
+        <button id="bListaPegar" class="chico">📋 Pegar texto</button>
+        <button id="bListaArchivo" class="chico">📥 Importar TXT</button>
+        <input type="file" id="archivoLista" accept=".txt,text/plain" class="oculto">
+      </div>
+      <div id="listaEditor" class="oculto">
+        <div class="lista-editor-grid">
+          <div>
+            <label for="listaNombre">Nombre de la lista</label>
+            <input type="text" id="listaNombre" maxlength="120" placeholder="Ej. Vocabulario de alimentos">
+            <label for="listaTipo">Tipo de lista</label>
+            <select id="listaTipo"><option value="elementos">Elementos (una entrada por renglón)</option><option value="guion">Guion (texto completo)</option></select>
+            <p class="nota" id="listaAyuda">En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.</p>
+          </div>
+          <div>
+            <label for="listaContenido">Contenido</label>
+            <textarea id="listaContenido" rows="14" maxlength="100000" placeholder="Pega o escribe aquí.
+Un elemento por renglón."></textarea>
+            <p class="nota" id="listaVistaPrevia"></p>
+          </div>
+        </div>
+        <div class="fila">
+          <button id="bListaGuardar" class="prim">💾 Guardar lista</button>
+          <button id="bListaCopiar">Copiar texto</button>
+          <button id="bListaExportar">⬇️ Exportar TXT</button>
+          <button id="bListaBorrar" class="peligro">Borrar</button>
+        </div>
+      </div>
+      <p id="listaVacia" class="nota">Todavía no tienes listas. Crea una o pega texto para comenzar.</p>
+    </div>
   </section>
 
   <!-- ───── Acervo ───── -->
@@ -201,7 +278,7 @@
       </details>
     </div>
     <div class="panel" id="panelAcceso">
-      <h2>♿ <span data-t>Accesibilidad</span></h2>
+      <h2><svg class="icono-accesibilidad" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2.2"></circle><path d="M12 8v8m-8-5 8-2 8 2M12 16l-5 6m5-6 5 6"></path></svg> <span data-t>Accesibilidad</span></h2>
       <label data-t>Tamaño de letra y botones</label>
       <div class="op" role="radiogroup">
         <label><input type="radio" name="aEscala" value="1"> <span data-t>Normal</span></label>
@@ -275,6 +352,7 @@
         <option value="1" data-t>1 día</option><option value="3" data-t>3 días</option><option value="7" data-t>7 días</option><option value="0" data-t>No recordar</option>
       </select>
       <p class="nota" data-t>Vírgula guarda todo solo en este aparato y no sube nada a internet. Si se borran los datos del navegador o se pierde el aparato, se pierde lo que no se exportó.</p>
+      <p class="nota" id="estadoPersistencia" role="status" aria-live="polite"></p>
     </div>
     <div class="panel">
       <h2>🛟 <span data-t>Ayuda</span></h2>
@@ -284,6 +362,8 @@
     <div class="panel">
       <h2>ℹ️ <span data-t>Acerca de</span></h2>
       <p class="nota"><span data-t>Vírgula · memoria sonora viva · versión</span> <span id="version"></span></p>
+      <div class="fila"><button id="bComprobarActualizaciones" class="chico">↻ Comprobar actualizaciones</button></div>
+      <p id="estadoActualizaciones" class="nota" role="status" aria-live="polite">La comprobación se realiza al abrir la aplicación.</p>
       <p class="nota" data-t>Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.</p>
       <p class="nota" data-t>En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.</p>
       <p class="nota" id="creditosIdioma"></p>
@@ -296,12 +376,13 @@
 
 <nav class="abajo" data-ta="Secciones">
   <button data-vista="vGrabar" class="on"><b>⏺</b><span data-t>Grabar</span></button>
+  <button data-vista="vListas"><b>☷</b><span data-t>Listas</span></button>
   <button data-vista="vAcervo"><b>📚</b><span data-t>Acervo</span></button>
   <button data-vista="vAjustes"><b>⚙️</b><span data-t>Ajustes</span></button>
 </nav>
 <script>
 'use strict';
-const TEXTOS_FUENTE = [["memoria sonora viva", "Pantalla principal"], ["⬇️ Instalar", "Pantalla principal"], ["Idioma", "Pantalla principal"], ["🔗 Compartir", "Pantalla principal"], ["🔗 Enlace copiado. Ya puedes compartirlo.", "Pantalla principal"], ["No se pudo compartir el enlace.", "Pantalla principal"], ["Copia el enlace de Vírgula:", "Pantalla principal"], ["🔖 Marcar", "Grabar"], ["1 toque: siguiente · 2 toques: otra vez", "Grabar"], ["⏹ Detener", "Grabar"], ["En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.", "Grabar"], ["Graba primero; la ficha se completa después, con calma.", "Grabar"], ["🔍 Buscar en títulos, descripciones, transcripciones…", "Acervo"], ["Buscar", "Acervo"], ["📦 Exportar", "Acervo"], ["☑ Todas", "Acervo"], ["📥 Importar paquete", "Acervo"], ["Idioma de la interfaz", "Ajustes"], ["🔄 Ver idiomas publicados", "Ajustes"], ["📥 Instalar idioma desde archivo", "Ajustes"], ["✍️ Traducir Vírgula a otra lengua", "Ajustes"], ["1. Descarga la plantilla: es una hoja con todos los textos de Vírgula y una columna vacía para la traducción.", "Ajustes"], ["2. Llénala en Google Sheets, Excel o LibreOffice (puede ser poco a poco: lo que falte se ve en español) y guárdala como CSV.", "Ajustes"], ["3. Pruébala aquí mismo: Vírgula cambia al instante y ves cómo queda cada texto.", "Ajustes"], ["4. Envíala por correo o GitHub. Tras la revisión, se publica para todos.", "Ajustes"], ["Partir de", "Ajustes"], ["⬇️ Descargar plantilla", "Ajustes"], ["📥 Probar mi traducción", "Ajustes"], ["📨 Enviar traducción", "Ajustes"], ["Accesibilidad", "Ajustes"], ["Tamaño de letra y botones", "Ajustes"], ["Normal", "Ajustes"], ["Grande", "Ajustes"], ["Muy grande", "Ajustes"], ["Máxima", "Ajustes"], ["Colores", "Ajustes"], ["Oscuro", "Ajustes"], ["Claro (para el sol)", "Ajustes"], ["Alto contraste", "Ajustes"], ["Reducir movimiento", "Ajustes"], ["Vibrar al grabar y marcar", "Ajustes"], ["Los cambios se aplican al momento y se guardan en este aparato.", "Ajustes"], ["Grabación", "Ajustes"], ["Micrófono", "Ajustes"], ["Predeterminado del aparato", "Ajustes"], ["🔎 Buscar micrófonos", "Ajustes"], ["Calidad", "Ajustes"], ["Archivo + consulta", "Ajustes"], ["Solo archivo (WAV)", "Ajustes"], ["Solo consulta", "Ajustes"], ["Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).", "Ajustes"], ["Canales", "Ajustes"], ["Mono", "Ajustes"], ["Estéreo", "Ajustes"], ["Ajustes del aparato (afectan también el audio de archivo)", "Ajustes"], ["Volumen automático", "Ajustes"], ["Quitar ruido", "Ajustes"], ["Quitar eco", "Ajustes"], ["Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.", "Ajustes"], ["Plantillas de ficha", "Ajustes"], ["La plantilla decide qué campos tiene la ficha. «Usar» la deja para las grabaciones nuevas; en cada ficha se puede cambiar.", "Ajustes"], ["＋ Nueva plantilla", "Ajustes"], ["📥 Importar plantilla", "Ajustes"], ["Fichas", "Ajustes"], ["Quién graba (se propone en cada ficha)", "Ajustes"], ["Nombre o equipo", "Ajustes"], ["Derechos y licencia (se propone en cada ficha)", "Ajustes"], ["Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos", "Ajustes"], ["Ubicación al llenar la ficha", "Ajustes"], ["Exacta", "Ajustes"], ["Aproximada (~1 km)", "Ajustes"], ["Aproximada (~10 km)", "Ajustes"], ["La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.", "Ajustes"], ["Respaldo", "Ajustes"], ["Recordarme respaldar después de", "Ajustes"], ["1 día", "Ajustes"], ["3 días", "Ajustes"], ["7 días", "Ajustes"], ["No recordar", "Ajustes"], ["Vírgula guarda todo solo en este aparato y no sube nada a internet. Si se borran los datos del navegador o se pierde el aparato, se pierde lo que no se exportó.", "Ajustes"], ["Ayuda", "Ajustes"], ["📨 Reportar un problema", "Ajustes"], ["Arma un informe técnico (aparato, versión, últimos eventos) para enviarlo por correo o GitHub. No incluye audios ni fichas.", "Ajustes"], ["Acerca de", "Ajustes"], ["Vírgula · memoria sonora viva · versión", "Ajustes"], ["Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.", "Ajustes"], ["En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.", "Ajustes"], ["Diseñado y desarrollado por Alejandro Estrada", "Ajustes"], ["código", "Ajustes"], ["Secciones", "Ajustes"], ["Grabar", "Ajustes"], ["Acervo", "Ajustes"], ["Ajustes", "Ajustes"], ["El archivo no es un idioma de Vírgula.", "Idioma"], ["Falta el código de la lengua (por ejemplo: hch, nah, en).", "Idioma"], ["El español ya viene incluido.", "Idioma"], ["Falta el nombre de la lengua.", "Idioma"], ["Termina la grabación antes de cambiar el idioma.", "Idioma"], ["¿Quitar el idioma «{nombre}» de este aparato?", "Idioma"], ["Traducción: {quien}", "Idioma"], ["Avala: {quien}", "Idioma"], ["en prueba", "Idioma"], ["✕ Quitar este idioma", "Idioma"], ["Buscando…", "Idioma"], ["Idiomas publicados:", "Idioma"], ["⬆️ Actualizar", "Idioma"], ["instalado", "Idioma"], ["Todavía no hay idiomas publicados.", "Idioma"], ["No se pudo consultar: revisa la conexión a internet.", "Idioma"], ["🌐 «{nombre}» instalado.", "Idioma"], ["🌐 «{nombre}» instalado: {n} % traducido.", "Idioma"], ["{n} texto(s) con variables distintas quedaron en español.", "Idioma"], ["Código de la lengua (ISO 639; por ejemplo: hch para wixárika, nah para náhuatl, en para inglés)", "Idioma"], ["Nombre de la lengua, escrito en esa lengua", "Idioma"], ["Nombre de la lengua en español", "Idioma"], ["Variante o región", "Idioma"], ["Cómo escribir fechas y números (por ejemplo: es-MX o en-US)", "Idioma"], ["Quién tradujo", "Idioma"], ["Comunidad, autoridad o institución que revisó y avala la traducción", "Idioma"], ["Licencia de la traducción", "Idioma"], ["Correo o teléfono de contacto (opcional)", "Idioma"], ["Versión de esta traducción (1, 2, 3…)", "Idioma"], ["Datos de la traducción", "Idioma"], ["Conserva igual lo que está entre llaves: {x}", "Idioma"], ["La hoja está vacía.", "Idioma"], ["La hoja necesita las columnas texto_original y traduccion.", "Idioma"], ["⬇️ Plantilla en Descargas. Ábrela con Google Sheets, Excel o LibreOffice; llena la columna «traduccion» y guárdala como CSV.", "Idioma"], ["Primero prueba tu traducción con «📥 Probar mi traducción».", "Idioma"], ["Traducción de Vírgula: {nombre} v{v}", "Idioma"], ["Hola. Envío la traducción de Vírgula a {nombre} ({codigo}), versión {v}, con {n} % de la interfaz.\nTradujo: {quien}\nAvala: {avala}\n\nAdjunto el archivo {archivo} (está en Descargas).", "Idioma"], ["📨 Enviar la traducción", "Idioma"], ["Se guardó **{archivo}** en Descargas. Envíalo por una de estas vías; el equipo de Vírgula lo revisa y lo publica para todos.", "Idioma"], ["✉️ Por correo", "Idioma"], ["(Arrastra aquí el archivo para adjuntarlo.)", "Idioma"], ["🐙 En GitHub", "Idioma"], ["Por correo: adjunta el archivo antes de enviar. En GitHub: necesitas una cuenta; arrastra el archivo al recuadro del mensaje.", "Idioma"], ["Cerrar", "Idioma"], ["Micrófono elegido", "General"], ["archivo + consulta", "General"], ["solo archivo", "General"], ["solo consulta", "General"], ["volumen automático", "General"], ["sin ruido", "General"], ["sin eco", "General"], ["estéreo", "General"], ["mono", "General"], ["aparato: {lista}", "General"], ["sonido sin alterar", "General"], ["micrófono predeterminado", "General"], ["💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.", "General"], ["🎙️ Se está grabando. Para terminar, toca ⏹ Detener.", "General"], ["Se está grabando. ¿Ver otra sección? La grabación sigue.", "General"], ["Grabación {fecha}", "Grabar"], ["El micrófono elegido no está conectado: usa el predeterminado.", "Grabar"], ["No se pudo usar el micrófono: {error}. Revisa el permiso del micrófono.", "Grabar"], ["predeterminado", "Grabar"], ["inicio", "Grabar"], ["no se pudo grabar en calidad de archivo: {error}", "Grabar"], ["este navegador no graba en calidad de consulta", "Grabar"], ["consulta: {error}", "Grabar"], ["Grabando", "Grabar"], ["sin audio", "Grabar"], ["de {desde} a {hasta} (posible llamada u otra app usando el micrófono)", "Grabar"], ["micrófono ocupado por el sistema", "Grabar"], ["p. ej. una llamada", "Grabar"], ["micrófono de vuelta", "Grabar"], ["el micrófono se desconectó", "Grabar"], ["audio del sistema: {estado}", "Grabar"], ["error al guardar", "Grabar"], ["(¿espacio lleno?)", "Grabar"], ["⚠️ No se pudo guardar: revisa el espacio del aparato.", "Grabar"], ["hueco", "Grabar"], ["faltan {s} s respecto al reloj", "Grabar"], ["⚠️ Satura: aleja el micrófono", "Grabar"], ["Muy bajo: acerca el micrófono (20–30 cm)", "Grabar"], ["Nivel {db} dB", "Grabar"], ["↩ Otra vez: ese intento queda descartado", "Grabar"], ["▶ Seguir", "Grabar"], ["pausa", "Grabar"], ["⏸ Pausa", "Grabar"], ["continúa", "Grabar"], ["fin", "Grabar"], ["Nivel de entrada", "Grabar"], ["🔆 Pantalla fija", "Grabar"], ["🔅 Pantalla sin fijar", "Grabar"], ["💾 hace {s} s", "Grabar"], ["⚠️ huecos {s} s", "Grabar"], ["🔇 {n} tramo(s) sin audio", "Grabar"], ["⏸ En pausa", "Grabar"], ["pantalla oculta o bloqueada", "Grabar"], ["pantalla visible", "Grabar"], ["la app se cerró u ocultó", "Grabar"], ["se conectó o desconectó un micrófono", "Grabar"], ["⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.", "Grabar"], ["🛟 Recuperar", "Grabar"], ["recuperada", "Grabar"], ["la grabación se cortó; se recuperó lo guardado", "Grabar"], ["🛟 Recuperada(s). Están en 📚 Acervo.", "Grabar"], ["Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.", "Audio"], ["💾 {n} grabación(es) sin respaldo o con cambios desde el último. Selecciónalas y usa 📦 Exportar para guardarlas en Drive, en otra computadora o donde prefieras.", "Acervo"], ["☑ Elegir las que faltan", "Acervo"], ["✅ Todo respaldado.", "Acervo"], ["Consentimiento", "Acervo"], ["Elegir {titulo}", "Acervo"], ["✔ consentimiento", "Acervo"], ["consentimiento no aplica", "Acervo"], ["⏳ consentimiento pendiente", "Acervo"], ["📝 faltan {n} dato(s)", "Acervo"], ["🔖 {n} clip(s)", "Acervo"], ["✍️ transcripción", "Acervo"], ["🌐 {n} traducción(es)", "Acervo"], ["🔒 confidencial", "Acervo"], ["🛟 recuperada", "Acervo"], ["💾 sin respaldo", "Acervo"], ["Nada coincide con la búsqueda.", "Acervo"], ["Todavía no hay grabaciones. Ve a ⏺ Grabar.", "Acervo"], ["💾 {n} grabación(es) llevan más de {d} día(s) sin respaldo. Solo existen en este aparato.", "Acervo"], ["📦 Respaldar ahora", "Acervo"], ["Mañana", "Acervo"], ["Título", "Plantillas"], ["Fecha y hora", "Plantillas"], ["Descripción", "Plantillas"], ["Uso", "Plantillas"], ["Lugar (comunidad, municipio, sitio)", "Plantillas"], ["Ubicación", "Plantillas"], ["Lengua(s) o variante(s)", "Plantillas"], ["Palabras clave", "Plantillas"], ["Participantes", "Plantillas"], ["Quién grabó", "Plantillas"], ["Derechos y licencia", "Plantillas"], ["Notas", "Plantillas"], ["Confidencial", "Plantillas"], ["✍️ Transcripción", "Plantillas"], ["🌐 Traducciones", "Plantillas"], ["🔖 Clips", "Plantillas"], ["📚 Fuentes y enlaces", "Plantillas"], ["Texto corto", "Plantillas"], ["Texto largo", "Plantillas"], ["Número", "Plantillas"], ["Fecha", "Plantillas"], ["Una opción de una lista", "Plantillas"], ["Varias opciones de una lista", "Plantillas"], ["Sí / no", "Plantillas"], ["— Ninguno —", "Plantillas"], ["Dublin Core · tema (subject)", "Plantillas"], ["Dublin Core · cobertura (coverage)", "Plantillas"], ["Dublin Core · descripción", "Plantillas"], ["Dublin Core · colaborador", "Plantillas"], ["Dublin Core · relación", "Plantillas"], ["Dublin Core · fuente", "Plantillas"], ["Dublin Core · tipo", "Plantillas"], ["Darwin Core · nombre científico", "Plantillas"], ["Darwin Core · nombre común", "Plantillas"], ["Darwin Core · número de individuos", "Plantillas"], ["Darwin Core · sexo", "Plantillas"], ["Darwin Core · etapa de vida", "Plantillas"], ["Darwin Core · comportamiento", "Plantillas"], ["Darwin Core · hábitat", "Plantillas"], ["Darwin Core · notas del evento", "Plantillas"], ["Darwin Core · notas del registro", "Plantillas"], ["Darwin Core · protocolo", "Plantillas"], ["Darwin Core · notas de identificación", "Plantillas"], ["Darwin Core · identificó", "Plantillas"], ["General", "Plantillas"], ["Todos los campos, para cualquier grabación.", "Plantillas"], ["Lengua", "Plantillas"], ["Vocabulario, narraciones y conversaciones en lengua, con transcripción, traducciones y clips para el catálogo.", "Plantillas"], ["Lengua y variante; por ejemplo, wixárika de San Andrés Cohamiata.", "Plantillas"], ["Tipo de habla", "Plantillas"], ["Vocabulario o palabras sueltas", "Plantillas"], ["Frases", "Plantillas"], ["Narración", "Plantillas"], ["Conversación", "Plantillas"], ["Canto", "Plantillas"], ["Discurso o ceremonia", "Plantillas"], ["Otro", "Plantillas"], ["Patrimonio y celebraciones", "Plantillas"], ["Música, rituales, fiestas y saberes, con sus restricciones de uso.", "Plantillas"], ["Celebración, ritual o evento", "Plantillas"], ["Ocasión o calendario", "Plantillas"], ["Instrumentos", "Plantillas"], ["Restricciones de uso o difusión", "Plantillas"], ["Lo que la comunidad pide: qué no se debe publicar, quién puede escucharlo, en qué fechas…", "Plantillas"], ["Bitácora de campo", "Plantillas"], ["Notas habladas del día de trabajo: actividades, observaciones y pendientes.", "Plantillas"], ["Actividades del día", "Plantillas"], ["Pendientes", "Plantillas"], ["Sonidos de la naturaleza", "Plantillas"], ["Aves, ranas, insectos, paisajes sonoros. Exporta también en Darwin Core para bases de biodiversidad.", "Plantillas"], ["Qué se escucha", "Plantillas"], ["Nombre científico", "Plantillas"], ["Si no estás seguro, déjalo vacío o escribe solo el género.", "Plantillas"], ["Nombre común", "Plantillas"], ["Nombre en la lengua local", "Plantillas"], ["Número de individuos", "Plantillas"], ["Comportamiento", "Plantillas"], ["Llamado", "Plantillas"], ["Alarma", "Plantillas"], ["Coro", "Plantillas"], ["Vuelo", "Plantillas"], ["Alimentación", "Plantillas"], ["Hábitat", "Plantillas"], ["Condiciones (clima, viento, lluvia)", "Plantillas"], ["Entrevista o sesión de investigación", "Plantillas"], ["Entrevistas, grupos y sesiones (antropología, psicología, educación). Confidencial desde el inicio.", "Plantillas"], ["Usa códigos (P01, P02…). La lista que relaciona códigos y nombres guárdala aparte.", "Plantillas"], ["Proyecto o estudio", "Plantillas"], ["Número de sesión", "Plantillas"], ["Guía o protocolo usado", "Plantillas"], ["Aprobación ética o folio", "Plantillas"], ["✓ para grabaciones nuevas", "Plantillas"], ["🔒 fija", "Plantillas"], ["📥 importada", "Plantillas"], ["{n} campo(s) propios", "Plantillas"], ["Usar", "Plantillas"], ["👁 Ver", "Plantillas"], ["✏️ Editar", "Plantillas"], ["⧉ Duplicar", "Plantillas"], ["⬇️ Exportar", "Plantillas"], ["Borrar", "Plantillas"], ["🧩 Las grabaciones nuevas usarán «{nombre}».", "Plantillas"], ["{nombre} (copia)", "Plantillas"], ["Plantilla nueva", "Plantillas"], ["¿Borrar la plantilla «{nombre}»?", "Plantillas"], ["{n} ficha(s) la usan: conservarán sus datos y se verán con la plantilla General.", "Plantillas"], ["⬇️ Plantilla guardada en Descargas. Compártela con tu equipo; la importan en ⚙️ Ajustes → 🧩 Plantillas.", "Plantillas"], ["No es una plantilla de Vírgula.", "Plantillas"], ["Ya tienes «{nombre}» v{v}, hecha en este aparato. ¿Reemplazarla con la v{v2} que llega?", "Plantillas"], ["El archivo no es una plantilla de Vírgula.", "Plantillas"], ["🧩 Plantilla «{nombre}» agregada.", "Plantillas"], ["🧩 «{nombre}» actualizada a la v{v}.", "Plantillas"], ["Ya tenías «{nombre}» en esa versión o una más nueva.", "Plantillas"], ["Plantilla", "Plantillas"], ["Editar plantilla", "Plantillas"], ["🔒 Es una plantilla fija de equipo: se usa tal cual. Para cambiarla, duplícala.", "Plantillas"], ["Nombre", "Plantillas"], ["Para qué sirve", "Plantillas"], ["Consentimiento al empezar", "Plantillas"], ["⏳ Pendiente", "Plantillas"], ["No aplica", "Plantillas"], ["🔒 Fichas confidenciales desde el inicio", "Plantillas"], ["Campos", "Plantillas"], ["Título, fecha y consentimiento son el núcleo: siempre están. Lo demás lo decides tú. Ocultar un campo no borra lo ya escrito.", "Plantillas"], ["＋ Campo propio", "Plantillas"], ["Una sección oculta vuelve a aparecer en la ficha si ya tiene datos.", "Plantillas"], ["👥 Compartir con un equipo", "Plantillas"], ["Equipo o proyecto", "Plantillas"], ["🔒 Fija: quien la importe la usa tal cual (puede duplicarla, no cambiarla)", "Plantillas"], ["Para compartirla: ⬇️ Exportar en la lista de plantillas. Cada vez que guardas cambios sube la versión; al importar una versión más nueva, se actualiza.", "Plantillas"], ["Versión {v}", "Plantillas"], ["plantilla de fábrica", "Plantillas"], ["💾 Guardar", "Plantillas"], ["Cancelar", "Plantillas"], ["↺ Volver a la de fábrica", "Plantillas"], ["Campos de fábrica cargados: toca 💾 Guardar para conservarlos.", "Plantillas"], ["¿Quitar este campo de la plantilla? Lo ya escrito en las fichas se conserva (aparece en «Otros datos»).", "Plantillas"], ["Nombre del campo *", "Plantillas"], ["Nombre del campo", "Plantillas"], ["Subir", "Plantillas"], ["Bajar", "Plantillas"], ["Núcleo: siempre visible y obligatorio.", "Plantillas"], ["Visible", "Plantillas"], ["Obligatorio", "Plantillas"], ["de Vírgula: {nombre}", "Plantillas"], ["campo de Vírgula", "Plantillas"], ["Tipo", "Plantillas"], ["Equivale a", "Plantillas"], ["Opciones (una por renglón)", "Plantillas"], ["Ayuda para quien llena (opcional)", "Plantillas"], ["✕ Quitar campo", "Plantillas"], ["La plantilla necesita un nombre.", "Plantillas"], ["Hay un campo propio sin nombre.", "Plantillas"], ["«{nombre}» necesita al menos dos opciones.", "Plantillas"], ["Ya hay una plantilla con ese nombre.", "Plantillas"], ["🧩 «{nombre}» guardada (v{v}).", "Plantillas"], ["📷 Foto", "Ficha"], ["✍️ Transcripción o traducción", "Ficha"], ["🎵 Letra, acordes o partitura", "Ficha"], ["📚 Material de apoyo", "Ficha"], ["🤝 Consentimiento", "Ficha"], ["📎 Otro", "Ficha"], ["— Sin especificar —", "Ficha"], ["Hablante", "Ficha"], ["Cantante", "Ficha"], ["Músico", "Ficha"], ["Intérprete", "Ficha"], ["Traductor", "Ficha"], ["Entrevistador", "Ficha"], ["Investigador", "Ficha"], ["Narrador", "Ficha"], ["— Cómo se dio —", "Ficha"], ["Oral (grabado)", "Ficha"], ["Firma en la pantalla", "Ficha"], ["Documento firmado", "Ficha"], ["De palabra, sin registro", "Ficha"], ["Acuerdo comunitario", "Ficha"], ["✔ Otorgado", "Ficha"], ["adjunto no disponible", "Ficha"], ["No se encontró la grabación.", "Ficha"], ["💾 Guardado {hora}", "Ficha"], ["🔗 Enlazar a un adjunto o página", "Ficha"], ["Qué se grabó, en qué contexto, quiénes participan…", "Ficha"], ["Ej. wixárika (variante de San Andrés)", "Ficha"], ["Separadas por comas", "Ficha"], ["＋ Participante", "Ficha"], ["Confidencial: sin ubicación, participantes solo con código y un aviso antes de exportar.", "Ficha"], ["📝 Falta: {lista}", "Ficha"], ["✅ Ficha completa", "Ficha"], ["🗄️ archivo WAV", "Ficha"], ["🔊 consulta", "Ficha"], ["Cargando audio…", "Ficha"], ["Ficha", "Ficha"], ["Otros datos", "Ficha"], ["De otra plantilla o de un campo que ya no está en esta. Se conservan y se exportan.", "Ficha"], ["Transcripción y traducciones", "Ficha"], ["Transcripción", "Ficha"], ["Traducciones", "Ficha"], ["Lengua de la transcripción", "Ficha"], ["Transcripción (lo que se dice, escrito en su lengua)", "Ficha"], ["＋ Traducción", "Ficha"], ["Clips", "Ficha"], ["Cada marca cortó un clip. Escribe su etiqueta (por ejemplo, la palabra que se dijo): al exportar, cada clip sale con ese nombre, listo para traerlo al catálogo de lenguas.", "Ficha"], ["＋ Clip a mano", "Ficha"], ["Fuentes y enlaces", "Ficha"], ["＋ Fuente", "Ficha"], ["«No aplica» sirve, por ejemplo, para sonidos de la naturaleza o espacios públicos sin personas identificables.", "Ficha"], ["Cómo se dio", "Ficha"], ["Condiciones o notas (qué usos se aceptaron, quién lo dio…)", "Ficha"], ["✍️ Firmar con el dedo", "Ficha"], ["🎙️ Grabar consentimiento", "Ficha"], ["📄 Adjuntar documento", "Ficha"], ["Adjuntos", "Ficha"], ["Fotos, documentos, letras, materiales… de cualquier tipo. Se guarda una copia dentro de Vírgula.", "Ficha"], ["📎 Adjuntar archivo", "Ficha"], ["📷 Tomar foto", "Ficha"], ["Datos técnicos y eventos", "Ficha"], ["📦 Exportar esta grabación", "Ficha"], ["🗑 Borrar", "Ficha"], ["🔒 Se quitó la ubicación.", "Ficha"], ["sí", "Ficha"], ["no", "Ficha"], ["Código: {x}", "Ficha"], ["Duración: {x}", "Ficha"], ["Archivo WAV: {x}", "Ficha"], ["sí, {sr} Hz, 16 bits, {ch} canal(es)", "Ficha"], ["Consulta: {x}", "Ficha"], ["(volumen de consulta ×{g})", "Ficha"], ["Ajustes pedidos: volumen automático {a}, quitar ruido {b}, quitar eco {c}", "Ficha"], ["Ajustes reales del micrófono: {x}", "Ficha"], ["Micrófono: {x}", "Ficha"], ["Aparato: {x}", "Ficha"], ["Versión de Vírgula: {x}", "Ficha"], ["Saturaciones: {a} · Huecos: {b} s · Tramos sin audio: {c}", "Ficha"], ["ninguno", "Ficha"], ["Eventos:", "Ficha"], ["Consulta", "Ficha"], ["Archivo (WAV, sin alterar)", "Ficha"], ["Sin audio guardado.", "Ficha"], ["No se pudo leer el audio: {error}", "Ficha"], ["exacta", "Ficha"], ["aproximada (~1 km)", "Ficha"], ["aproximada (~10 km)", "Ficha"], ["🔒 Confidencial: sin ubicación.", "Ficha"], ["precisión del aparato ±{m} m", "Ficha"], ["ver mapa", "Ficha"], ["📍 Volver a tomar", "Ficha"], ["✕ Quitar ubicación", "Ficha"], ["📍 Agregar ubicación", "Ficha"], ["Precisión", "Ficha"], ["Este aparato no da la ubicación.", "Ficha"], ["📍 Buscando ubicación… puede tardar al aire libre.", "Ficha"], ["📍 Ubicación guardada.", "Ficha"], ["No se pudo obtener la ubicación: {error}", "Ficha"], ["Código (p. ej. P01)", "Ficha"], ["Nombre o código", "Ficha"], ["Rol", "Ficha"], ["Quitar", "Ficha"], ["Comunidad, edad aproximada, otros datos que acepte compartir", "Ficha"], ["Traducción", "Ficha"], ["🔗 Enlazar", "Ficha"], ["Título o referencia", "Ficha"], ["https://… (opcional)", "Ficha"], ["▶ Oír", "Ficha"], ["descartado", "Ficha"], ["Etiqueta (p. ej. la palabra)", "Ficha"], ["Etiqueta del clip {n}", "Ficha"], ["Traducción (opcional)", "Ficha"], ["Ajustar o anotar", "Ficha"], ["Desde (s)", "Ficha"], ["Hasta (s)", "Ficha"], ["Transcripción o nota del clip", "Ficha"], ["✕ Quitar clip", "Ficha"], ["Sin clips: esta grabación no tiene marcas. Puedes cortar clips a mano.", "Ficha"], ["Papel del adjunto", "Ficha"], ["Nota (qué es, quién lo hizo…)", "Ficha"], ["👁 Abrir", "Ficha"], ["✕ Quitar", "Ficha"], ["Sin adjuntos.", "Ficha"], ["No se pudo guardar «{nombre}»: {error}", "Ficha"], ["📎 {n} adjunto(s) guardado(s).", "Ficha"], ["Vírgula no puede mostrar este tipo de archivo: guárdalo o compártelo para abrirlo con otra app.", "Ficha"], ["⬇️ Guardar en el aparato", "Ficha"], ["📤 Compartir", "Ficha"], ["¿Quitar «{nombre}» de esta grabación?", "Ficha"], ["Enlazar", "Ficha"], ["Palabras que se verán", "Ficha"], ["Ej. la letra completa", "Ficha"], ["A un adjunto de esta grabación", "Ficha"], ["o a una página web", "Ficha"], ["En el texto queda así: [palabras](adjunto) — al exportar, el enlace abre el archivo dentro del paquete.", "Ficha"], ["Insertar", "Ficha"], ["Escribe las palabras que se verán.", "Ficha"], ["Elige un adjunto o escribe una dirección que empiece con https://", "Ficha"], ["Preparando…", "Ficha"], ["No se pudo: {error}", "Ficha"], ["No queda audio después del último clip.", "Ficha"], ["Firma de consentimiento", "Ficha"], ["Firma con el dedo. Queda como adjunto «Consentimiento».", "Ficha"], ["Espacio para firmar", "Ficha"], ["Nombre o código de quien firma", "Ficha"], ["Guardar firma", "Ficha"], ["Primero firma en el recuadro.", "Ficha"], ["Consentimiento oral", "Ficha"], ["Pide a la persona que diga su nombre (o código), la fecha y para qué usos da su permiso.", "Ficha"], ["⏹ Terminar y guardar", "Ficha"], ["¿Borrar «{titulo}» de este aparato, con su audio y sus adjuntos?", "Ficha"], ["⚠️ Esta grabación NO tiene respaldo.", "Ficha"], ["Para confirmar, escribe BORRAR", "Ficha"], ["BORRAR", "Ficha"], ["🗑 Borrada.", "Ficha"], ["¿Quitar este clip? El audio de la grabación no cambia.", "Ficha"], ["El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.", "Exportar"], ["Elige al menos una grabación.", "Exportar"], ["Exportar «{titulo}»", "Exportar"], ["Exportar {n} grabaciones", "Exportar"], ["🔒 {n} grabación(es) son confidenciales. Comparte el paquete solo con quien deba tenerlo.", "Exportar"], ["⏳ {n} grabación(es) tienen el consentimiento pendiente.", "Exportar"], ["📝 {n} ficha(s) tienen datos obligatorios sin llenar.", "Exportar"], ["Audio completo", "Exportar"], ["🗄️ Archivo (WAV) + 🔊 consulta", "Exportar"], ["🔊 Solo consulta (ligero)", "Exportar"], ["🗄️ Solo archivo (WAV)", "Exportar"], ["Sin audio completo (solo fichas y clips)", "Exportar"], ["Clips ({n})", "Exportar"], ["🎯 WAV + Ogg, con nombre de su etiqueta (para el catálogo)", "Exportar"], ["Solo WAV", "Exportar"], ["Sin clips", "Exportar"], ["Los clips salen con el volumen ajustado para escuchar. Su nombre es la etiqueta: el catálogo de lenguas los reconoce con «📥 Traer audios en lote».", "Exportar"], ["Adjuntos ({n})", "Exportar"], ["Todos", "Exportar"], ["Ninguno", "Exportar"], ["Elegir…", "Exportar"], ["Empaque", "Exportar"], ["Un solo paquete", "Exportar"], ["Un paquete por grabación", "Exportar"], ["🏛️ Formatos para archivos e instituciones", "Exportar"], ["Datos de la ficha dentro de cada WAV (Broadcast WAV)", "Exportar"], ["Dublin Core (XML) para bibliotecas y repositorios", "Exportar"], ["ELAN (.eaf): clips y transcripción alineados al audio", "Exportar"], ["Darwin Core para bases de biodiversidad", "Exportar"], ["Siempre van: indice.html para leer sin Vírgula, fichas.json (completo), fichas.csv y clips.csv.", "Exportar"], ["📦 Preparar paquete", "Exportar"], ["✅ Cabe en WhatsApp como documento, correo (hasta ~20 MB) o Drive.", "Exportar"], ["✅ WhatsApp como documento, Drive o cable USB. Para correo es grande: usa Drive.", "Exportar"], ["📁 Mejor Drive, cable USB o memoria. WhatsApp acepta documentos de hasta 2 GB pero puede tardar mucho con datos móviles.", "Exportar"], ["⚠️ Muy grande: elige «un paquete por grabación», «solo consulta» o menos adjuntos. Por cable o Drive con wifi.", "Exportar"], ["Tamaño aproximado: {x}", "Exportar"], ["{n} paquetes, el mayor de {x}", "Exportar"], ["Referencia: 1 hora de archivo WAV mono ≈ 330 MB; la consulta ≈ 21 MB. Antes de compartir, el aparato necesita espacio libre parecido al tamaño del paquete.", "Exportar"], ["Preparando… {n} %", "Exportar"], ["✅ Listo: {n} paquete(s), {x}.", "Exportar"], ["Este navegador no deja compartir .zip directamente: guárdalo y compártelo desde Descargas o Archivos (WhatsApp, Drive, correo…).", "Exportar"], ["En la computadora queda en Descargas.", "Exportar"], ["📦 Paquete compartido.", "Exportar"], ["✅ Guardado en **Descargas**:", "Exportar"], ["📂 Abrir Descargas", "Exportar"], ["Ahí, mantén presionado el paquete y toca **Compartir** (WhatsApp, Drive, correo…). Si el botón no abre nada, ve a la app **Archivos** → **Descargas**, o toca el aviso de descarga de Chrome.", "Exportar"], ["En iPhone o iPad está en la app **Archivos** → **Descargas** (o donde elegiste guardarlo). Ahí, mantén presionado el paquete y toca **Compartir**.", "Exportar"], ["Está en la carpeta **Descargas** de la computadora. Desde ahí puedes subirlo a Drive, adjuntarlo a un correo o copiarlo a una memoria.", "Exportar"], ["Listo", "Exportar"], ["⬇️ Guardar otra vez", "Exportar"], ["Preparando «{titulo}»…", "Exportar"], ["Cortando clip {n} de «{titulo}»…", "Exportar"], ["VÍRGULA · memoria sonora viva — paquete de grabaciones", "Exportar"], ["Abre indice.html con cualquier navegador para ver las fichas, escuchar los audios y abrir los adjuntos (primero extrae o descomprime el .zip).", "Exportar"], ["Contenido", "Exportar"], ["Las fichas para leer y escuchar, sin conexión.", "Exportar"], ["Todos los datos, completos. Es lo que lee Vírgula al importar este paquete.", "Exportar"], ["Una fila por grabación (se abre en Excel, LibreOffice o Google Sheets).", "Exportar"], ["Una fila por clip.", "Exportar"], ["Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).", "Exportar"], ["Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».", "Exportar"], ["Fotos, documentos y consentimientos, en una carpeta por grabación.", "Exportar"], ["Dublin Core (dublin_core.xml) y, si aplica, Darwin Core (carpeta darwin_core, lista para GBIF/SNIB).", "Exportar"], ["Un archivo .eaf por grabación: ábrelo con ELAN junto con la carpeta audios/.", "Exportar"], ["Los WAV llevan dentro el título, la fecha, el código y los derechos (Broadcast WAV).", "Exportar"], ["Para volver a tener estas grabaciones en Vírgula: 📚 Acervo → 📥 Importar paquete.", "Exportar"], ["Respeta las condiciones de consentimiento y derechos anotadas en cada ficha.", "Exportar"], ["confidencial", "Exportar"], ["Archivo", "Exportar"], ["Lugar", "Exportar"], ["Tramos sin audio", "Exportar"], ["no incluido", "Exportar"], ["{n} grabación(es)", "Exportar"], ["exportado el {fecha}", "Exportar"], ["versión", "Exportar"], ["Respeta las condiciones de consentimiento y derechos de cada ficha.", "Exportar"], ["No parece un archivo .zip.", "Importar"], ["Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.", "Importar"], ["El .zip está dañado.", "Importar"], ["Este navegador no descomprime .zip.", "Importar"], ["Compresión no reconocida en {ruta}", "Importar"], ["📥 Leyendo el paquete…", "Importar"], ["El paquete no tiene fichas.json: no es un paquete de Vírgula.", "Importar"], ["fichas.json no tiene el formato de Vírgula.", "Importar"], ["ya está", "Importar"], ["Dejar como están las {n} que ya tengo", "Importar"], ["Reemplazarlas con las del paquete", "Importar"], ["Trae {n} plantilla(s); las que no tengas se agregan.", "Importar"], ["📥 Importar", "Importar"], ["Importando «{titulo}»…", "Importar"], ["📥 {n} grabación(es) importada(s).", "Importar"], ["falta el WAV de «{titulo}»", "Importar"], ["falta la consulta de «{titulo}»", "Importar"], ["falta el adjunto «{nombre}»", "Importar"], ["importada", "Importar"], ["{n} adjunto(s) no venían en el paquete", "Importar"], ["Micrófono {n}", "Ajustes"], ["🎙️ {n} micrófono(s) encontrado(s).", "Ajustes"], ["No se pudo ver los micrófonos: {error}", "Ajustes"], ["Plantilla vacía (una lengua nueva)", "Ajustes"], ["Mejorar: {nombre}", "Ajustes"], ["Interfaz en {nombre}: tradujo {quien}{avala}.", "Ajustes"], ["avala {quien}", "Ajustes"], ["¿Qué pasó? ¿Qué estabas haciendo?", "Ajustes"], ["Se agregan datos técnicos: versión, aparato, navegador, espacio, ajustes de grabación y errores recientes. No se incluyen audios, fichas ni nombres.", "Ajustes"], ["Preparar informe", "Ajustes"], ["Qué pasó", "Ajustes"], ["Instalada", "Ajustes"], ["Espacio", "Ajustes"], ["Grabaciones", "Ajustes"], ["Última grabación", "Ajustes"], ["tramos sin audio", "Ajustes"], ["Eventos", "Ajustes"], ["Errores recientes", "Ajustes"], ["Problema en Vírgula {v}", "Ajustes"], ["⬇️ Guardar informe", "Ajustes"], ["Revisa el texto antes de enviarlo. Si es largo, el correo lleva solo el principio: adjunta el informe guardado.", "Ajustes"], ["⬇️ Instalar en iPhone o iPad", "Ajustes"], ["1. Abre esta página en **Safari**.", "Ajustes"], ["2. Toca **Compartir** (el cuadro con la flecha hacia arriba).", "Ajustes"], ["3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.", "Ajustes"], ["Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.", "Ajustes"], ["En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).", "Ajustes"], ["Entendido", "Ajustes"], ["✅ Vírgula quedó instalada.", "Ajustes"], ["✨ Hay una versión nueva de Vírgula.", "Ajustes"], ["Actualizar ahora", "Ajustes"], ["Termina la grabación antes de actualizar.", "Ajustes"], ["⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.", "Ajustes"]];
+const TEXTOS_FUENTE = [["memoria sonora viva", "Pantalla principal"], ["⬇️ Instalar", "Pantalla principal"], ["Idioma", "Pantalla principal"], ["🔗 Compartir", "Pantalla principal"], ["🔗 Enlace copiado. Ya puedes compartirlo.", "Pantalla principal"], ["No se pudo compartir el enlace.", "Pantalla principal"], ["Copia el enlace de Vírgula:", "Pantalla principal"], ["🔖 Siguiente", "Grabar"], ["Cerrar elemento actual", "Grabar"], ["↩ Repetir", "Grabar"], ["Sin avanzar la lista", "Grabar"], ["⏹ Detener", "Grabar"], ["En iPhone y iPad: mantén la pantalla encendida y Vírgula al frente mientras grabas. Si bloqueas o cambias de app, iOS detiene el micrófono; Vírgula lo anota como tramo sin audio.", "Grabar"], ["Graba primero; la ficha se completa después, con calma.", "Grabar"], ["🔍 Buscar en títulos, descripciones, transcripciones…", "Acervo"], ["Buscar", "Acervo"], ["📦 Exportar", "Acervo"], ["☑ Todas", "Acervo"], ["📥 Importar paquete", "Acervo"], ["Idioma de la interfaz", "Ajustes"], ["🔄 Ver idiomas publicados", "Ajustes"], ["📥 Instalar idioma desde archivo", "Ajustes"], ["✍️ Traducir Vírgula a otra lengua", "Ajustes"], ["1. Descarga la plantilla: es una hoja con todos los textos de Vírgula y una columna vacía para la traducción.", "Ajustes"], ["2. Llénala en Google Sheets, Excel o LibreOffice (puede ser poco a poco: lo que falte se ve en español) y guárdala como CSV.", "Ajustes"], ["3. Pruébala aquí mismo: Vírgula cambia al instante y ves cómo queda cada texto.", "Ajustes"], ["4. Envíala por correo o GitHub. Tras la revisión, se publica para todos.", "Ajustes"], ["Partir de", "Ajustes"], ["⬇️ Descargar plantilla", "Ajustes"], ["📥 Probar mi traducción", "Ajustes"], ["📨 Enviar traducción", "Ajustes"], ["Accesibilidad", "Ajustes"], ["Tamaño de letra y botones", "Ajustes"], ["Normal", "Ajustes"], ["Grande", "Ajustes"], ["Muy grande", "Ajustes"], ["Máxima", "Ajustes"], ["Colores", "Ajustes"], ["Oscuro", "Ajustes"], ["Claro (para el sol)", "Ajustes"], ["Alto contraste", "Ajustes"], ["Reducir movimiento", "Ajustes"], ["Vibrar al grabar y marcar", "Ajustes"], ["Los cambios se aplican al momento y se guardan en este aparato.", "Ajustes"], ["Grabación", "Ajustes"], ["Micrófono", "Ajustes"], ["Predeterminado del aparato", "Ajustes"], ["🔎 Buscar micrófonos", "Ajustes"], ["Calidad", "Ajustes"], ["Archivo + consulta", "Ajustes"], ["Solo archivo (WAV)", "Ajustes"], ["Solo consulta", "Ajustes"], ["Archivo: WAV sin compresión, el sonido tal cual (unos 5.5 MB por minuto en mono). Consulta: ligero, con el volumen ajustado para escucharse bien (unos 0.35 MB por minuto).", "Ajustes"], ["Canales", "Ajustes"], ["Mono", "Ajustes"], ["Estéreo", "Ajustes"], ["Ajustes del aparato (afectan también el audio de archivo)", "Ajustes"], ["Volumen automático", "Ajustes"], ["Quitar ruido", "Ajustes"], ["Quitar eco", "Ajustes"], ["Para documentar, déjalos apagados: el aparato no altera el sonido. El audio de consulta sube su volumen por su cuenta sin tocar el de archivo.", "Ajustes"], ["Plantillas de ficha", "Ajustes"], ["La plantilla decide qué campos tiene la ficha. «Usar» la deja para las grabaciones nuevas; en cada ficha se puede cambiar.", "Ajustes"], ["＋ Nueva plantilla", "Ajustes"], ["📥 Importar plantilla", "Ajustes"], ["Fichas", "Ajustes"], ["Quién graba (se propone en cada ficha)", "Ajustes"], ["Nombre o equipo", "Ajustes"], ["Derechos y licencia (se propone en cada ficha)", "Ajustes"], ["Ej. Uso comunitario y educativo; consultar a la comunidad para otros usos", "Ajustes"], ["Ubicación al llenar la ficha", "Ajustes"], ["Exacta", "Ajustes"], ["Aproximada (~1 km)", "Ajustes"], ["Aproximada (~10 km)", "Ajustes"], ["La ubicación nunca se toma sola: solo cuando tocas 📍 en una ficha.", "Ajustes"], ["Respaldo", "Ajustes"], ["Recordarme respaldar después de", "Ajustes"], ["1 día", "Ajustes"], ["3 días", "Ajustes"], ["7 días", "Ajustes"], ["No recordar", "Ajustes"], ["Vírgula guarda todo solo en este aparato y no sube nada a internet. Si se borran los datos del navegador o se pierde el aparato, se pierde lo que no se exportó.", "Ajustes"], ["Ayuda", "Ajustes"], ["📨 Reportar un problema", "Ajustes"], ["Arma un informe técnico (aparato, versión, últimos eventos) para enviarlo por correo o GitHub. No incluye audios ni fichas.", "Ajustes"], ["Acerca de", "Ajustes"], ["Vírgula · memoria sonora viva · versión", "Ajustes"], ["Todo se guarda en este aparato y no se envía a ningún lado. Cuidar el acceso al aparato y a los archivos exportados es responsabilidad de quien graba.", "Ajustes"], ["En los códices mesoamericanos, la vírgula es la voluta que sale de la boca de quien habla: todo sonido viene de alguien.", "Ajustes"], ["Diseñado y desarrollado por Alejandro Estrada", "Ajustes"], ["código", "Ajustes"], ["Secciones", "Ajustes"], ["Grabar", "Ajustes"], ["Acervo", "Ajustes"], ["Ajustes", "Ajustes"], ["El archivo no es un idioma de Vírgula.", "Idioma"], ["Falta el código de la lengua (por ejemplo: hch, nah, en).", "Idioma"], ["El español ya viene incluido.", "Idioma"], ["Falta el nombre de la lengua.", "Idioma"], ["Termina la grabación antes de cambiar el idioma.", "Idioma"], ["¿Quitar el idioma «{nombre}» de este aparato?", "Idioma"], ["Traducción: {quien}", "Idioma"], ["Avala: {quien}", "Idioma"], ["en prueba", "Idioma"], ["✕ Quitar este idioma", "Idioma"], ["Buscando…", "Idioma"], ["Idiomas publicados:", "Idioma"], ["⬆️ Actualizar", "Idioma"], ["instalado", "Idioma"], ["Todavía no hay idiomas publicados.", "Idioma"], ["No se pudo consultar: revisa la conexión a internet.", "Idioma"], ["🌐 «{nombre}» instalado.", "Idioma"], ["🌐 «{nombre}» instalado: {n} % traducido.", "Idioma"], ["{n} texto(s) con variables distintas quedaron en español.", "Idioma"], ["Código de la lengua (ISO 639; por ejemplo: hch para wixárika, nah para náhuatl, en para inglés)", "Idioma"], ["Nombre de la lengua, escrito en esa lengua", "Idioma"], ["Nombre de la lengua en español", "Idioma"], ["Variante o región", "Idioma"], ["Cómo escribir fechas y números (por ejemplo: es-MX o en-US)", "Idioma"], ["Quién tradujo", "Idioma"], ["Comunidad, autoridad o institución que revisó y avala la traducción", "Idioma"], ["Licencia de la traducción", "Idioma"], ["Correo o teléfono de contacto (opcional)", "Idioma"], ["Versión de esta traducción (1, 2, 3…)", "Idioma"], ["Datos de la traducción", "Idioma"], ["Conserva igual lo que está entre llaves: {x}", "Idioma"], ["La hoja está vacía.", "Idioma"], ["La hoja necesita las columnas texto_original y traduccion.", "Idioma"], ["⬇️ Plantilla en Descargas. Ábrela con Google Sheets, Excel o LibreOffice; llena la columna «traduccion» y guárdala como CSV.", "Idioma"], ["Primero prueba tu traducción con «📥 Probar mi traducción».", "Idioma"], ["Traducción de Vírgula: {nombre} v{v}", "Idioma"], ["Hola. Envío la traducción de Vírgula a {nombre} ({codigo}), versión {v}, con {n} % de la interfaz.\nTradujo: {quien}\nAvala: {avala}\n\nAdjunto el archivo {archivo} (está en Descargas).", "Idioma"], ["📨 Enviar la traducción", "Idioma"], ["Se guardó **{archivo}** en Descargas. Envíalo por una de estas vías; el equipo de Vírgula lo revisa y lo publica para todos.", "Idioma"], ["✉️ Por correo", "Idioma"], ["(Arrastra aquí el archivo para adjuntarlo.)", "Idioma"], ["🐙 En GitHub", "Idioma"], ["Por correo: adjunta el archivo antes de enviar. En GitHub: necesitas una cuenta; arrastra el archivo al recuadro del mensaje.", "Idioma"], ["Cerrar", "Idioma"], ["Micrófono elegido", "General"], ["archivo + consulta", "General"], ["solo archivo", "General"], ["solo consulta", "General"], ["volumen automático", "General"], ["sin ruido", "General"], ["sin eco", "General"], ["estéreo", "General"], ["mono", "General"], ["aparato: {lista}", "General"], ["sonido sin alterar", "General"], ["micrófono predeterminado", "General"], ["💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.", "General"], ["🎙️ Se está grabando. Para terminar, toca ⏹ Detener.", "General"], ["Se está grabando. ¿Ver otra sección? La grabación sigue.", "General"], ["Grabación {fecha}", "Grabar"], ["El micrófono elegido no está conectado: usa el predeterminado.", "Grabar"], ["No se pudo usar el micrófono: {error}. Revisa el permiso del micrófono.", "Grabar"], ["predeterminado", "Grabar"], ["inicio", "Grabar"], ["no se pudo grabar en calidad de archivo: {error}", "Grabar"], ["este navegador no graba en calidad de consulta", "Grabar"], ["consulta: {error}", "Grabar"], ["Grabando", "Grabar"], ["sin audio", "Grabar"], ["de {desde} a {hasta} (posible llamada u otra app usando el micrófono)", "Grabar"], ["micrófono ocupado por el sistema", "Grabar"], ["p. ej. una llamada", "Grabar"], ["micrófono de vuelta", "Grabar"], ["el micrófono se desconectó", "Grabar"], ["audio del sistema: {estado}", "Grabar"], ["error al guardar", "Grabar"], ["(¿espacio lleno?)", "Grabar"], ["⚠️ No se pudo guardar: revisa el espacio del aparato.", "Grabar"], ["hueco", "Grabar"], ["faltan {s} s respecto al reloj", "Grabar"], ["⚠️ Satura: aleja el micrófono", "Grabar"], ["Muy bajo: acerca el micrófono (20–30 cm)", "Grabar"], ["Nivel {db} dB", "Grabar"], ["↩ Otra vez: ese intento queda descartado", "Grabar"], ["▶ Seguir", "Grabar"], ["pausa", "Grabar"], ["⏸ Pausa", "Grabar"], ["continúa", "Grabar"], ["fin", "Grabar"], ["Nivel de entrada", "Grabar"], ["🔆 Pantalla fija", "Grabar"], ["🔅 Pantalla sin fijar", "Grabar"], ["💾 hace {s} s", "Grabar"], ["⚠️ huecos {s} s", "Grabar"], ["🔇 {n} tramo(s) sin audio", "Grabar"], ["⏸ En pausa", "Grabar"], ["pantalla oculta o bloqueada", "Grabar"], ["pantalla visible", "Grabar"], ["la app se cerró u ocultó", "Grabar"], ["se conectó o desconectó un micrófono", "Grabar"], ["⚠️ {n} grabación(es) no se cerraron. Lo guardado hasta el último momento se puede recuperar.", "Grabar"], ["🛟 Recuperar", "Grabar"], ["recuperada", "Grabar"], ["la grabación se cortó; se recuperó lo guardado", "Grabar"], ["🛟 Recuperada(s). Están en 📚 Acervo.", "Grabar"], ["Para cortar clips de una grabación de más de 40 minutos hace falta la calidad de archivo.", "Audio"], ["💾 {n} grabación(es) sin respaldo o con cambios desde el último. Selecciónalas y usa 📦 Exportar para guardarlas en Drive, en otra computadora o donde prefieras.", "Acervo"], ["☑ Elegir las que faltan", "Acervo"], ["✅ Todo respaldado.", "Acervo"], ["Consentimiento", "Acervo"], ["Elegir {titulo}", "Acervo"], ["✔ consentimiento", "Acervo"], ["consentimiento no aplica", "Acervo"], ["⏳ consentimiento pendiente", "Acervo"], ["📝 faltan {n} dato(s)", "Acervo"], ["🔖 {n} clip(s)", "Acervo"], ["✍️ transcripción", "Acervo"], ["🌐 {n} traducción(es)", "Acervo"], ["🔒 confidencial", "Acervo"], ["🛟 recuperada", "Acervo"], ["💾 sin respaldo", "Acervo"], ["Nada coincide con la búsqueda.", "Acervo"], ["Todavía no hay grabaciones. Ve a ⏺ Grabar.", "Acervo"], ["💾 {n} grabación(es) llevan más de {d} día(s) sin respaldo. Solo existen en este aparato.", "Acervo"], ["📦 Respaldar ahora", "Acervo"], ["Mañana", "Acervo"], ["Título", "Plantillas"], ["Fecha y hora", "Plantillas"], ["Descripción", "Plantillas"], ["Uso", "Plantillas"], ["Lugar (comunidad, municipio, sitio)", "Plantillas"], ["Ubicación", "Plantillas"], ["Lengua(s) o variante(s)", "Plantillas"], ["Palabras clave", "Plantillas"], ["Participantes", "Plantillas"], ["Quién grabó", "Plantillas"], ["Derechos y licencia", "Plantillas"], ["Notas", "Plantillas"], ["Confidencial", "Plantillas"], ["✍️ Transcripción", "Plantillas"], ["🌐 Traducciones", "Plantillas"], ["🔖 Clips", "Plantillas"], ["📚 Fuentes y enlaces", "Plantillas"], ["Texto corto", "Plantillas"], ["Texto largo", "Plantillas"], ["Número", "Plantillas"], ["Fecha", "Plantillas"], ["Una opción de una lista", "Plantillas"], ["Varias opciones de una lista", "Plantillas"], ["Sí / no", "Plantillas"], ["— Ninguno —", "Plantillas"], ["Dublin Core · tema (subject)", "Plantillas"], ["Dublin Core · cobertura (coverage)", "Plantillas"], ["Dublin Core · descripción", "Plantillas"], ["Dublin Core · colaborador", "Plantillas"], ["Dublin Core · relación", "Plantillas"], ["Dublin Core · fuente", "Plantillas"], ["Dublin Core · tipo", "Plantillas"], ["Darwin Core · nombre científico", "Plantillas"], ["Darwin Core · nombre común", "Plantillas"], ["Darwin Core · número de individuos", "Plantillas"], ["Darwin Core · sexo", "Plantillas"], ["Darwin Core · etapa de vida", "Plantillas"], ["Darwin Core · comportamiento", "Plantillas"], ["Darwin Core · hábitat", "Plantillas"], ["Darwin Core · notas del evento", "Plantillas"], ["Darwin Core · notas del registro", "Plantillas"], ["Darwin Core · protocolo", "Plantillas"], ["Darwin Core · notas de identificación", "Plantillas"], ["Darwin Core · identificó", "Plantillas"], ["General", "Plantillas"], ["Todos los campos, para cualquier grabación.", "Plantillas"], ["Lengua", "Plantillas"], ["Vocabulario, narraciones y conversaciones en lengua, con transcripción, traducciones y clips para el catálogo.", "Plantillas"], ["Lengua y variante; por ejemplo, wixárika de San Andrés Cohamiata.", "Plantillas"], ["Tipo de habla", "Plantillas"], ["Vocabulario o palabras sueltas", "Plantillas"], ["Frases", "Plantillas"], ["Narración", "Plantillas"], ["Conversación", "Plantillas"], ["Canto", "Plantillas"], ["Discurso o ceremonia", "Plantillas"], ["Otro", "Plantillas"], ["Patrimonio y celebraciones", "Plantillas"], ["Música, rituales, fiestas y saberes, con sus restricciones de uso.", "Plantillas"], ["Celebración, ritual o evento", "Plantillas"], ["Ocasión o calendario", "Plantillas"], ["Instrumentos", "Plantillas"], ["Restricciones de uso o difusión", "Plantillas"], ["Lo que la comunidad pide: qué no se debe publicar, quién puede escucharlo, en qué fechas…", "Plantillas"], ["Bitácora de campo", "Plantillas"], ["Notas habladas del día de trabajo: actividades, observaciones y pendientes.", "Plantillas"], ["Actividades del día", "Plantillas"], ["Pendientes", "Plantillas"], ["Sonidos de la naturaleza", "Plantillas"], ["Aves, ranas, insectos, paisajes sonoros. Exporta también en Darwin Core para bases de biodiversidad.", "Plantillas"], ["Qué se escucha", "Plantillas"], ["Nombre científico", "Plantillas"], ["Si no estás seguro, déjalo vacío o escribe solo el género.", "Plantillas"], ["Nombre común", "Plantillas"], ["Nombre en la lengua local", "Plantillas"], ["Número de individuos", "Plantillas"], ["Comportamiento", "Plantillas"], ["Llamado", "Plantillas"], ["Alarma", "Plantillas"], ["Coro", "Plantillas"], ["Vuelo", "Plantillas"], ["Alimentación", "Plantillas"], ["Hábitat", "Plantillas"], ["Condiciones (clima, viento, lluvia)", "Plantillas"], ["Entrevista o sesión de investigación", "Plantillas"], ["Entrevistas, grupos y sesiones (antropología, psicología, educación). Confidencial desde el inicio.", "Plantillas"], ["Usa códigos (P01, P02…). La lista que relaciona códigos y nombres guárdala aparte.", "Plantillas"], ["Proyecto o estudio", "Plantillas"], ["Número de sesión", "Plantillas"], ["Guía o protocolo usado", "Plantillas"], ["Aprobación ética o folio", "Plantillas"], ["✓ para grabaciones nuevas", "Plantillas"], ["🔒 fija", "Plantillas"], ["📥 importada", "Plantillas"], ["{n} campo(s) propios", "Plantillas"], ["Usar", "Plantillas"], ["👁 Ver", "Plantillas"], ["✏️ Editar", "Plantillas"], ["⧉ Duplicar", "Plantillas"], ["⬇️ Exportar", "Plantillas"], ["Borrar", "Plantillas"], ["🧩 Las grabaciones nuevas usarán «{nombre}».", "Plantillas"], ["{nombre} (copia)", "Plantillas"], ["Plantilla nueva", "Plantillas"], ["¿Borrar la plantilla «{nombre}»?", "Plantillas"], ["{n} ficha(s) la usan: conservarán sus datos y se verán con la plantilla General.", "Plantillas"], ["⬇️ Plantilla guardada en Descargas. Compártela con tu equipo; la importan en ⚙️ Ajustes → 🧩 Plantillas.", "Plantillas"], ["No es una plantilla de Vírgula.", "Plantillas"], ["Ya tienes «{nombre}» v{v}, hecha en este aparato. ¿Reemplazarla con la v{v2} que llega?", "Plantillas"], ["El archivo no es una plantilla de Vírgula.", "Plantillas"], ["🧩 Plantilla «{nombre}» agregada.", "Plantillas"], ["🧩 «{nombre}» actualizada a la v{v}.", "Plantillas"], ["Ya tenías «{nombre}» en esa versión o una más nueva.", "Plantillas"], ["Plantilla", "Plantillas"], ["Editar plantilla", "Plantillas"], ["🔒 Es una plantilla fija de equipo: se usa tal cual. Para cambiarla, duplícala.", "Plantillas"], ["Nombre", "Plantillas"], ["Para qué sirve", "Plantillas"], ["Consentimiento al empezar", "Plantillas"], ["⏳ Pendiente", "Plantillas"], ["No aplica", "Plantillas"], ["🔒 Fichas confidenciales desde el inicio", "Plantillas"], ["Campos", "Plantillas"], ["Título, fecha y consentimiento son el núcleo: siempre están. Lo demás lo decides tú. Ocultar un campo no borra lo ya escrito.", "Plantillas"], ["＋ Campo propio", "Plantillas"], ["Una sección oculta vuelve a aparecer en la ficha si ya tiene datos.", "Plantillas"], ["👥 Compartir con un equipo", "Plantillas"], ["Equipo o proyecto", "Plantillas"], ["🔒 Fija: quien la importe la usa tal cual (puede duplicarla, no cambiarla)", "Plantillas"], ["Para compartirla: ⬇️ Exportar en la lista de plantillas. Cada vez que guardas cambios sube la versión; al importar una versión más nueva, se actualiza.", "Plantillas"], ["Versión {v}", "Plantillas"], ["plantilla de fábrica", "Plantillas"], ["💾 Guardar", "Plantillas"], ["Cancelar", "Plantillas"], ["↺ Volver a la de fábrica", "Plantillas"], ["Campos de fábrica cargados: toca 💾 Guardar para conservarlos.", "Plantillas"], ["¿Quitar este campo de la plantilla? Lo ya escrito en las fichas se conserva (aparece en «Otros datos»).", "Plantillas"], ["Nombre del campo *", "Plantillas"], ["Nombre del campo", "Plantillas"], ["Subir", "Plantillas"], ["Bajar", "Plantillas"], ["Núcleo: siempre visible y obligatorio.", "Plantillas"], ["Visible", "Plantillas"], ["Obligatorio", "Plantillas"], ["de Vírgula: {nombre}", "Plantillas"], ["campo de Vírgula", "Plantillas"], ["Tipo", "Plantillas"], ["Equivale a", "Plantillas"], ["Opciones (una por renglón)", "Plantillas"], ["Ayuda para quien llena (opcional)", "Plantillas"], ["✕ Quitar campo", "Plantillas"], ["La plantilla necesita un nombre.", "Plantillas"], ["Hay un campo propio sin nombre.", "Plantillas"], ["«{nombre}» necesita al menos dos opciones.", "Plantillas"], ["Ya hay una plantilla con ese nombre.", "Plantillas"], ["🧩 «{nombre}» guardada (v{v}).", "Plantillas"], ["📷 Foto", "Ficha"], ["✍️ Transcripción o traducción", "Ficha"], ["🎵 Letra, acordes o partitura", "Ficha"], ["📚 Material de apoyo", "Ficha"], ["🤝 Consentimiento", "Ficha"], ["📎 Otro", "Ficha"], ["— Sin especificar —", "Ficha"], ["Hablante", "Ficha"], ["Cantante", "Ficha"], ["Músico", "Ficha"], ["Intérprete", "Ficha"], ["Traductor", "Ficha"], ["Entrevistador", "Ficha"], ["Investigador", "Ficha"], ["Narrador", "Ficha"], ["— Cómo se dio —", "Ficha"], ["Oral (grabado)", "Ficha"], ["Firma en la pantalla", "Ficha"], ["Documento firmado", "Ficha"], ["De palabra, sin registro", "Ficha"], ["Acuerdo comunitario", "Ficha"], ["✔ Otorgado", "Ficha"], ["adjunto no disponible", "Ficha"], ["No se encontró la grabación.", "Ficha"], ["💾 Guardado {hora}", "Ficha"], ["🔗 Enlazar a un adjunto o página", "Ficha"], ["Qué se grabó, en qué contexto, quiénes participan…", "Ficha"], ["Ej. wixárika (variante de San Andrés)", "Ficha"], ["Separadas por comas", "Ficha"], ["＋ Participante", "Ficha"], ["Confidencial: sin ubicación, participantes solo con código y un aviso antes de exportar.", "Ficha"], ["📝 Falta: {lista}", "Ficha"], ["✅ Ficha completa", "Ficha"], ["🗄️ archivo WAV", "Ficha"], ["🔊 consulta", "Ficha"], ["Cargando audio…", "Ficha"], ["Ficha", "Ficha"], ["Otros datos", "Ficha"], ["De otra plantilla o de un campo que ya no está en esta. Se conservan y se exportan.", "Ficha"], ["Transcripción y traducciones", "Ficha"], ["Transcripción", "Ficha"], ["Traducciones", "Ficha"], ["Lengua de la transcripción", "Ficha"], ["Transcripción (lo que se dice, escrito en su lengua)", "Ficha"], ["＋ Traducción", "Ficha"], ["Clips", "Ficha"], ["Cada marca cortó un clip. Escribe su etiqueta (por ejemplo, la palabra que se dijo): al exportar, cada clip sale con ese nombre, listo para traerlo al catálogo de lenguas.", "Ficha"], ["＋ Clip a mano", "Ficha"], ["Fuentes y enlaces", "Ficha"], ["＋ Fuente", "Ficha"], ["«No aplica» sirve, por ejemplo, para sonidos de la naturaleza o espacios públicos sin personas identificables.", "Ficha"], ["Cómo se dio", "Ficha"], ["Condiciones o notas (qué usos se aceptaron, quién lo dio…)", "Ficha"], ["✍️ Firmar con el dedo", "Ficha"], ["🎙️ Grabar consentimiento", "Ficha"], ["📄 Adjuntar documento", "Ficha"], ["Adjuntos", "Ficha"], ["Fotos, documentos, letras, materiales… de cualquier tipo. Se guarda una copia dentro de Vírgula.", "Ficha"], ["📎 Adjuntar archivo", "Ficha"], ["📷 Tomar foto", "Ficha"], ["Datos técnicos y eventos", "Ficha"], ["📦 Exportar esta grabación", "Ficha"], ["🗑 Borrar", "Ficha"], ["🔒 Se quitó la ubicación.", "Ficha"], ["sí", "Ficha"], ["no", "Ficha"], ["Código: {x}", "Ficha"], ["Duración: {x}", "Ficha"], ["Archivo WAV: {x}", "Ficha"], ["sí, {sr} Hz, 16 bits, {ch} canal(es)", "Ficha"], ["Consulta: {x}", "Ficha"], ["(volumen de consulta ×{g})", "Ficha"], ["Ajustes pedidos: volumen automático {a}, quitar ruido {b}, quitar eco {c}", "Ficha"], ["Ajustes reales del micrófono: {x}", "Ficha"], ["Micrófono: {x}", "Ficha"], ["Aparato: {x}", "Ficha"], ["Versión de Vírgula: {x}", "Ficha"], ["Saturaciones: {a} · Huecos: {b} s · Tramos sin audio: {c}", "Ficha"], ["ninguno", "Ficha"], ["Eventos:", "Ficha"], ["Consulta", "Ficha"], ["Archivo (WAV, sin alterar)", "Ficha"], ["Sin audio guardado.", "Ficha"], ["No se pudo leer el audio: {error}", "Ficha"], ["exacta", "Ficha"], ["aproximada (~1 km)", "Ficha"], ["aproximada (~10 km)", "Ficha"], ["🔒 Confidencial: sin ubicación.", "Ficha"], ["precisión del aparato ±{m} m", "Ficha"], ["ver mapa", "Ficha"], ["📍 Volver a tomar", "Ficha"], ["✕ Quitar ubicación", "Ficha"], ["📍 Agregar ubicación", "Ficha"], ["Precisión", "Ficha"], ["Este aparato no da la ubicación.", "Ficha"], ["📍 Buscando ubicación… puede tardar al aire libre.", "Ficha"], ["📍 Ubicación guardada.", "Ficha"], ["No se pudo obtener la ubicación: {error}", "Ficha"], ["Código (p. ej. P01)", "Ficha"], ["Nombre o código", "Ficha"], ["Rol", "Ficha"], ["Quitar", "Ficha"], ["Comunidad, edad aproximada, otros datos que acepte compartir", "Ficha"], ["Traducción", "Ficha"], ["🔗 Enlazar", "Ficha"], ["Título o referencia", "Ficha"], ["https://… (opcional)", "Ficha"], ["▶ Oír", "Ficha"], ["descartado", "Ficha"], ["Etiqueta (p. ej. la palabra)", "Ficha"], ["Etiqueta del clip {n}", "Ficha"], ["Traducción (opcional)", "Ficha"], ["Ajustar o anotar", "Ficha"], ["Desde (s)", "Ficha"], ["Hasta (s)", "Ficha"], ["Transcripción o nota del clip", "Ficha"], ["✕ Quitar clip", "Ficha"], ["Sin clips: esta grabación no tiene marcas. Puedes cortar clips a mano.", "Ficha"], ["Papel del adjunto", "Ficha"], ["Nota (qué es, quién lo hizo…)", "Ficha"], ["👁 Abrir", "Ficha"], ["✕ Quitar", "Ficha"], ["Sin adjuntos.", "Ficha"], ["No se pudo guardar «{nombre}»: {error}", "Ficha"], ["📎 {n} adjunto(s) guardado(s).", "Ficha"], ["Vírgula no puede mostrar este tipo de archivo: guárdalo o compártelo para abrirlo con otra app.", "Ficha"], ["⬇️ Guardar en el aparato", "Ficha"], ["📤 Compartir", "Ficha"], ["¿Quitar «{nombre}» de esta grabación?", "Ficha"], ["Enlazar", "Ficha"], ["Palabras que se verán", "Ficha"], ["Ej. la letra completa", "Ficha"], ["A un adjunto de esta grabación", "Ficha"], ["o a una página web", "Ficha"], ["En el texto queda así: [palabras](adjunto) — al exportar, el enlace abre el archivo dentro del paquete.", "Ficha"], ["Insertar", "Ficha"], ["Escribe las palabras que se verán.", "Ficha"], ["Elige un adjunto o escribe una dirección que empiece con https://", "Ficha"], ["Preparando…", "Ficha"], ["No se pudo: {error}", "Ficha"], ["No queda audio después del último clip.", "Ficha"], ["Firma de consentimiento", "Ficha"], ["Firma con el dedo. Queda como adjunto «Consentimiento».", "Ficha"], ["Espacio para firmar", "Ficha"], ["Nombre o código de quien firma", "Ficha"], ["Guardar firma", "Ficha"], ["Primero firma en el recuadro.", "Ficha"], ["Consentimiento oral", "Ficha"], ["Pide a la persona que diga su nombre (o código), la fecha y para qué usos da su permiso.", "Ficha"], ["⏹ Terminar y guardar", "Ficha"], ["¿Borrar «{titulo}» de este aparato, con su audio y sus adjuntos?", "Ficha"], ["⚠️ Esta grabación NO tiene respaldo.", "Ficha"], ["Para confirmar, escribe BORRAR", "Ficha"], ["BORRAR", "Ficha"], ["🗑 Borrada.", "Ficha"], ["¿Quitar este clip? El audio de la grabación no cambia.", "Ficha"], ["El paquete pasa de 4 GB. Elige «un paquete por grabación» o menos anexos.", "Exportar"], ["Elige al menos una grabación.", "Exportar"], ["Exportar «{titulo}»", "Exportar"], ["Exportar {n} grabaciones", "Exportar"], ["🔒 {n} grabación(es) son confidenciales. Comparte el paquete solo con quien deba tenerlo.", "Exportar"], ["⏳ {n} grabación(es) tienen el consentimiento pendiente.", "Exportar"], ["📝 {n} ficha(s) tienen datos obligatorios sin llenar.", "Exportar"], ["Audio completo", "Exportar"], ["🗄️ Archivo (WAV) + 🔊 consulta", "Exportar"], ["🔊 Solo consulta (ligero)", "Exportar"], ["🗄️ Solo archivo (WAV)", "Exportar"], ["Sin audio completo (solo fichas y clips)", "Exportar"], ["Clips ({n})", "Exportar"], ["🎯 WAV + Ogg, con nombre de su etiqueta (para el catálogo)", "Exportar"], ["Solo WAV", "Exportar"], ["Sin clips", "Exportar"], ["Los clips salen con el volumen ajustado para escuchar. Su nombre es la etiqueta: el catálogo de lenguas los reconoce con «📥 Traer audios en lote».", "Exportar"], ["Adjuntos ({n})", "Exportar"], ["Todos", "Exportar"], ["Ninguno", "Exportar"], ["Elegir…", "Exportar"], ["Empaque", "Exportar"], ["Un solo paquete", "Exportar"], ["Un paquete por grabación", "Exportar"], ["🏛️ Formatos para archivos e instituciones", "Exportar"], ["Datos de la ficha dentro de cada WAV (Broadcast WAV)", "Exportar"], ["Dublin Core (XML) para bibliotecas y repositorios", "Exportar"], ["ELAN (.eaf): clips y transcripción alineados al audio", "Exportar"], ["Darwin Core para bases de biodiversidad", "Exportar"], ["Siempre van: indice.html para leer sin Vírgula, fichas.json (completo), fichas.csv y clips.csv.", "Exportar"], ["📦 Preparar paquete", "Exportar"], ["✅ Cabe en WhatsApp como documento, correo (hasta ~20 MB) o Drive.", "Exportar"], ["✅ WhatsApp como documento, Drive o cable USB. Para correo es grande: usa Drive.", "Exportar"], ["📁 Mejor Drive, cable USB o memoria. WhatsApp acepta documentos de hasta 2 GB pero puede tardar mucho con datos móviles.", "Exportar"], ["⚠️ Muy grande: elige «un paquete por grabación», «solo consulta» o menos adjuntos. Por cable o Drive con wifi.", "Exportar"], ["Tamaño aproximado: {x}", "Exportar"], ["{n} paquetes, el mayor de {x}", "Exportar"], ["Referencia: 1 hora de archivo WAV mono ≈ 330 MB; la consulta ≈ 21 MB. Antes de compartir, el aparato necesita espacio libre parecido al tamaño del paquete.", "Exportar"], ["Preparando… {n} %", "Exportar"], ["✅ Listo: {n} paquete(s), {x}.", "Exportar"], ["Este navegador no deja compartir .zip directamente: guárdalo y compártelo desde Descargas o Archivos (WhatsApp, Drive, correo…).", "Exportar"], ["En la computadora queda en Descargas.", "Exportar"], ["📦 Paquete compartido.", "Exportar"], ["✅ Guardado en **Descargas**:", "Exportar"], ["📂 Abrir Descargas", "Exportar"], ["Ahí, mantén presionado el paquete y toca **Compartir** (WhatsApp, Drive, correo…). Si el botón no abre nada, ve a la app **Archivos** → **Descargas**, o toca el aviso de descarga de Chrome.", "Exportar"], ["En iPhone o iPad está en la app **Archivos** → **Descargas** (o donde elegiste guardarlo). Ahí, mantén presionado el paquete y toca **Compartir**.", "Exportar"], ["Está en la carpeta **Descargas** de la computadora. Desde ahí puedes subirlo a Drive, adjuntarlo a un correo o copiarlo a una memoria.", "Exportar"], ["Listo", "Exportar"], ["⬇️ Guardar otra vez", "Exportar"], ["Preparando «{titulo}»…", "Exportar"], ["Cortando clip {n} de «{titulo}»…", "Exportar"], ["VÍRGULA · memoria sonora viva — paquete de grabaciones", "Exportar"], ["Abre indice.html con cualquier navegador para ver las fichas, escuchar los audios y abrir los adjuntos (primero extrae o descomprime el .zip).", "Exportar"], ["Contenido", "Exportar"], ["Las fichas para leer y escuchar, sin conexión.", "Exportar"], ["Todos los datos, completos. Es lo que lee Vírgula al importar este paquete.", "Exportar"], ["Una fila por grabación (se abre en Excel, LibreOffice o Google Sheets).", "Exportar"], ["Una fila por clip.", "Exportar"], ["Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).", "Exportar"], ["Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».", "Exportar"], ["Fotos, documentos y consentimientos, en una carpeta por grabación.", "Exportar"], ["Dublin Core (dublin_core.xml) y, si aplica, Darwin Core (carpeta darwin_core, lista para GBIF/SNIB).", "Exportar"], ["Un archivo .eaf por grabación: ábrelo con ELAN junto con la carpeta audios/.", "Exportar"], ["Los WAV llevan dentro el título, la fecha, el código y los derechos (Broadcast WAV).", "Exportar"], ["Para volver a tener estas grabaciones en Vírgula: 📚 Acervo → 📥 Importar paquete.", "Exportar"], ["Respeta las condiciones de consentimiento y derechos anotadas en cada ficha.", "Exportar"], ["confidencial", "Exportar"], ["Archivo", "Exportar"], ["Lugar", "Exportar"], ["Tramos sin audio", "Exportar"], ["no incluido", "Exportar"], ["{n} grabación(es)", "Exportar"], ["exportado el {fecha}", "Exportar"], ["versión", "Exportar"], ["Respeta las condiciones de consentimiento y derechos de cada ficha.", "Exportar"], ["No parece un archivo .zip.", "Importar"], ["Este .zip es de más de 4 GB (zip64); Vírgula aún no lo lee.", "Importar"], ["El .zip está dañado.", "Importar"], ["Este navegador no descomprime .zip.", "Importar"], ["Compresión no reconocida en {ruta}", "Importar"], ["📥 Leyendo el paquete…", "Importar"], ["El paquete no tiene fichas.json: no es un paquete de Vírgula.", "Importar"], ["fichas.json no tiene el formato de Vírgula.", "Importar"], ["ya está", "Importar"], ["Dejar como están las {n} que ya tengo", "Importar"], ["Reemplazarlas con las del paquete", "Importar"], ["Trae {n} plantilla(s); las que no tengas se agregan.", "Importar"], ["📥 Importar", "Importar"], ["Importando «{titulo}»…", "Importar"], ["📥 {n} grabación(es) importada(s).", "Importar"], ["falta el WAV de «{titulo}»", "Importar"], ["falta la consulta de «{titulo}»", "Importar"], ["falta el adjunto «{nombre}»", "Importar"], ["importada", "Importar"], ["{n} adjunto(s) no venían en el paquete", "Importar"], ["Micrófono {n}", "Ajustes"], ["🎙️ {n} micrófono(s) encontrado(s).", "Ajustes"], ["No se pudo ver los micrófonos: {error}", "Ajustes"], ["Plantilla vacía (una lengua nueva)", "Ajustes"], ["Mejorar: {nombre}", "Ajustes"], ["Interfaz en {nombre}: tradujo {quien}{avala}.", "Ajustes"], ["avala {quien}", "Ajustes"], ["¿Qué pasó? ¿Qué estabas haciendo?", "Ajustes"], ["Se agregan datos técnicos: versión, aparato, navegador, espacio, ajustes de grabación y errores recientes. No se incluyen audios, fichas ni nombres.", "Ajustes"], ["Preparar informe", "Ajustes"], ["Qué pasó", "Ajustes"], ["Instalada", "Ajustes"], ["Espacio", "Ajustes"], ["Grabaciones", "Ajustes"], ["Última grabación", "Ajustes"], ["tramos sin audio", "Ajustes"], ["Eventos", "Ajustes"], ["Errores recientes", "Ajustes"], ["Problema en Vírgula {v}", "Ajustes"], ["⬇️ Guardar informe", "Ajustes"], ["Revisa el texto antes de enviarlo. Si es largo, el correo lleva solo el principio: adjunta el informe guardado.", "Ajustes"], ["⬇️ Instalar en iPhone o iPad", "Ajustes"], ["1. Abre esta página en **Safari**.", "Ajustes"], ["2. Toca **Compartir** (el cuadro con la flecha hacia arriba).", "Ajustes"], ["3. Elige **Agregar a pantalla de inicio** y luego **Agregar**.", "Ajustes"], ["Instálala antes de grabar: en iPhone, Safari borra los datos de las páginas que no se usan en 7 días, pero no los de las apps agregadas a la pantalla de inicio.", "Ajustes"], ["En iPhone, la app instalada y Safari guardan por separado: lo grabado en Safari no aparece en la app. Si ya grabaste en Safari, exporta esas grabaciones desde Safari (📦 Exportar) e impórtalas en la app (📥 Importar paquete).", "Ajustes"], ["Entendido", "Ajustes"], ["✅ Vírgula quedó instalada.", "Ajustes"], ["✨ Hay una versión nueva de Vírgula.", "Ajustes"], ["Actualizar ahora", "Ajustes"], ["Termina la grabación antes de actualizar.", "Ajustes"], ["⚠️ Este navegador no deja guardar datos (¿ventana privada?). Vírgula necesita guardar en el aparato.", "Ajustes"], ["Listas", "Ajustes"], ["Listas de trabajo", "Listas"], ["Prepara vocabularios, secuencias de palabras, cuestionarios o guiones. Puedes compartir una lista copiando su texto.", "Listas"], ["Mis listas", "Listas"], ["＋ Nueva lista", "Listas"], ["📋 Pegar texto", "Listas"], ["📥 Importar TXT", "Listas"], ["Nombre de la lista", "Listas"], ["Ej. Vocabulario de alimentos", "Listas"], ["Tipo de lista", "Listas"], ["Elementos (una entrada por renglón)", "Listas"], ["Guion (texto completo)", "Listas"], ["En modalidad Elementos, cada salto de línea crea una palabra o frase independiente. Se reconocen viñetas y numeraciones.", "Listas"], ["Contenido", "Listas"], ["Pega o escribe aquí.\nUn elemento por renglón.", "Listas"], ["💾 Guardar lista", "Listas"], ["Copiar texto", "Listas"], ["⬇️ Exportar TXT", "Listas"], ["Borrar", "Listas"], ["Todavía no tienes listas. Crea una o pega texto para comenzar.", "Listas"], ["Lista de trabajo", "Grabar"], ["Seleccionar lista para esta grabación", "Grabar"], ["La lista seleccionada se copia en la grabación. Puedes modificar la lista original sin alterar grabaciones anteriores.", "Grabar"], ["Sin lista", "Listas"], ["Guion", "Listas"], ["{n} elementos", "Listas"], ["El guion se conserva como un solo texto, con sus párrafos y saltos de línea. No se asigna automáticamente a los clips.", "Listas"], ["Cada salto de línea crea un elemento independiente. Se reconocen viñetas y numeraciones; las comas se conservan.", "Listas"], ["Un guion de {n} carácter(es).", "Listas"], ["El guion está vacío.", "Listas"], ["{n} elemento(s) detectado(s).", "Listas"], ["{n} de {total}", "Listas"], ["Lista completada", "Listas"], ["Lista vacía", "Listas"], ["Siguiente: {texto}", "Listas"], ["Último elemento", "Listas"], ["Puedes continuar grabando sin asignación.", "Listas"], ["Termina la grabación antes de crear o cambiar la lista de trabajo.", "Listas"], ["La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.", "Listas"], ["La lista seleccionada ya no existe.", "Listas"], ["No se pudo preparar la lista seleccionada. No se inició la grabación.", "Listas"], ["La lista necesita un nombre.", "Listas"], ["La lista no puede estar vacía.", "Listas"], ["Ya existe una lista con ese nombre.", "Listas"], ["Lista «{nombre}» guardada.", "Listas"], ["¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.", "Listas"], ["📋 Importar o pegar lista", "Listas"], ["Tipo", "Listas"], ["Pega aquí el texto", "Listas"], ["Ej. Vocabulario de alimentos", "Listas"], ["Elementos · un renglón por entrada", "Listas"], ["Guion · texto completo", "Listas"], ["Crear lista", "Listas"], ["Cancelar", "Listas"], ["Escribe un nombre y pega el contenido de la lista.", "Listas"], ["Texto de la lista copiado.", "Listas"], ["Copia el texto de la lista:", "Listas"], ["No se pudo leer el archivo: {error}", "Listas"], ["Hay cambios sin guardar. ¿Descartarlos y abrir otra lista?", "Listas"], ["Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?", "Listas"], ["Elemento actual", "Grabar"], ["Elemento", "Grabar"], ["Repetir elemento", "Grabar"], ["↩ Se repetirá el mismo elemento.", "Grabar"], ["Vista de plantilla", "Ajustes"], ["Visible", "Ajustes"], ["Oculto", "Ajustes"], ["Obligatorio", "Ajustes"], ["Opcional", "Ajustes"], ["Ver plantilla", "Ajustes"], ["Editar", "Ajustes"], ["Protección del almacenamiento: concedida. El navegador reducirá el riesgo de eliminar los datos de Vírgula automáticamente.", "Ajustes"], ["Protección del almacenamiento: no concedida. El navegador podría eliminar datos locales si necesita espacio.", "Ajustes"], ["Este navegador no permite consultar la protección del almacenamiento. Exporta respaldos periódicamente.", "Ajustes"], ["Este navegador no informa del espacio disponible.", "Ajustes"], ["No se pudo consultar el espacio disponible.", "Ajustes"], ["Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.", "Exportar"], ["Este navegador no permite actualizar Vírgula como aplicación instalada.", "Ajustes"], ["No hay conexión. No se pudo comprobar si existe una versión nueva.", "Ajustes"], ["Buscando actualizaciones…", "Ajustes"], ["Se encontró una versión nueva. Se está descargando…", "Ajustes"], ["Vírgula está actualizada.", "Ajustes"], ["No se pudo comprobar la actualización. Revisa la conexión e inténtalo de nuevo.", "Ajustes"], ["No se pudo registrar el sistema de actualizaciones.", "Ajustes"], ["Preparando la actualización…", "Ajustes"], ["La versión nueva está activa. Recarga Vírgula cuando termines de trabajar.", "Ajustes"], ["La actualización está lista.", "Ajustes"], ["Recargar ahora", "Ajustes"], ["Termina la grabación antes de recargar.", "Ajustes"], ["Hay una actualización lista para instalar.", "Ajustes"],];
 /* ═════════════════ IDIOMA DE LA INTERFAZ ═════════════════
    El texto en español ES la clave: t('Grabar') devuelve la traducción del idioma elegido o, si falta, el español.
    · t(texto, {var})  → texto plano (para avisos, confirmaciones, textContent).
@@ -481,7 +562,7 @@ function leerCsv(txt) {
 }
 
 /* ═════════════════ BASE: utilidades, base de datos local, ajustes, interfaz ═════════════════ */
-const VERSION = '1.2';
+const VERSION = '1.3';
 const FORMATO_PAQUETE = 'virgula-paquete-1';
 const $ = id => document.getElementById(id);
 const dos = n => String(n).padStart(2, '0');
@@ -528,15 +609,21 @@ const DB = {
   abrir() {
     if (this.db) return Promise.resolve(this.db);
     return new Promise((ok, mal) => {
-      const r = indexedDB.open('virgula', 1);
+      const r = indexedDB.open('virgula', 2);
       r.onupgradeneeded = () => {
         const d = r.result;
-        d.createObjectStore('grabaciones', { keyPath: 'id' });
-        d.createObjectStore('trozos', { autoIncrement: true }).createIndex('grabacion', 'grabacion');
-        d.createObjectStore('adjuntos', { keyPath: 'id' }).createIndex('grabacion', 'grabacion');
-        d.createObjectStore('ajustes');
+        if (!d.objectStoreNames.contains('grabaciones')) d.createObjectStore('grabaciones', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('trozos')) d.createObjectStore('trozos', { autoIncrement: true }).createIndex('grabacion', 'grabacion');
+        if (!d.objectStoreNames.contains('adjuntos')) d.createObjectStore('adjuntos', { keyPath: 'id' }).createIndex('grabacion', 'grabacion');
+        if (!d.objectStoreNames.contains('ajustes')) d.createObjectStore('ajustes');
+        if (!d.objectStoreNames.contains('listas')) d.createObjectStore('listas', { keyPath: 'id' });
       };
-      r.onsuccess = () => { this.db = r.result; ok(this.db); };
+      r.onblocked = () => avisar(t('Cierra las otras pestañas de Vírgula para completar la actualización del almacenamiento.'), 7000);
+      r.onsuccess = () => {
+        this.db = r.result;
+        this.db.onversionchange = () => { this.db.close(); this.db = null; };
+        ok(this.db);
+      };
       r.onerror = () => mal(r.error);
     });
   },
@@ -959,9 +1046,32 @@ const Espacio = {
   async datos() { if (!navigator.storage || !navigator.storage.estimate) return null; const e = await navigator.storage.estimate(); return { usado: e.usage || 0, cuota: e.quota || 0, libre: Math.max(0, (e.quota || 0) - (e.usage || 0)) }; },
   porMinuto() { const v = Ajustes.v; return ((v.calidad !== 'consulta' ? MB_MIN.archivo : 0) + (v.calidad !== 'archivo' ? MB_MIN.consulta : 0)) * (v.canales === 2 ? 2 : 1); },
   async actualizar() {
-    const e = await this.datos(); if (!e) { $('espacio').textContent = ''; return; }
-    const min = Math.floor(e.libre / this.porMinuto());
-    $('espacio').textContent = t('💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.', { usado: mb(e.usado), h: Math.floor(min / 60), m: min % 60 });
+    try {
+      const [e, persistido] = await Promise.all([
+        this.datos(),
+        navigator.storage && typeof navigator.storage.persisted === 'function'
+          ? navigator.storage.persisted().catch(() => null)
+          : Promise.resolve(null)
+      ]);
+      if (e) {
+        const min = Math.floor(e.libre / this.porMinuto());
+        $('espacio').textContent = t('💾 Vírgula usa {usado}. Con estos ajustes caben unas {h} h {m} min más de grabación.', { usado: mb(e.usado), h: Math.floor(min / 60), m: min % 60 });
+      } else {
+        $('espacio').textContent = t('Este navegador no informa del espacio disponible.');
+      }
+      const estado = $('estadoPersistencia');
+      if (estado) {
+        estado.textContent = persistido === true
+          ? t('Protección del almacenamiento: concedida. El navegador reducirá el riesgo de eliminar los datos de Vírgula automáticamente.')
+          : persistido === false
+            ? t('Protección del almacenamiento: no concedida. El navegador podría eliminar datos locales si necesita espacio.')
+            : t('Este navegador no permite consultar la protección del almacenamiento. Exporta respaldos periódicamente.');
+        estado.classList.toggle('aviso', persistido === false);
+      }
+    } catch (e) {
+      Bitacora.poner('consulta de almacenamiento', e && e.message ? e.message : String(e));
+      if ($('espacio')) $('espacio').textContent = t('No se pudo consultar el espacio disponible.');
+    }
   }
 };
 
@@ -974,7 +1084,7 @@ function avisar(texto, ms = 3500) {
 /** Botón «atrás» del teléfono: cierra la ventana abierta, vuelve de la ficha al Acervo y nunca sale de la app mientras se graba. */
 const Atras = {
   ignorar: false,
-  abierto() { return !!$('velo') || Nav.actual === 'vFicha' || !!G; },
+  abierto() { return !!$('velo') || Nav.actual === 'vFicha' || Nav.actual === 'vListas' || !!G; },
   abrir() { if (!(history.state && history.state.capa)) history.pushState({ capa: true }, ''); },
   cerrar() { if (this.ignorar) return; if (history.state && history.state.capa && !this.abierto()) { this.ignorar = true; history.back(); } },   // nunca dos pasos atrás pendientes
   alVolver() {
@@ -982,6 +1092,13 @@ const Atras = {
     if ($('velo')) Ventana.cerrar(true);
     else if (G) avisar(t('🎙️ Se está grabando. Para terminar, toca ⏹ Detener.'), 4000);
     else if (Nav.actual === 'vFicha') Nav.ir('vAcervo', true);
+    else if (Nav.actual === 'vListas') {
+      if (ListaTrabajo.hayCambiosSinGuardar() && !confirm(t('Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?'))) {
+        this.abrir();
+        return;
+      }
+      Nav.ir('vGrabar', true, true);
+    }
     if (this.abierto()) this.abrir();
   }
 };
@@ -1007,13 +1124,17 @@ const Ventana = {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') Ventana.cerrar(); });
 const Nav = {
   actual: 'vGrabar',
-  ir(id, desdeAtras) {
+  ir(id, desdeAtras, listaConfirmada = false) {
     if (G && id !== 'vGrabar' && !confirm(t('Se está grabando. ¿Ver otra sección? La grabación sigue.'))) return;
+    if (!listaConfirmada && this.actual === 'vListas' && id !== 'vListas' && ListaTrabajo.hayCambiosSinGuardar() &&
+        !confirm(t('Hay cambios en la lista que no se han guardado. ¿Salir sin guardarlos?'))) return;
+    const vistaAnterior = this.actual;
     document.querySelectorAll('.vista').forEach(v => v.classList.toggle('oculto', v.id !== id));
     document.querySelectorAll('nav.abajo button').forEach(b => b.classList.toggle('on', b.dataset.vista === id || (id === 'vFicha' && b.dataset.vista === 'vAcervo')));
-    this.actual = id; window.scrollTo(0, 0);
     if (id === 'vAcervo') Acervo.pintar();
+    if (id === 'vListas' && vistaAnterior !== 'vListas') ListaTrabajo.pintar();
     if (id === 'vAjustes') { Espacio.actualizar(); Plantillas.pintarAjustes(); Idioma.pintar(); pintarBaseTraduccion(); }
+    this.actual = id; window.scrollTo(0, 0);
     if (Atras.abierto()) Atras.abrir(); else if (!desdeAtras) Atras.cerrar();
   }
 };
@@ -1130,6 +1251,9 @@ const Grabadora = {
   
   async iniciar() {
     if (G) return;
+    let listaTrabajo = null;
+    try { listaTrabajo = await ListaTrabajo.instantaneaSeleccionada(); }
+    catch (e) { Bitacora.poner('lista de trabajo', e && e.message ? e.message : String(e)); return avisar(t('No se pudo preparar la lista seleccionada. No se inició la grabación.')); }
     const v = Ajustes.v, conArchivo = v.calidad !== 'consulta', conConsulta = v.calidad !== 'archivo', canales = v.canales === 2 ? 2 : 1;
     let stream;
     try {
@@ -1149,8 +1273,8 @@ const Grabadora = {
     const ahora = Date.now(), id = nuevoCodigo(ahora);
     G = { id, inicio: ahora, sr, canales, conArchivo, conConsulta, stream, track, ctx, analizador, t0: performance.now(), pausado: 0, pausaDesde: 0,
       frames: 0, pendientes: [], fallidos: [], nTrozo: 0, bytesArchivo: 0, bytesConsulta: 0, marcas: [], eventos: [], silencios: [], silencioDesde: null,
-      huecos: 0, ultimoGuardado: 0, picoMax: 0, saturado: 0, ultSat: 0, ganancia: 1, ultimoChequeo: performance.now() };
-    G.reg = { id, creada: ahora, estado: 'grabando', version: VERSION,
+      listaTrabajo, huecos: 0, ultimoGuardado: 0, picoMax: 0, saturado: 0, ultSat: 0, ganancia: 1, ultimoChequeo: performance.now() };
+    G.reg = { id, creada: ahora, estado: 'grabando', version: VERSION, listaTrabajo: listaTrabajo ? JSON.parse(JSON.stringify(listaTrabajo)) : null,
       tecnica: { sr, canales, conArchivo, conConsulta, mime: '', ajustesPedidos: { volAuto: v.volAuto, ruido: v.ruido, eco: v.eco },
         ajustesReales: { sampleRate: reales.sampleRate, channelCount: reales.channelCount, autoGainControl: reales.autoGainControl, noiseSuppression: reales.noiseSuppression, echoCancellation: reales.echoCancellation },
         microfono: track.label || t('predeterminado'), aparato: navigator.userAgent },
@@ -1168,6 +1292,7 @@ const Grabadora = {
       return;
     }
 
+    ListaTrabajo.pintarGrabacion();
     this.evento(t('inicio'), `${sr} Hz · ${canales === 2 ? t('estéreo') : t('mono')}`);
 
     if (conArchivo) {
@@ -1262,7 +1387,7 @@ const Grabadora = {
     Atras.abrir();   // «atrás» no saca de la app mientras se graba
     G.cuadro = requestAnimationFrame(() => this.medir());
     $('bGrabar').classList.add('on'); $('bGrabar').innerHTML = '●<br>' + tH('Grabando'); $('bGrabar').setAttribute('aria-pressed', 'true');
-    ['bMarcar', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
+    ['bMarcar', 'bRepetirElemento', 'bPausa', 'bDetener'].forEach(b => $(b).disabled = false);
     vibrar(40);
     this.pintarEstado();
   },
@@ -1530,7 +1655,7 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
         silencios: sesion.silencios,
         huecos: sesion.huecos,
         saturaciones: sesion.saturado,
-        clips: clipsDesdeMarcas(sesion.marcas, dur),
+        clips: clipsDesdeMarcas(sesion.marcas, dur, sesion.listaTrabajo || null),
         modificada: Date.now()
       });
 
@@ -1548,12 +1673,13 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
 
       const id = sesion.id;
       G = null;
+      ListaTrabajo.pintarGrabacion();
 
       $('bGrabar').classList.remove('on');
       $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar');
       $('bGrabar').setAttribute('aria-pressed', 'false');
 
-      ['bMarcar', 'bPausa', 'bDetener'].forEach(
+      ['bMarcar', 'bRepetirElemento', 'bPausa', 'bDetener'].forEach(
         b => $(b).disabled = true
       );
 
@@ -1664,14 +1790,19 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
     else $('nivelNota').textContent = t('Nivel {db} dB', { db: db(rms).toFixed(0) });
     G.cuadro = requestAnimationFrame(() => this.medir());
   },
-  /* 1 toque: siguiente clip · 2 toques seguidos: «otra vez» (el intento que termina ahí queda descartado) */
-  ultimoToque: 0,
-  marcar() {
-    if (!G) return;
-    const tm = Math.round(this.segundos() * 100) / 100, ahora = performance.now();
-    if (ahora - this.ultimoToque < 450 && G.marcas.length) { G.marcas.at(-1).tipo = 'otra vez'; vibrar([30, 60, 30]); avisar(t('↩ Otra vez: ese intento queda descartado'), 1500); }
-    else { G.marcas.push({ t: tm, tipo: 'siguiente' }); vibrar(30); }
-    this.ultimoToque = ahora; G.reg.marcas = G.marcas; this.pintarEstado();
+  /* Una marca cierra el tramo actual. «Otra vez» conserva el mismo elemento de la lista. */
+  marcar(tipo = 'siguiente') {
+    if (!G || G.cerrado) return;
+    const tm = Math.round(this.segundos() * 100) / 100;
+    if (G.marcas.length && tm <= G.marcas[G.marcas.length - 1].t) return;
+    G.marcas.push({ t: tm, tipo: tipo === 'otra vez' ? 'otra vez' : 'siguiente' });
+    G.reg.marcas = G.marcas;
+    G.reg.clips = clipsDesdeMarcas(G.marcas, this.segundos(), G.listaTrabajo || null);
+    vibrar(tipo === 'otra vez' ? [30, 60, 30] : 30);
+    if (tipo === 'otra vez') avisar(t('↩ Se repetirá el mismo elemento.'), 1800);
+    this.registrarEscritura(DB.poner('grabaciones', G.reg).catch(e => Bitacora.poner('guardar marca', e && e.message ? e.message : String(e))));
+    this.pintarEstado();
+    ListaTrabajo.pintarGrabacion();
   },
   async pausa() {
     if (!G) return;
@@ -1853,13 +1984,33 @@ async guardarTrozo(tipo, blob, frames = 0, inicioFrame = null) {
 };
 
 /** Clips a partir de las marcas: cada marca cierra un tramo; «otra vez» lo descarta. */
-function clipsDesdeMarcas(marcas, dur) {
+function indiceElementoLista(marcas) {
+  let indice = 0, inicio = 0;
+  for (const marca of (marcas || [])) {
+    if (Number(marca.t) - inicio >= 0.15 && marca.tipo !== 'otra vez') indice++;
+    inicio = Number(marca.t) || inicio;
+  }
+  return indice;
+}
+
+function clipsDesdeMarcas(marcas, dur, listaTrabajo = null) {
   if (!marcas || !marcas.length) return [];
   const cortes = [0, ...marcas.map(m => m.t), dur], clips = [];
+  let indiceLista = 0;
   for (let i = 0; i < cortes.length - 1; i++) {
-    const desde = cortes[i], hasta = cortes[i + 1];
+    const desde = cortes[i], hasta = cortes[i + 1], marcaFin = marcas[i];
     if (hasta - desde < 0.15) continue;
-    clips.push({ n: clips.length + 1, desde, hasta, etiqueta: '', texto: '', traduccion: '', descartado: i < marcas.length && marcas[i].tipo === 'otra vez' });
+    const elemento = listaTrabajo && listaTrabajo.tipo === 'elementos' ? (listaTrabajo.elementos || [])[indiceLista] : null;
+    clips.push({
+      n: clips.length + 1, desde, hasta,
+      etiqueta: elemento ? elemento.texto : '',
+      texto: '', traduccion: '',
+      listaId: elemento ? listaTrabajo.id : null,
+      listaElementoId: elemento ? elemento.id : null,
+      listaIndice: elemento ? indiceLista : null,
+      descartado: !!(marcaFin && marcaFin.tipo === 'otra vez')
+    });
+    if (!marcaFin || marcaFin.tipo !== 'otra vez') indiceLista++;
   }
   return clips;
 }
@@ -1954,7 +2105,8 @@ async function revisarPendientes(
           bytes: { archivo: bytesArchivo, consulta: bytesConsulta },
           clips: clipsDesdeMarcas(
             (r.marcas || []).filter(m => Number(m.t) < dur),
-            dur
+            dur,
+            r.listaTrabajo || null
           ),
           modificada: Date.now()
         });
@@ -1986,7 +2138,8 @@ async function revisarPendientes(
 
 
 $('bGrabar').onclick = () => G ? null : Grabadora.iniciar();
-$('bMarcar').onclick = () => Grabadora.marcar();
+$('bMarcar').onclick = () => Grabadora.marcar('siguiente');
+$('bRepetirElemento').onclick = () => Grabadora.marcar('otra vez');
 $('bPausa').onclick = () => Grabadora.pausa();
 $('bDetener').onclick = () => Grabadora.detener();
 
@@ -2366,7 +2519,7 @@ const Acervo = {
       const f = r.ficha, c = f.consentimiento.estado, clips = (r.clips || []).filter(x => !x.descartado).length, faltan = Plantillas.faltan(r).filter(x => x !== t('Consentimiento')).length;
       return `<div class="tarjeta"><input type="checkbox" data-sel="${r.id}" ${this.sel.has(r.id) ? 'checked' : ''} aria-label="${tH('Elegir {titulo}', { titulo: f.titulo })}">
         <div class="cuerpo" data-abrir="${r.id}"><h3>${esc(f.titulo)}</h3>
-        <div class="nota">${fechaBonita(r.creada)} · ${reloj(r.duracion)}${f.lugar ? ' · ' + esc(f.lugar) : ''} · 🧩 ${esc(Plantillas.nombre(Plantillas.de(f.plantilla && f.plantilla.id)))}</div>
+        <div class="nota">${fechaBonita(r.creada)} · ${reloj(r.duracion)}${f.lugar ? ' · ' + esc(f.lugar) : ''} · 🧩 ${esc(Plantillas.nombre(f.plantillaDef || Plantillas.de(f.plantilla && f.plantilla.id)))}</div>
         <div>${chip(c === 'otorgado' ? tH('✔ consentimiento') : c === 'no aplica' ? tH('consentimiento no aplica') : tH('⏳ consentimiento pendiente'), c === 'pendiente' ? 'aviso' : 'ok')}
         ${faltan ? chip(tH('📝 faltan {n} dato(s)', { n: faltan }), 'aviso') : ''}
         ${clips ? chip(tH('🔖 {n} clip(s)', { n: clips })) : ''}${adj[r.id] ? chip('📎 ' + adj[r.id]) : ''}${f.transcripcion.texto ? chip(tH('✍️ transcripción')) : ''}${(f.traducciones || []).length ? chip(tH('🌐 {n} traducción(es)', { n: f.traducciones.length })) : ''}
@@ -2495,6 +2648,8 @@ const Plantillas = {
     let l = null; try { l = await DB.leer('ajustes', 'plantillas'); } catch (e) {}
     if (!Array.isArray(l) || !l.length) { l = PLANTILLAS_FABRICA(); await DB.poner('ajustes', l, 'plantillas').catch(() => {}); }
     this.lista = l;
+    const activa = this.lista.find(p => p.id === (Ajustes.v.plantilla || 'general'));
+    if (!activa || activa.archivada) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
   },
   guardar() { return DB.poner('ajustes', this.lista, 'plantillas'); },
   de(id) { return this.lista.find(p => p.id === id) || this.lista.find(p => p.id === 'general') || PLANTILLAS_FABRICA()[0]; },
@@ -2512,33 +2667,54 @@ const Plantillas = {
   },
   /** Campos obligatorios vacíos de una ficha (más el consentimiento pendiente). */
   faltan(reg) {
-    const f = reg.ficha, p = this.de(f.plantilla && f.plantilla.id);
+    const f = reg.ficha, p = f.plantillaDef || this.de(f.plantilla && f.plantilla.id);
     const l = this.campos(p).filter(c => c.obligatorio && (c.visible || CAMPOS_BASE[c.id] && CAMPOS_BASE[c.id].nucleo) && this.vacio(this.valor(f, c))).map(c => c.etiqueta);
     if (f.consentimiento.estado === 'pendiente') l.push(t('Consentimiento'));
     return l;
   },
   aplicarPredet(f, p) {
-    f.plantilla = this.referencia(p); f.extra = f.extra || {};
+    f.plantilla = this.referencia(p);
+    f.plantillaDef = JSON.parse(JSON.stringify(p));
+    f.extra = f.extra || {};
     if (p.uso && !f.uso) f.uso = p.uso;
     if (p.predet.confidencial) f.confidencial = true;
     if (p.predet.consentimiento && f.consentimiento.estado === 'pendiente' && !f.consentimiento.forma) f.consentimiento.estado = p.predet.consentimiento;
   },
   enUso: async id => (await DB.todas('grabaciones')).filter(r => r.ficha.plantilla && r.ficha.plantilla.id === id).length,
 
-  /* ── Ajustes: lista de plantillas ── */
+  /* ── Ajustes: una plantilla seleccionada, sin saturar la pantalla ── */
+  vistaId: null,
   pintarAjustes() {
     const d = $('plantillas'); if (!d) return;
-    const act = Ajustes.v.plantilla || 'general';
-    d.innerHTML = this.lista.map(p => `<div class="tarjeta" style="cursor:default"><div class="cuerpo">
-      <h3>${esc(this.nombre(p))} ${p.id === act ? chip(tH('✓ para grabaciones nuevas'), 'ok') : ''}</h3>
-      <div class="nota">${esc(t(p.descripcion || ''))}</div>
-      <div>${chip('v' + p.version)}${p.equipo ? chip('👥 ' + esc(p.equipo)) : ''}${p.fija ? chip(tH('🔒 fija')) : ''}${p.autoria === 'importada' ? chip(tH('📥 importada')) : ''}${chip(tH('{n} campo(s) propios', { n: p.campos.filter(c => !c.base).length }))}</div>
-      <div class="fila fija" style="margin-top:6px">${p.id !== act ? `<button class="chico prim" data-pusar="${p.id}">${tH('Usar')}</button>` : ''}
-        <button class="chico" data-peditar="${p.id}">${this.soloLectura(p) ? tH('👁 Ver') : tH('✏️ Editar')}</button><button class="chico" data-pduplicar="${p.id}">${tH('⧉ Duplicar')}</button>
-        <button class="chico" data-pexportar="${p.id}">${tH('⬇️ Exportar')}</button>${p.id !== 'general' ? `<button class="chico" data-pborrar="${p.id}" aria-label="${tH('Borrar')}">🗑</button>` : ''}</div></div></div>`).join('');
+    const activa = Ajustes.v.plantilla || 'general';
+    const ids = this.lista.some(p => p.id === this.vistaId) ? this.vistaId : (this.lista.some(p => p.id === activa) ? activa : 'general');
+    this.vistaId = ids;
+    const p = this.de(ids);
+    d.innerHTML = `<label for="plSeleccion">${tH('Seleccionar plantilla')}</label>
+      <select id="plSeleccion">${this.lista.slice().sort((a,b)=>this.nombre(a).localeCompare(this.nombre(b))).map(x => `<option value="${esc(x.id)}" ${x.id === ids ? 'selected' : ''}>${esc(this.nombre(x))}${x.archivada ? ' · archivada' : ''}</option>`).join('')}</select>
+      <div class="plantilla-detalle">
+        <h3>${esc(this.nombre(p))} ${p.id === activa ? chip(tH('✓ para grabaciones nuevas'), 'ok') : ''}</h3>
+        <p class="nota">${esc(t(p.descripcion || ''))}</p>
+        <div>${chip('v' + p.version)}${p.equipo ? chip('👥 ' + esc(p.equipo)) : ''}${p.fija ? chip(tH('🔒 fija')) : ''}${p.autoria === 'importada' ? chip(tH('📥 importada')) : ''}${p.archivada ? chip(tH('Archivada'), 'aviso') : ''}${chip(tH('{n} campo(s) propios', { n: (p.campos || []).filter(c => !c.base).length }))}</div>
+        <div class="fila">
+          ${p.id !== activa && !p.archivada ? `<button class="chico prim" data-pusar="${esc(p.id)}">${tH('Usar en grabaciones nuevas')}</button>` : ''}
+          <button class="chico" data-pver="${esc(p.id)}">${tH('👁 Ver plantilla')}</button>
+          ${this.soloLectura(p) ? '' : `<button class="chico" data-peditar="${esc(p.id)}">${tH('✏️ Editar')}</button>`}
+          <button class="chico" data-pduplicar="${esc(p.id)}">${tH('⧉ Duplicar')}</button>
+          <button class="chico" data-pexportar="${esc(p.id)}">${tH('⬇️ Exportar')}</button>
+          ${p.archivada ? `<button class="chico" data-prestaurar="${esc(p.id)}">${tH('Restaurar')}</button>` : p.id !== 'general' ? `<button class="chico" data-pborrar="${esc(p.id)}">${tH('Archivar o eliminar')}</button>` : ''}
+        </div>
+      </div>`;
+  },
+  ver(id) {
+    const p = this.de(id);
+    const campos = this.campos(p).map(c => `<li><b>${esc(c.etiqueta)}</b> · ${tH(TIPOS_CAMPO[c.tipo] || c.tipo || 'Texto')} · ${c.visible || c.base ? tH('Visible') : tH('Oculto')} · ${c.obligatorio ? tH('Obligatorio') : tH('Opcional')}${c.ayuda ? `<div class="nota">${esc(c.ayuda)}</div>` : ''}</li>`).join('');
+    Ventana.abrir(`<h2>${tH('Vista de plantilla')}</h2><h3>${esc(this.nombre(p))} · v${p.version || 1}</h3><p class="nota">${esc(t(p.descripcion || ''))}</p><ul class="lista-campos">${campos}</ul><div class="fila"><button id="plVistaCerrar">${tH('Cerrar')}</button>${this.soloLectura(p) ? '' : `<button class="prim" id="plVistaEditar">${tH('Editar')}</button>`}</div>`);
+    $('plVistaCerrar').onclick = () => Ventana.cerrar();
+    if ($('plVistaEditar')) $('plVistaEditar').onclick = () => { Ventana.cerrar(); this.editar(id); };
   },
   soloLectura: p => p.fija && p.autoria === 'importada',
-  async usar(id) { Ajustes.v.plantilla = id; await Ajustes.guardar(); this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 Las grabaciones nuevas usarán «{nombre}».', { nombre: this.nombre(this.de(id)) })); },
+  async usar(id) { const p = this.de(id); if (p.archivada) return avisar(t('Primero restaura la plantilla archivada.')); Ajustes.v.plantilla = id; await Ajustes.guardar(); this.vistaId = id; this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 Las grabaciones nuevas usarán «{nombre}».', { nombre: this.nombre(this.de(id)) })); },
   async duplicar(id) {
     const o = this.de(id), n = JSON.parse(JSON.stringify(o));
     Object.assign(n, { id: 'P' + Date.now().toString(36) + azar(3), nombre: t('{nombre} (copia)', { nombre: this.nombre(o) }), descripcion: t(o.descripcion || ''), version: 1, fija: false, fabrica: false, autoria: 'local', modificada: Date.now() });
@@ -2550,10 +2726,21 @@ const Plantillas = {
     Object.assign(n, { fabrica: false, modificada: Date.now() }); this.lista.push(n); await this.guardar(); this.pintarAjustes(); this.editar(n.id);
   },
   async borrar(id) {
+    if (id === 'general') return;
     const p = this.de(id), n = await this.enUso(id);
-    if (!confirm(t('¿Borrar la plantilla «{nombre}»?', { nombre: this.nombre(p) }) + (n ? '\n\n' + t('{n} ficha(s) la usan: conservarán sus datos y se verán con la plantilla General.', { n }) : ''))) return;
-    this.lista = this.lista.filter(x => x.id !== id); if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
-    await this.guardar(); this.pintarAjustes();
+    if (n > 0) {
+      if (!confirm(t('La plantilla «{nombre}» está vinculada a {n} ficha(s). Se archivará y esas grabaciones conservarán su definición original. ¿Continuar?', { nombre: this.nombre(p), n }))) return;
+      p.archivada = true;
+      if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
+    } else {
+      if (!confirm(t('¿Eliminar definitivamente la plantilla «{nombre}»?', { nombre: this.nombre(p) }))) return;
+      this.lista = this.lista.filter(x => x.id !== id);
+      if (Ajustes.v.plantilla === id) { Ajustes.v.plantilla = 'general'; await Ajustes.guardar(); }
+    }
+    await this.guardar(); this.vistaId = 'general'; this.pintarAjustes();
+  },
+  async restaurar(id) {
+    const p = this.de(id); p.archivada = false; await this.guardar(); this.vistaId = id; this.pintarAjustes();
   },
   async exportar(id) {
     const p = JSON.parse(JSON.stringify(this.de(id))); delete p.autoria; delete p.modificada;
@@ -2660,17 +2847,270 @@ const Plantillas = {
     await this.guardar(); Ventana.cerrar(); this.pintarAjustes(); Ajustes.resumen(); avisar(t('🧩 «{nombre}» guardada (v{v}).', { nombre: p.nombre, v: p.version }));
   }
 };
+$('vAjustes').addEventListener('change', e => {
+  if (e.target.id === 'plSeleccion') { Plantillas.vistaId = e.target.value; Plantillas.pintarAjustes(); }
+});
 $('vAjustes').addEventListener('click', e => {
-  const b = e.target.closest('[data-pusar],[data-peditar],[data-pduplicar],[data-pexportar],[data-pborrar]'); if (!b) return;
+  const b = e.target.closest('[data-pusar],[data-pver],[data-peditar],[data-pduplicar],[data-pexportar],[data-pborrar],[data-prestaurar]'); if (!b) return;
   if (b.dataset.pusar) Plantillas.usar(b.dataset.pusar);
+  if (b.dataset.pver) Plantillas.ver(b.dataset.pver);
   if (b.dataset.peditar) Plantillas.editar(b.dataset.peditar);
   if (b.dataset.pduplicar) Plantillas.duplicar(b.dataset.pduplicar);
   if (b.dataset.pexportar) Plantillas.exportar(b.dataset.pexportar);
   if (b.dataset.pborrar) Plantillas.borrar(b.dataset.pborrar);
+  if (b.dataset.prestaurar) Plantillas.restaurar(b.dataset.prestaurar);
 });
 $('bPlNueva').onclick = () => Plantillas.nueva();
 $('bPlImportar').onclick = () => $('archivoPlantilla').click();
 $('archivoPlantilla').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) Plantillas.importarArchivo(f); };
+
+/* ═════════════════ LISTAS: preparación y guía de la grabación ═════════════════ */
+const ListaTrabajo = {
+  lista: [],
+  actualId: '',
+  seleccionGrabacion: '',
+  borradorNuevo: false,
+  hayCambiosSinGuardar() {
+    const nombre = $('listaNombre'), tipo = $('listaTipo'), contenido = $('listaContenido');
+    if (!nombre || !tipo || !contenido || !this.borradorNuevo && !this.actualId) return false;
+    const texto = contenido.value;
+    if (this.borradorNuevo) return !!(nombre.value.trim() || texto.trim());
+    const original = this.lista.find(x => x.id === this.actualId);
+    return !!original && (nombre.value !== original.nombre || tipo.value !== original.tipo || texto !== this.textoDe(original));
+  },
+  async cargar() {
+    this.lista = await DB.todas('listas').catch(() => []);
+    this.seleccionGrabacion = await DB.leer('ajustes', 'listaGrabacion').catch(() => '') || '';
+    if (!this.lista.some(x => x.id === this.seleccionGrabacion)) this.seleccionGrabacion = '';
+    this.actualId = this.seleccionGrabacion || (this.lista[0] && this.lista[0].id) || '';
+    this.pintar();
+    this.pintarGrabacion();
+  },
+  textoDe(l) {
+    if (!l) return '';
+    return l.tipo === 'guion' ? (l.texto || '') : (l.elementos || []).map(x => x.texto).join('\n');
+  },
+  normalizarElementos(texto) {
+    return String(texto || '').split(/\r?\n/).map(x => x.trim().replace(/^\s*(?:(?:[-*•‣])\s+|\d+[.)]\s+)/, '').trim()).filter(Boolean).map(texto => ({ id: 'E' + Date.now().toString(36) + azar(4), texto }));
+  },
+  desdeTexto(nombre, tipo, texto, id) {
+    const ahora = Date.now();
+    return {
+      id: id || 'L' + ahora.toString(36) + azar(5),
+      nombre: String(nombre || '').trim().slice(0, 120),
+      tipo: tipo === 'guion' ? 'guion' : 'elementos',
+      texto: tipo === 'guion' ? String(texto || '') : '',
+      elementos: tipo === 'guion' ? [] : this.normalizarElementos(texto),
+      creada: ahora, modificada: ahora
+    };
+  },
+  async obtener(id) { return this.lista.find(x => x.id === id) || await DB.leer('listas', id); },
+  async instantaneaSeleccionada() {
+    if (!this.seleccionGrabacion) return null;
+    const l = await this.obtener(this.seleccionGrabacion);
+    if (!l) throw new Error('La lista seleccionada ya no existe.');
+    return JSON.parse(JSON.stringify(l));
+  },
+  async seleccionarGrabacion(id) {
+    if (G) return avisar(t('La lista de esta grabación ya quedó fijada. La selección cambiará para la siguiente grabación.'));
+    this.seleccionGrabacion = id || '';
+    await DB.poner('ajustes', this.seleccionGrabacion, 'listaGrabacion');
+    this.pintarGrabacion();
+  },
+  opciones(id) {
+    return `<option value="">${tH('Sin lista')}</option>` + this.lista.slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre))).map(l => `<option value="${esc(l.id)}" ${l.id === id ? 'selected' : ''}>${esc(l.nombre)} · ${l.tipo === 'guion' ? tH('Guion') : tH('{n} elementos', { n: (l.elementos || []).length })}</option>`).join('');
+  },
+  pintar() {
+    const sel = $('listaSeleccion'), editor = $('listaEditor'), vacia = $('listaVacia');
+    if (!sel || !editor) return;
+    sel.innerHTML = this.opciones(this.actualId);
+    sel.value = this.actualId;
+    const l = this.lista.find(x => x.id === this.actualId);
+    editor.classList.toggle('oculto', !l && !this.borradorNuevo);
+    vacia.classList.toggle('oculto', !!l || this.borradorNuevo);
+    if (l) {
+      $('listaNombre').value = l.nombre;
+      $('listaTipo').value = l.tipo;
+      $('listaContenido').value = this.textoDe(l);
+      $('bListaBorrar').classList.remove('oculto');
+    } else if (this.borradorNuevo) {
+      $('listaNombre').value = '';
+      $('listaTipo').value = 'elementos';
+      $('listaContenido').value = '';
+      $('bListaBorrar').classList.add('oculto');
+    }
+    this.pintarAyuda();
+    this.pintarGrabacion();
+  },
+  pintarAyuda() {
+    const tipo = $('listaTipo') && $('listaTipo').value;
+    if (!$('listaAyuda')) return;
+    $('listaAyuda').textContent = tipo === 'guion'
+      ? t('El guion se conserva como un solo texto, con sus párrafos y saltos de línea. No se asigna automáticamente a los clips.')
+      : t('Cada salto de línea crea un elemento independiente. Se reconocen viñetas y numeraciones; las comas se conservan.');
+    const texto = $('listaContenido') ? $('listaContenido').value : '';
+    const n = tipo === 'guion' ? (texto.trim() ? 1 : 0) : this.normalizarElementos(texto).length;
+    $('listaVistaPrevia').textContent = tipo === 'guion' ? (n ? t('Un guion de {n} carácter(es).', { n: texto.length }) : t('El guion está vacío.')) : t('{n} elemento(s) detectado(s).', { n });
+  },
+  pintarGrabacion() {
+    const sel = $('listaGrabacion'), vista = $('listaLectura');
+    if (!sel || !vista) return;
+    const seleccion = G && G.listaTrabajo ? G.listaTrabajo.id : this.seleccionGrabacion;
+    sel.innerHTML = this.opciones(seleccion);
+    sel.value = seleccion || '';
+    sel.disabled = !!G;
+    $('bListaCrear').disabled = !!G;
+    $('bListaImportar').disabled = !!G;
+    const l = G ? G.listaTrabajo : this.lista.find(x => x.id === this.seleccionGrabacion);
+    if (!l) { vista.classList.add('oculto'); vista.innerHTML = ''; return; }
+    vista.classList.remove('oculto');
+    if (l.tipo === 'guion') {
+      vista.innerHTML = `<h3>${esc(l.nombre)}</h3><p class="nota">${tH('Guion · texto completo')}</p><div class="lista-guion">${esc(l.texto || '')}</div>`;
+      return;
+    }
+    const elementos = l.elementos || [];
+    const indice = G ? indiceElementoLista(G.marcas) : 0;
+    const actual = elementos[indice];
+    vista.innerHTML = `<div class="lista-actual" aria-live="polite"><div class="nota">${esc(l.nombre)} · ${elementos.length ? tH('{n} de {total}', { n: Math.min(indice + 1, elementos.length), total: elementos.length }) : tH('Lista vacía')}</div><div class="valor">${actual ? esc(actual.texto) : tH('Lista completada')}</div><div class="nota">${actual && elementos[indice + 1] ? tH('Siguiente: {texto}', { texto: elementos[indice + 1].texto }) : actual ? tH('Último elemento') : tH('Puedes continuar grabando sin asignación.')}</div></div>
+      <ol class="lista-elementos">${elementos.map((x,i)=>`<li class="${i < indice ? 'completado' : i === indice ? 'actual' : ''}" ${i === indice ? 'aria-current="step"' : ''}>${esc(x.texto)} ${i < indice ? '✓' : ''}</li>`).join('')}</ol>`;
+  },
+  nuevo() {
+    if (G) return avisar(t('Termina la grabación antes de crear o cambiar la lista de trabajo.'));
+    this.actualId = '';
+    this.borradorNuevo = true;
+    this.pintar();
+    Nav.ir('vListas');
+    setTimeout(() => $('listaNombre') && $('listaNombre').focus(), 0);
+  },
+  async guardar() {
+    const nombre = $('listaNombre').value.trim(), tipo = $('listaTipo').value, texto = $('listaContenido').value;
+    if (!nombre) return avisar(t('La lista necesita un nombre.'));
+    if (!texto.trim()) return avisar(t('La lista no puede estar vacía.'));
+    const eraNueva = this.borradorNuevo;
+    const anterior = this.lista.find(x => x.id === this.actualId);
+    const nuevo = this.desdeTexto(nombre, tipo, texto, anterior && anterior.id);
+    if (anterior) {
+      nuevo.creada = anterior.creada;
+      nuevo.modificada = Date.now();
+      if (nuevo.tipo === 'elementos' && anterior.tipo === 'elementos') {
+        const idsPorTexto = new Map();
+        for (const elemento of (anterior.elementos || [])) {
+          if (!idsPorTexto.has(elemento.texto)) idsPorTexto.set(elemento.texto, []);
+          idsPorTexto.get(elemento.texto).push(elemento.id);
+        }
+        nuevo.elementos = nuevo.elementos.map(elemento => {
+          const ids = idsPorTexto.get(elemento.texto);
+          return ids && ids.length ? Object.assign({}, elemento, { id: ids.shift() }) : elemento;
+        });
+      }
+    }
+    if (this.lista.some(x => x.id !== nuevo.id && x.nombre.toLocaleLowerCase() === nombre.toLocaleLowerCase())) return avisar(t('Ya existe una lista con ese nombre.'));
+    await DB.poner('listas', nuevo);
+    this.lista = await DB.todas('listas');
+    this.actualId = nuevo.id; this.borradorNuevo = false;
+    if (eraNueva) { this.seleccionGrabacion = nuevo.id; await DB.poner('ajustes', nuevo.id, 'listaGrabacion'); }
+    this.pintar();
+    avisar(t('Lista «{nombre}» guardada.', { nombre }));
+  },
+  async borrar() {
+    const l = this.lista.find(x => x.id === this.actualId); if (!l) return;
+    if (!confirm(t('¿Borrar la lista «{nombre}»? Las grabaciones anteriores conservarán su copia.', { nombre: l.nombre }))) return;
+    await DB.quitar('listas', l.id);
+    this.lista = await DB.todas('listas');
+    this.actualId = this.lista[0] ? this.lista[0].id : '';
+    if (this.seleccionGrabacion === l.id) { this.seleccionGrabacion = ''; await DB.poner('ajustes', '', 'listaGrabacion'); }
+    this.pintar();
+  },
+  async exportar() {
+    const l = this.lista.find(x => x.id === this.actualId); if (!l) return;
+    const f = new File([this.textoDe(l)], `${nombreArchivo(l.nombre, 80) || 'lista'}.txt`, { type: 'text/plain;charset=utf-8' });
+    await descargarArchivos([f]);
+  },
+  async copiar() {
+    const l = this.lista.find(x => x.id === this.actualId); if (!l) return;
+    const texto = this.textoDe(l);
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(texto); avisar(t('Texto de la lista copiado.')); }
+      else window.prompt(t('Copia el texto de la lista:'), texto);
+    } catch (_) { window.prompt(t('Copia el texto de la lista:'), texto); }
+  },
+  importarDialogo(textoInicial = '', nombreInicial = '') {
+    Ventana.abrir(`<h2>${tH('📋 Importar o pegar lista')}</h2>
+      <label for="impListaNombre">${tH('Nombre de la lista')}</label><input id="impListaNombre" type="text" maxlength="120" value="${esc(nombreInicial)}" placeholder="${tH('Ej. Vocabulario de alimentos')}">
+      <label for="impListaTipo">${tH('Tipo')}</label><select id="impListaTipo"><option value="elementos">${tH('Elementos · un renglón por entrada')}</option><option value="guion">${tH('Guion · texto completo')}</option></select>
+      <label for="impListaTexto">${tH('Pega aquí el texto')}</label><textarea id="impListaTexto" rows="12" maxlength="100000">${esc(textoInicial)}</textarea>
+      <div class="fila"><button class="prim" id="impListaGuardar">${tH('Crear lista')}</button><button id="impListaCancelar">${tH('Cancelar')}</button></div>`);
+    $('impListaCancelar').onclick = () => Ventana.cerrar();
+    $('impListaGuardar').onclick = async () => {
+      const nombre = $('impListaNombre').value.trim(), tipo = $('impListaTipo').value, texto = $('impListaTexto').value;
+      if (!nombre || !texto.trim()) return avisar(t('Escribe un nombre y pega el contenido de la lista.'));
+      const nuevo = this.desdeTexto(nombre, tipo, texto);
+      if (this.lista.some(x => x.nombre.toLowerCase() === nombre.toLowerCase())) nuevo.nombre += ' (importada)';
+      await DB.poner('listas', nuevo);
+      this.lista = await DB.todas('listas'); this.actualId = nuevo.id; this.borradorNuevo = false;
+      this.seleccionGrabacion = nuevo.id; await DB.poner('ajustes', nuevo.id, 'listaGrabacion');
+      Ventana.cerrar(); this.pintar(); avisar(t('Lista «{nombre}» importada.', { nombre: nuevo.nombre }));
+    };
+  },
+  async incorporar(l) {
+    if (!l || typeof l.id !== 'string' || !['elementos','guion'].includes(l.tipo) || typeof l.nombre !== 'string') return;
+    const nombre = l.nombre.trim().slice(0, 120);
+    if (!nombre) return;
+    let copia;
+    if (l.tipo === 'guion') {
+      if (typeof l.texto !== 'string' || l.texto.length > 100000) return;
+      copia = { id: l.id, nombre, tipo: 'guion', texto: l.texto, elementos: [] };
+    } else {
+      if (!Array.isArray(l.elementos) || l.elementos.length > 5000) return;
+      const elementos = [];
+      for (const x of l.elementos) {
+        if (!x || typeof x.texto !== 'string' || !x.texto.trim() || x.texto.length > 2000) return;
+        elementos.push({ id: typeof x.id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(x.id) ? x.id : 'E' + azar(8), texto: x.texto.trim() });
+      }
+      copia = { id: l.id, nombre, tipo: 'elementos', texto: '', elementos };
+    }
+    const mismoContenido = this.lista.find(x =>
+      x.tipo === copia.tipo &&
+      x.nombre === copia.nombre &&
+      this.textoDe(x) === this.textoDe(copia)
+    );
+    if (mismoContenido) return;
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(copia.id)) copia.id = 'L' + Date.now().toString(36) + azar(5);
+    if (this.lista.some(x => x.id === copia.id)) copia.id = 'L' + Date.now().toString(36) + azar(5);
+    copia.creada = Date.now(); copia.modificada = Date.now();
+    await DB.poner('listas', copia);
+    this.lista = await DB.todas('listas');
+  }
+};
+$('listaSeleccion').addEventListener('change', e => {
+  const id = e.target.value;
+  const anterior = ListaTrabajo.lista.find(x => x.id === ListaTrabajo.actualId);
+  const contenidoActual = $('listaContenido').value;
+  const cambios = ListaTrabajo.borradorNuevo
+    ? !!($('listaNombre').value.trim() || contenidoActual.trim())
+    : !!anterior && ($('listaNombre').value !== anterior.nombre || $('listaTipo').value !== anterior.tipo || contenidoActual !== ListaTrabajo.textoDe(anterior));
+  if (cambios && !confirm(t('Hay cambios sin guardar. ¿Descartarlos y abrir otra lista?'))) { e.target.value = ListaTrabajo.actualId; return; }
+  ListaTrabajo.actualId = id; ListaTrabajo.borradorNuevo = false; ListaTrabajo.pintar();
+});
+$('listaTipo').addEventListener('change', () => ListaTrabajo.pintarAyuda());
+$('listaContenido').addEventListener('input', () => ListaTrabajo.pintarAyuda());
+$('bListaNueva').onclick = () => ListaTrabajo.nuevo();
+$('bListaCrear').onclick = () => ListaTrabajo.nuevo();
+$('bListaGuardar').onclick = () => ListaTrabajo.guardar();
+$('bListaBorrar').onclick = () => ListaTrabajo.borrar();
+$('bListaExportar').onclick = () => ListaTrabajo.exportar();
+$('bListaCopiar').onclick = () => ListaTrabajo.copiar();
+$('bListaPegar').onclick = () => ListaTrabajo.importarDialogo();
+$('bListaImportar').onclick = () => ListaTrabajo.importarDialogo();
+$('bListaArchivo').onclick = () => $('archivoLista').click();
+$('archivoLista').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { ListaTrabajo.importarDialogo(await f.text(), f.name.replace(/\.txt$/i, '')); }
+  catch (err) { avisar(t('No se pudo leer el archivo: {error}', { error: err.message })); }
+};
+$('listaGrabacion').addEventListener('change', e => ListaTrabajo.seleccionarGrabacion(e.target.value));
+$('bComprobarActualizaciones').onclick = () => comprobarActualizaciones(true);
 
 /* ═════════════════ FICHA: todo lo que acompaña a una grabación ═════════════════ */
 const PAPELES = { foto: N_('📷 Foto'), transcripcion: N_('✍️ Transcripción o traducción'), letra: N_('🎵 Letra, acordes o partitura'), apoyo: N_('📚 Material de apoyo'), consentimiento: N_('🤝 Consentimiento'), otro: N_('📎 Otro') };
@@ -2701,6 +3141,7 @@ const Ficha = {
     const reg = await DB.leer('grabaciones', id); if (!reg) return avisar(t('No se encontró la grabación.'));
     const f = reg.ficha; f.extra = f.extra || {}; f.extraEtiquetas = f.extraEtiquetas || {};
     if (!f.plantilla) f.plantilla = Plantillas.referencia(Plantillas.de('general'));
+    if (!f.plantillaDef) f.plantillaDef = JSON.parse(JSON.stringify(Plantillas.de(f.plantilla.id)));
     this.reg = reg; this.adjuntos = await DB.porGrabacion('adjuntos', id);
     Nav.ir('vFicha'); this.pintar(); this.cargarAudio();
   },
@@ -2712,7 +3153,7 @@ const Ficha = {
     };
     if (inmediato) return f(); this._t = setTimeout(f, 500);
   },
-  plantilla() { return Plantillas.de(this.reg.ficha.plantilla && this.reg.ficha.plantilla.id); },
+  plantilla() { return this.reg.ficha.plantillaDef || Plantillas.de(this.reg.ficha.plantilla && this.reg.ficha.plantilla.id); },
   campoTexto(id, etiqueta, valor, { largo, max = 4000, ph = '', enlaces, dato = 'c' } = {}) {
     return `<label for="${id}">${etiqueta}</label>` + (largo
       ? `<textarea id="${id}" data-${dato}="${dato === 'x' ? id.slice(3) : id}" maxlength="${max}" placeholder="${esc(ph)}">${esc(valor)}</textarea>${enlaces ? `<div class="fila fija"><button class="chico" data-enlazar="${id}">${tH('🔗 Enlazar a un adjunto o página')}</button></div><div class="vista-texto oculto" id="vista-${id}"></div>` : ''}`
@@ -3298,7 +3739,7 @@ const Exportar = {
   },
   /** Todo lo que va dentro de un paquete. */
   async entradas(regs, o, decir) {
-    const e = [], datos = [], ahora = Date.now(), plantillas = {};
+    const e = [], datos = [], ahora = Date.now(), plantillas = {}, listas = {};
     for (const r of regs) {
       decir(t('Preparando «{titulo}»…', { titulo: r.ficha.titulo }));
       const a = await Medios.archivos(r, { bwf: o.bwf }), rutas = {};
@@ -3321,13 +3762,16 @@ const Exportar = {
       const adjuntos = this.adj[r.id].map(ad => { const m = { id: ad.id, nombre: ad.nombre, tipo: ad.tipo, tam: ad.tam, papel: ad.papel, nota: ad.nota, fecha: ad.fecha };
         if (o.adj(ad)) { m.archivo = rutaAdjunto(ad); e.push({ ruta: m.archivo, datos: ad.blob, fecha: ad.fecha }); } else m.noIncluido = true; return m; });
       const copia = JSON.parse(JSON.stringify(r)); delete copia.estado;
-      const pl = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id); plantillas[pl.id] = pl;
+      const pl = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id); plantillas[pl.id] = pl;
+      if (copia.listaTrabajo && copia.listaTrabajo.id) listas[`${r.id}:${copia.listaTrabajo.id}`] = copia.listaTrabajo;
       datos.push(Object.assign(copia, { clips, adjuntos, archivos: rutas }));
     }
     const lista = Object.values(plantillas).map(p => { const c = JSON.parse(JSON.stringify(p)); delete c.autoria; delete c.modificada; return c; });
-    const paquete = { formato: FORMATO_PAQUETE, app: 'Vírgula · memoria sonora viva', version: VERSION, exportado: fechaISO(ahora), idioma: Idioma.codigo, plantillas: lista, grabaciones: datos };
+    const listasPaquete = Object.values(listas);
+    const paquete = { formato: FORMATO_PAQUETE, app: 'Vírgula · memoria sonora viva', version: VERSION, exportado: fechaISO(ahora), idioma: Idioma.codigo, plantillas: lista, listas: listasPaquete, grabaciones: datos };
     const fijos = [{ ruta: 'fichas.json', datos: JSON.stringify(paquete, null, 1) }, { ruta: 'fichas.csv', datos: this.csvFichas(datos) }, { ruta: 'clips.csv', datos: this.csvClips(datos) },
       { ruta: 'indice.html', datos: indiceHtml(paquete) }, { ruta: 'LEEME.txt', datos: leeme(o) }];
+    listasPaquete.forEach((l, i) => fijos.push({ ruta: `listas/${String(i + 1).padStart(3, '0')}_${ascii(l.id)}_${nombreArchivo(l.nombre, 80) || 'lista'}.txt`, datos: ListaTrabajo.textoDe(l) }));
     if (o.dc) fijos.push({ ruta: 'estandares/dublin_core.xml', datos: dublinCore(datos) });
     if (o.dwc) { const d = darwinCore(datos); if (d) fijos.push({ ruta: 'estandares/darwin_core/occurrence.csv', datos: d.ocurrencias }, { ruta: 'estandares/darwin_core/meta.xml', datos: d.meta }); }
     if (o.elan) datos.filter(tieneElan).forEach(r => fijos.push({ ruta: `elan/${nombreArchivo(Medios.nombreBase(r), 90)}.eaf`, datos: elan(r) }));
@@ -3337,7 +3781,7 @@ const Exportar = {
   /** Columnas de los campos propios (de cualquier plantilla) presentes en el paquete. */
   columnasExtra(d) {
     const cols = new Map();
-    d.forEach(r => { const p = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id);
+    d.forEach(r => { const p = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id);
       Object.keys(r.ficha.extra || {}).forEach(k => { if (cols.has(k)) return; const c = p.campos.find(x => x.id === k); cols.set(k, c ? c.etiqueta : (r.ficha.extraEtiquetas || {})[k] || k); }); });
     return [...cols.entries()];
   },
@@ -3357,8 +3801,8 @@ const Exportar = {
         ...extra.map(([k]) => val((f.extra || {})[k]))]; })]);
   },
   csvClips(d) {
-    const filas = [['codigo_grabacion', 'titulo_grabacion', 'clip', 'etiqueta', 'desde_s', 'hasta_s', 'texto', 'traduccion', 'descartado', 'archivo_wav', 'archivo_ogg']];
-    d.forEach(r => (r.clips || []).forEach(c => filas.push([r.id, r.ficha.titulo, c.n, c.etiqueta, c.desde.toFixed(2), c.hasta.toFixed(2), c.texto, c.traduccion, c.descartado ? 'sí' : 'no', c.archivoWav, c.archivoOgg])));
+    const filas = [['codigo_grabacion', 'titulo_grabacion', 'clip', 'etiqueta', 'desde_s', 'hasta_s', 'texto', 'traduccion', 'descartado', 'archivo_wav', 'archivo_ogg', 'lista_id', 'lista_elemento_id', 'lista_indice']];
+    d.forEach(r => (r.clips || []).forEach(c => filas.push([r.id, r.ficha.titulo, c.n, c.etiqueta, c.desde.toFixed(2), c.hasta.toFixed(2), c.texto, c.traduccion, c.descartado ? 'sí' : 'no', c.archivoWav, c.archivoOgg, c.listaId || '', c.listaElementoId || '', Number.isSafeInteger(c.listaIndice) ? c.listaIndice + 1 : ''])));
     return csv(filas);
   }
 };
@@ -3374,6 +3818,7 @@ function leeme(o) {
     '  audios/       ' + t('Audio completo: .wav = archivo (sin alterar, 16 bits); .webm/.m4a/.ogg = consulta (ligero, volumen ajustado).'),
     '  clips/        ' + t('Clips con el nombre de su etiqueta: etiqueta__código-número. El catálogo de lenguas los reconoce con «📥 Traer audios en lote».'),
     '  adjuntos/     ' + t('Fotos, documentos y consentimientos, en una carpeta por grabación.'),
+    '  listas/       ' + t('Copias en TXT de las listas de trabajo utilizadas en las grabaciones exportadas.'),
     o.dc || o.dwc ? '  estandares/   ' + t('Dublin Core (dublin_core.xml) y, si aplica, Darwin Core (carpeta darwin_core, lista para GBIF/SNIB).') : '',
     o.elan ? '  elan/         ' + t('Un archivo .eaf por grabación: ábrelo con ELAN junto con la carpeta audios/.') : '',
     o.bwf ? '  ' + t('Los WAV llevan dentro el título, la fecha, el código y los derechos (Broadcast WAV).') : '', '',
@@ -3387,7 +3832,7 @@ function indiceHtml(p) {
   const tx = (s, adj) => textoConEnlaces(s || '', adj, rutaAdj).replace(/\n/g, '<br>');
   const fila = (k, v) => v ? `<tr><th>${tH(k)}</th><td>${v}</td></tr>` : '';
   const fichas = p.grabaciones.map(r => {
-    const f = r.ficha, u = f.ubicacion, c = f.consentimiento, adj = r.adjuntos, pl = Plantillas.de(f.plantilla && f.plantilla.id);
+    const f = r.ficha, u = f.ubicacion, c = f.consentimiento, adj = r.adjuntos, pl = f.plantillaDef || Plantillas.de(f.plantilla && f.plantilla.id);
     const extras = Object.entries(f.extra || {}).filter(([, v]) => !Plantillas.vacio(v)).map(([k, v]) => { const cp = pl.campos.find(x => x.id === k);
       return fila(cp ? cp.etiqueta : (f.extraEtiquetas || {})[k] || k, cp && cp.tipo === 'largo' ? tx(v, adj) : esc(Array.isArray(v) ? v.map(x => t(x)).join(', ') : v === true ? t('sí') : t(String(v)))); }).join('');
     const audio = (ruta, tipo) => ruta ? `<p>${tipo}: <a href="${esc(ruta)}">${esc(ruta.split('/').pop())}</a></p><audio controls preload="none" src="${esc(ruta)}"></audio>` : '';
@@ -3404,6 +3849,7 @@ function indiceHtml(p) {
       ${fila(N_('Notas'), tx(f.notas, adj))}${fila(N_('Tramos sin audio'), (r.silencios || []).map(s => relojFino(s.desde) + '–' + relojFino(s.hasta)).join(', '))}</table>
       ${f.transcripcion.texto ? `<h3>${tH('Transcripción')}${f.transcripcion.lengua ? ' (' + esc(f.transcripcion.lengua) + ')' : ''}</h3><div class="txt">${tx(f.transcripcion.texto, adj)}</div>` : ''}
       ${(f.traducciones || []).map(x => `<h3>${tH('Traducción')}${x.lengua ? ' — ' + esc(x.lengua) : ''}${x.autor ? ' · ' + esc(x.autor) : ''}</h3><div class="txt">${tx(x.texto, adj)}</div>`).join('')}
+      ${r.listaTrabajo ? `<h3>${tH('Lista de trabajo')}: ${esc(r.listaTrabajo.nombre)}</h3><div class="txt">${esc(ListaTrabajo.textoDe(r.listaTrabajo))}</div>` : ''}
       ${(r.clips || []).some(x => !x.descartado) ? `<h3>${tH('Clips')}</h3><table>${r.clips.filter(x => !x.descartado).map(x => `<tr><th>#${x.n} ${esc(x.etiqueta)}</th><td>${relojFino(x.desde)}–${relojFino(x.hasta)}${x.traduccion ? ' · ' + esc(x.traduccion) : ''}${x.texto ? '<br>' + esc(x.texto) : ''}${x.archivoWav ? `<br><audio controls preload="none" src="${esc(x.archivoOgg || x.archivoWav)}"></audio>` : ''}</td></tr>`).join('')}</table>` : ''}
       ${adj.length ? `<h3>${tH('Adjuntos')}</h3><ul>${adj.map(a => `<li>${a.archivo ? `<a href="${esc(a.archivo)}">${esc(a.nombre)}</a>` : esc(a.nombre) + ' <i>(' + tH('no incluido') + ')</i>'} · ${tH(PAPELES[a.papel] || a.papel)}${a.nota ? ' — ' + esc(a.nota) : ''}${/^image\//.test(a.tipo) && a.archivo ? `<br><img src="${esc(a.archivo)}" alt="${esc(a.nota || a.nombre)}" loading="lazy">` : ''}</li>`).join('')}</ul>` : ''}
     </article>`;
@@ -3426,7 +3872,7 @@ function indiceHtml(p) {
 const xml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
 /** Valores de los campos propios que equivalen a un término de un estándar. */
 function valoresEstandar(r, prefijo) {
-  const p = Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id), out = {};
+  const p = r.ficha.plantillaDef || Plantillas.de(r.ficha.plantilla && r.ficha.plantilla.id), out = {};
   p.campos.filter(c => !c.base && c.estandar && c.estandar.startsWith(prefijo + ':')).forEach(c => {
     let v = (r.ficha.extra || {})[c.id]; if (Plantillas.vacio(v)) return; if (Array.isArray(v)) v = v.join('; '); if (v === true) v = 'sí';
     const k = c.estandar.slice(prefijo.length + 1); out[k] = out[k] ? out[k] + ' | ' + v : String(v);
@@ -3724,6 +4170,7 @@ const Importar = {
         throw new Error(t('fichas.json no tiene el formato de Vírgula.'));
       }
       if (p.grabaciones.length > 10000) throw new Error(t('El paquete contiene demasiadas grabaciones para importarlo de forma segura.'));
+      if (p.listas != null && (!Array.isArray(p.listas) || p.listas.length > 5000)) throw new Error(t('El paquete contiene una colección de listas no válida.'));
       const ids = new Set();
       const idsAdjuntos = new Set();
       for (const g of p.grabaciones) {
@@ -3764,6 +4211,7 @@ const Importar = {
       const reemplazar = leerRadio('iYa') === 'reemplazar'; $('iOk').disabled = true;
       let n = 0, aviso = [];
       for (const pl of (p.plantillas || [])) { try { await Plantillas.incorporar(pl, false); } catch (e) {} }
+      for (const lista of (p.listas || [])) { try { await ListaTrabajo.incorporar(lista); } catch (e) { Bitacora.poner('importar lista', e && e.message ? e.message : String(e)); } }
       for (const g of p.grabaciones) {
         if (ya.includes(g) && !reemplazar) continue;
         $('iProg').textContent = t('Importando «{titulo}»…', { titulo: g.ficha.titulo });
@@ -4011,24 +4459,104 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedido
 $('bInstalar').onclick = async () => { if (ES_IOS && !pedidoInstalar) return instruccionesIos(); if (!pedidoInstalar) return; pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; $('bInstalar').classList.add('oculto'); };
 window.addEventListener('appinstalled', () => { $('bInstalar').classList.add('oculto'); avisar(t('✅ Vírgula quedó instalada.')); });
 
-/* ── Sin conexión; avisa cuando hay versión nueva (nunca recarga en medio de una grabación) ── */
+/* ── Actualizaciones: comprobación automática y manual, sin interrumpir grabaciones ── */
+let registroSW = null;
+let trabajadorPendiente = null;
+let recargaActualizacionPendiente = false;
+let controladorEstablecido = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+let ultimaComprobacionSW = 0;
+
+function estadoActualizacion(mensaje, tipo = '') {
+  const el = $('estadoActualizaciones');
+  if (el) { el.textContent = t(mensaje); el.className = 'nota' + (tipo ? ' ' + tipo : ''); }
+}
+
+function mostrarActualizacionDisponible(worker) {
+  trabajadorPendiente = worker || (registroSW && registroSW.waiting) || null;
+  if (!trabajadorPendiente) return;
+  const aviso = $('avisoActualizacion');
+  aviso.classList.remove('oculto', 'aviso'); aviso.classList.add('ok');
+  aviso.innerHTML = `${tH('✨ Hay una versión nueva de Vírgula disponible.')} <div class="fila fija"><button class="chico prim" id="bActualizar">${tH('Actualizar ahora')}</button></div>`;
+  $('bActualizar').onclick = () => {
+    if (G) return avisar(t('Termina la grabación antes de actualizar. La nueva versión permanecerá pendiente.'));
+    if (!trabajadorPendiente) return avisar(t('La actualización ya no está pendiente. Comprueba de nuevo.'));
+    trabajadorPendiente.postMessage('saltar');
+    estadoActualizacion('Preparando la actualización…');
+  };
+  estadoActualizacion('Hay una actualización lista para instalar.', 'ok');
+}
+
+async function comprobarActualizaciones(manual = false) {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') {
+    estadoActualizacion('Este navegador no permite actualizar Vírgula como aplicación instalada.', 'aviso');
+    return;
+  }
+  if (!navigator.onLine) {
+    estadoActualizacion('No hay conexión. No se pudo comprobar si existe una versión nueva.', 'aviso');
+    if (manual) avisar(t('Conéctate a internet para comprobar actualizaciones.'));
+    return;
+  }
+  try {
+    if (!registroSW) registroSW = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+    if (registroSW.waiting) { mostrarActualizacionDisponible(registroSW.waiting); return; }
+    estadoActualizacion('Buscando actualizaciones…');
+    await registroSW.update();
+    ultimaComprobacionSW = Date.now();
+    if (registroSW.waiting) {
+      mostrarActualizacionDisponible(registroSW.waiting);
+    } else if (registroSW.installing) {
+      const instalando = registroSW.installing;
+      if (instalando.state === 'installed' && navigator.serviceWorker.controller) { mostrarActualizacionDisponible(registroSW.waiting || instalando); return; }
+      estadoActualizacion('Se encontró una versión nueva. Se está descargando…');
+      instalando.addEventListener('statechange', () => {
+        if (instalando.state === 'installed' && navigator.serviceWorker.controller) mostrarActualizacionDisponible(registroSW.waiting || instalando);
+        if (instalando.state === 'redundant') estadoActualizacion('No se pudo instalar la actualización. Revisa la conexión e inténtalo de nuevo.', 'aviso');
+      });
+    } else {
+      estadoActualizacion('Vírgula está actualizada.', 'ok');
+      if (manual) avisar(t('✅ Vírgula está actualizada.'));
+    }
+  } catch (e) {
+    Bitacora.poner('comprobar actualización', e && e.message ? e.message : String(e));
+    estadoActualizacion('No se pudo comprobar la actualización. Revisa la conexión e inténtalo de nuevo.', 'aviso');
+    if (manual) avisar(t('No se pudo comprobar la actualización. Revisa la conexión.'));
+  }
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  const habia = !!navigator.serviceWorker.controller;   // en la primera visita no se recarga
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (habia && !G) location.reload(); });
-  navigator.serviceWorker.register('sw.js').then(r => {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!controladorEstablecido) { controladorEstablecido = true; return; }
+    if (G || Nav.actual === 'vFicha') {
+      recargaActualizacionPendiente = true;
+      estadoActualizacion('La versión nueva está activa. Recarga Vírgula cuando termines de trabajar.', 'ok');
+      $('avisoActualizacion').classList.remove('oculto');
+      $('avisoActualizacion').innerHTML = `${tH('La actualización está lista.')} <div class="fila fija"><button class="chico prim" id="bRecargarActualizada">${tH('Recargar ahora')}</button></div>`;
+      $('bRecargarActualizada').onclick = () => {
+        if (G) return avisar(t('Termina la grabación antes de recargar.'));
+        recargaActualizacionPendiente = false; location.reload();
+      };
+      return;
+    }
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => {
+    registroSW = r;
+    if (r.waiting) mostrarActualizacionDisponible(r.waiting);
     r.addEventListener('updatefound', () => {
       const n = r.installing; if (!n) return;
       n.addEventListener('statechange', () => {
-        if (n.state === 'installed' && navigator.serviceWorker.controller) {
-          const b = $('avisoActualizacion');
-          if (!b.classList.contains('oculto')) return;
-          b.classList.remove('oculto', 'aviso'); b.classList.add('ok');
-          b.innerHTML = `${tH('✨ Hay una versión nueva de Vírgula.')} <div class="fila fija"><button class="chico prim" id="bActualizar">${tH('Actualizar ahora')}</button></div>`;
-          $('bActualizar').onclick = () => { if (G) return avisar(t('Termina la grabación antes de actualizar.')); n.postMessage('saltar'); };
-        }
+        if (n.state === 'installed' && navigator.serviceWorker.controller) mostrarActualizacionDisponible(r.waiting || n);
+        if (n.state === 'redundant') Bitacora.poner('service worker', 'La nueva versión no pudo instalarse.');
       });
     });
-  }).catch(() => {});
+    comprobarActualizaciones(false);
+  }).catch(e => {
+    Bitacora.poner('registro service worker', e && e.message ? e.message : String(e));
+    estadoActualizacion('No se pudo registrar el sistema de actualizaciones.', 'aviso');
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - ultimaComprobacionSW > 5 * 60 * 1000) comprobarActualizaciones(false);
+  });
 }
 
 (async () => {
@@ -4037,6 +4565,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   await Ajustes.cargar();
   await Idioma.cargar();
   await Plantillas.cargar();
+  await ListaTrabajo.cargar();
   Ajustes.pintar();
   if (ES_IOS) $('avisoIos').classList.remove('oculto');
   $('bGrabar').innerHTML = '⏺<br>' + tH('Grabar'); $('bPausa').textContent = t('⏸ Pausa'); $('nivelNota').textContent = t('Nivel de entrada');
