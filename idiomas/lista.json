@@ -1,10 +1,38 @@
 {
   "idiomas": [
     {
+      "codigo": "de",
+      "nombre": "Deutsch",
+      "version": 1,
+      "archivo": "de.json",
+      "avance": 100
+    },
+    {
       "codigo": "en",
       "nombre": "English",
       "version": 7,
       "archivo": "en.json",
+      "avance": 100
+    },
+    {
+      "codigo": "fr",
+      "nombre": "Français",
+      "version": 1,
+      "archivo": "fr.json",
+      "avance": 100
+    },
+    {
+      "codigo": "it",
+      "nombre": "Italiano",
+      "version": 1,
+      "archivo": "it.json",
+      "avance": 100
+    },
+    {
+      "codigo": "pt-BR",
+      "nombre": "Português (Brasil)",
+      "version": 1,
+      "archivo": "pt-BR.json",
       "avance": 100
     }
   ]
